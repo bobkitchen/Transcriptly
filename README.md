@@ -3,9 +3,9 @@
 ## Overview
 Transcriptly is a native macOS 26 application that captures speech via keyboard shortcuts, transcribes using Apple's Speech framework, applies AI refinement with Foundation Models, and pastes results into any application. Built with service isolation and Liquid Glass design principles.
 
-## Current Status: Pre-Development Setup
-- **Version**: v0.0.1-initial
-- **Phase**: Phase 0 - Project Setup
+## Current Status: Ready for Phase 1
+- **Version**: v0.0.2-structure  
+- **Phase**: Phase 1 - Basic Dock App with Liquid Glass UI
 - **Last Updated**: 2025-06-25
 
 ## Architecture Highlights

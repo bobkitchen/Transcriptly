@@ -6,16 +6,20 @@
 //
 
 import SwiftUI
-import CoreData
 
 @main
 struct TranscriptlyApp: App {
-    let persistenceController = PersistenceController.shared
-
+    init() {
+        // Initialize menu bar on app startup
+        _ = MenuBarController()
+    }
+    
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        WindowGroup("Transcriptly") {
+            MainWindowView()
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified)
+        .windowResizability(.contentSize)
     }
 }
