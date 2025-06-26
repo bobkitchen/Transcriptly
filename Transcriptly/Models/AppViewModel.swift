@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 import AVFoundation
+import UserNotifications
 
 final class AppViewModel: ObservableObject {
     @Published var currentStatus: AppStatus = .ready
@@ -16,6 +17,7 @@ final class AppViewModel: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing = false
     @Published var errorMessage: String? = nil
+    @Published var selectedSidebarSection: SidebarSection = .home
     
     private let permissionsService = PermissionsService()
     private let audioService = AudioService()
@@ -23,10 +25,17 @@ final class AppViewModel: ObservableObject {
     private let transcriptionService = TranscriptionService()
     private let pasteService = PasteService()
     @Published var refinementService = RefinementService()
+    @Published var capsuleController = CapsuleController()
     
     init() {
         // Initialize status based on permissions
         updateStatusBasedOnPermissions()
+        
+        // Set up capsule controller reference
+        capsuleController.setViewModel(self)
+        
+        // Request notification permissions
+        requestNotificationPermissions()
         
         // Observe audio service recording state
         audioService.$isRecording
@@ -46,15 +55,27 @@ final class AppViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Set up keyboard shortcut handler
+        // Set up keyboard shortcut handlers
         keyboardShortcutService.onShortcutPressed = { [weak self] in
             Task { @MainActor in
                 await self?.handleKeyboardShortcut()
             }
         }
+        
+        keyboardShortcutService.onModeChangePressed = { [weak self] mode in
+            Task { @MainActor in
+                self?.handleModeChange(mode)
+            }
+        }
+        
+        keyboardShortcutService.onCancelPressed = { [weak self] in
+            Task { @MainActor in
+                await self?.handleCancel()
+            }
+        }
     }
     
-    private var cancellables = Set<AnyCancellable>()
+    var cancellables = Set<AnyCancellable>()
     
     private func updateStatusBasedOnPermissions() {
         if permissionsService.hasPermission {
@@ -95,6 +116,9 @@ final class AppViewModel: ObservableObject {
         } else if !isTranscribing {
             currentStatus = .ready
         }
+        
+        // Update keyboard service recording state
+        keyboardShortcutService.setRecordingState(recording)
     }
     
     private func updateStatusForTranscribing(_ transcribing: Bool) {
@@ -184,12 +208,16 @@ final class AppViewModel: ObservableObject {
                 self.transcribedText = refinedText
                 // Continue with paste operation
                 self.pasteService.copyTextToClipboard(refinedText)
+                // Show completion notification
+                self.showCompletionNotification()
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Refinement failed: \(error.localizedDescription)"
                 self.transcribedText = text // Fall back to original text
                 self.pasteService.copyTextToClipboard(text)
+                // Show completion notification even on error
+                self.showCompletionNotification()
             }
         }
     }
@@ -220,5 +248,60 @@ final class AppViewModel: ObservableObject {
     
     func pasteTranscribedText() async -> Bool {
         return await pasteService.pasteAtCursorLocation()
+    }
+    
+    private func handleModeChange(_ mode: RefinementMode) {
+        refinementService.currentMode = mode
+        showModeChangeNotification(mode)
+    }
+    
+    private func showModeChangeNotification(_ mode: RefinementMode) {
+        // Show brief visual feedback for mode change
+        // This could be implemented as a temporary overlay or menu bar update
+        print("Mode changed to: \(mode.rawValue)")
+    }
+    
+    private func handleCancel() async {
+        guard isRecording else { return }
+        await audioService.cancelRecording()
+        await MainActor.run {
+            currentStatus = .ready
+        }
+    }
+    
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("Failed to request notification permissions: \(error)")
+            }
+        }
+    }
+    
+    private func showCompletionNotification() {
+        // Check user preferences
+        let showNotifications = UserDefaults.standard.bool(forKey: "showNotifications")
+        let playCompletionSound = UserDefaults.standard.bool(forKey: "playCompletionSound")
+        
+        if showNotifications {
+            let content = UNMutableNotificationContent()
+            content.title = "Transcription Complete"
+            content.body = "Text has been copied to clipboard"
+            
+            if playCompletionSound {
+                content.sound = .default
+            }
+            
+            let request = UNNotificationRequest(
+                identifier: "transcription-complete-\(Date().timeIntervalSince1970)",
+                content: content,
+                trigger: nil // Show immediately
+            )
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Failed to show notification: \(error)")
+                }
+            }
+        }
     }
 }

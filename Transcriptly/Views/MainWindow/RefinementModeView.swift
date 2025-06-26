@@ -13,11 +13,6 @@ struct RefinementModeView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Section header
-            Text("Refinement Mode")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
             // Refinement mode selection using Picker
             Picker("Refinement Mode", selection: $viewModel.refinementService.currentMode) {
                 ForEach(RefinementMode.allCases, id: \.self) { mode in
