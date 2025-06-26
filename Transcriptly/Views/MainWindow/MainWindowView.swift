@@ -8,17 +8,20 @@
 import SwiftUI
 
 struct MainWindowView: View {
+    @StateObject private var viewModel = AppViewModel()
+    
     var body: some View {
         VStack(spacing: 0) {
             // Main content area with proper margins (20pt)
             VStack(spacing: 16) {
                 // Recording section
                 RecordingView()
+                    .environmentObject(viewModel)
                 
                 Divider()
                 
                 // Refinement mode section
-                RefinementModeView()
+                RefinementModeView(viewModel: viewModel)
                 
                 Divider()
                 

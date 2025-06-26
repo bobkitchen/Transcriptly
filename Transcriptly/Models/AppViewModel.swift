@@ -22,6 +22,7 @@ final class AppViewModel: ObservableObject {
     private let keyboardShortcutService = KeyboardShortcutService()
     private let transcriptionService = TranscriptionService()
     private let pasteService = PasteService()
+    @Published var refinementService = RefinementService()
     
     init() {
         // Initialize status based on permissions
@@ -165,12 +166,30 @@ final class AppViewModel: ObservableObject {
         
         await MainActor.run {
             if let text = transcribedText, !text.isEmpty {
-                self.transcribedText = text
-                // Automatically copy to clipboard
-                self.pasteService.copyTextToClipboard(text)
+                // Process transcription with refinement
+                Task {
+                    await processTranscription(text)
+                }
             } else {
                 self.transcribedText = ""
                 self.errorMessage = "Transcription failed. Please try recording again."
+            }
+        }
+    }
+    
+    private func processTranscription(_ text: String) async {
+        do {
+            let refinedText = try await refinementService.refine(text)
+            await MainActor.run {
+                self.transcribedText = refinedText
+                // Continue with paste operation
+                self.pasteService.copyTextToClipboard(refinedText)
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Refinement failed: \(error.localizedDescription)"
+                self.transcribedText = text // Fall back to original text
+                self.pasteService.copyTextToClipboard(text)
             }
         }
     }
