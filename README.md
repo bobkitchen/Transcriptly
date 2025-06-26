@@ -3,10 +3,10 @@
 ## Overview
 Transcriptly is a native macOS 26 application that captures speech via keyboard shortcuts, transcribes using Apple's Speech framework, applies AI refinement with Foundation Models, and pastes results into any application. Built with service isolation and Liquid Glass design principles.
 
-## Current Status: Ready for Phase 1
-- **Version**: v0.0.2-structure  
-- **Phase**: Phase 1 - Basic Dock App with Liquid Glass UI
-- **Last Updated**: 2025-06-25
+## Current Status: Phase 2 In Progress
+- **Version**: v0.6.0-dev
+- **Phase**: Phase 2 - AI Refinement and UI Restructuring  
+- **Last Updated**: 2025-06-26
 
 ## Architecture Highlights
 - **Service Isolation**: Each service (audio, transcription, AI) operates independently
@@ -14,12 +14,19 @@ Transcriptly is a native macOS 26 application that captures speech via keyboard 
 - **Defensive Programming**: Extensive resource cleanup and error handling
 - **Dock-First Design**: Full macOS app with secondary menu bar access
 
-## Core Features (Planned)
-- Global keyboard shortcuts (Cmd+Shift+V default)
+## Core Features 
+### Phase 1 Complete ✅
+- Global keyboard shortcuts (⌘⇧V)
 - Post-recording transcription using Apple's Speech framework
-- AI refinement modes: Email, Clean-up, Professional, Raw
 - Auto-paste to active application
-- Minimal menu bar integration
+- Basic recording interface
+
+### Phase 2 In Progress 🚧
+- AI refinement modes: Raw, Clean-up, Email, Messaging
+- Sidebar navigation (Home, Transcription, AI Providers, Learning, Settings)
+- Capsule mode for minimal recording
+- User-editable refinement prompts
+- Mode switching shortcuts (⌘1-4)
 
 ## Technical Requirements
 - **macOS**: 26.0+ only (no backward compatibility)
@@ -28,12 +35,11 @@ Transcriptly is a native macOS 26 application that captures speech via keyboard 
 - **Frameworks**: SwiftUI, Speech, Foundation Models
 
 ## Development Phases
-1. **Phase 0**: Project setup and structure *(Current)*
-2. **Phase 1**: Basic dock app with Liquid Glass UI
-3. **Phase 2**: Core recording functionality
-4. **Phase 3**: Transcription integration
-5. **Phase 4**: AI refinement
-6. **Phase 5**: Polish and options
+1. **Phase 0**: Project setup and structure ✅
+2. **Phase 1**: Basic dock app with Liquid Glass UI ✅
+3. **Phase 2**: AI refinement and UI restructuring 🚧 *(Current)*
+4. **Phase 3**: Learning features and advanced AI
+5. **Phase 4**: Polish and production readiness
 
 ## Key Lessons from Previous Attempt
 - Service isolation prevents cascading failures

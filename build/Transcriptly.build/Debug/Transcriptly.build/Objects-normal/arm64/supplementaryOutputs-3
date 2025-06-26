@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Services/KeyboardShortcutService.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/KeyboardShortcutService.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/KeyboardShortcutService.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/KeyboardShortcutService.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/KeyboardShortcutService.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/KeyboardShortcutService.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Services/PasteService.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PasteService.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PasteService.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PasteService.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PasteService.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PasteService.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Services/PermissionsService.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PermissionsService.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PermissionsService.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PermissionsService.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PermissionsService.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/PermissionsService.swiftdeps"
+  }
+}

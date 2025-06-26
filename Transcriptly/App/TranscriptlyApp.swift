@@ -9,6 +9,8 @@ import SwiftUI
 
 @main
 struct TranscriptlyApp: App {
+    @StateObject private var appViewModel = AppViewModel()
+    
     init() {
         // Initialize menu bar on app startup
         _ = MenuBarController()
@@ -17,6 +19,7 @@ struct TranscriptlyApp: App {
     var body: some Scene {
         WindowGroup("Transcriptly") {
             MainWindowView()
+                .environmentObject(appViewModel)
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified)
