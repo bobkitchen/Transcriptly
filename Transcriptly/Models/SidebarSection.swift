@@ -35,9 +35,9 @@ enum SidebarSection: String, CaseIterable, Codable {
     
     var isEnabled: Bool {
         switch self {
-        case .home, .transcription, .settings:
+        case .home, .transcription, .settings, .learning:
             return true
-        case .aiProviders, .learning:
+        case .aiProviders:
             return false
         }
     }
