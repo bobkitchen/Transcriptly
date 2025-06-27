@@ -25,25 +25,8 @@ struct TranscriptlyApp: App {
                     // Connect menu bar controller to app view model
                     connectMenuBarToAppViewModel()
                 }
-                .sheet(isPresented: $appViewModel.showEditReview) {
-                    EditReviewWindow(
-                        originalTranscription: appViewModel.currentOriginalTranscription,
-                        aiRefinement: appViewModel.currentAIRefinement,
-                        refinementMode: appViewModel.refinementService.currentMode
-                    ) { finalText, wasSkipped in
-                        appViewModel.handleEditReviewComplete(finalText: finalText, wasSkipped: wasSkipped)
-                    }
-                }
-                .sheet(isPresented: $appViewModel.showABTesting) {
-                    ABTestingWindow(
-                        originalTranscription: appViewModel.currentOriginalTranscription,
-                        optionA: appViewModel.currentABOptionA,
-                        optionB: appViewModel.currentABOptionB,
-                        refinementMode: appViewModel.refinementService.currentMode
-                    ) { selectedOption in
-                        appViewModel.handleABTestComplete(selectedOption: selectedOption)
-                    }
-                }
+                // Note: Learning windows are now proper NSWindows instead of sheets
+                // to support capsule mode presentation
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified)

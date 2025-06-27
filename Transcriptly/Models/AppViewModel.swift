@@ -10,6 +10,7 @@ import SwiftUI
 import Combine
 import AVFoundation
 import UserNotifications
+import AppKit
 
 
 final class AppViewModel: ObservableObject {
@@ -20,9 +21,9 @@ final class AppViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
     @Published var selectedSidebarSection: SidebarSection = .home
     
-    // Learning window states
-    @Published var showEditReview = false
-    @Published var showABTesting = false
+    // Learning window controllers
+    private var editReviewWindow: NSWindow?
+    private var abTestingWindow: NSWindow?
     
     // Current transcription data for learning
     @Published var currentOriginalTranscription = ""
@@ -231,17 +232,21 @@ final class AppViewModel: ObservableObject {
                 wasSkipped: false
             )
             
-            // Wait a moment for learning service to update its state
-            try? await Task.sleep(for: .milliseconds(100))
-            
             // Learning windows are now handled directly in createLearningSession
-            // If no learning window was shown, proceed with normal flow
+            // Wait a moment to allow the UI to update, then check if we need to auto-complete
+            try? await Task.sleep(for: .milliseconds(200))
+            
             await MainActor.run {
-                if !showEditReview && !showABTesting {
+                let hasEditWindow = editReviewWindow != nil
+                let hasABWindow = abTestingWindow != nil
+                print("Post-learning check: editReviewWindow = \(hasEditWindow), abTestingWindow = \(hasABWindow)")
+                if !hasEditWindow && !hasABWindow {
                     // No learning windows - proceed with normal flow
+                    print("No learning windows shown, proceeding with auto-completion")
                     completeTranscriptionWithText(refinedText)
+                } else {
+                    print("Learning window shown, waiting for user interaction")
                 }
-                // If learning windows appeared, completion will happen when user finishes interaction
             }
         } catch {
             await MainActor.run {
@@ -286,16 +291,16 @@ final class AppViewModel: ObservableObject {
             )
         }
         
-        // Directly control sheet presentation based on learning decision
+        // Directly control window presentation based on learning decision
         await MainActor.run {
             switch shouldShowLearning {
             case .editReview:
                 print("Directly showing Edit Review window")
-                self.showEditReview = true
+                self.showEditReviewWindow()
             case .abTesting:
                 print("Directly showing A/B Testing window")
                 self.generateABOptions()
-                self.showABTesting = true
+                self.showABTestingWindow()
             case .none:
                 print("No learning window needed")
                 break
@@ -306,7 +311,82 @@ final class AppViewModel: ObservableObject {
     }
     
     // MARK: - Learning Window Management
-    // Note: Learning windows are now controlled directly in createLearningSession to prevent race conditions
+    // Note: Learning windows are now proper NSWindows to work with capsule mode
+    
+    private func showEditReviewWindow() {
+        // Close any existing edit review window
+        editReviewWindow?.close()
+        
+        let contentView = EditReviewWindow(
+            originalTranscription: currentOriginalTranscription,
+            aiRefinement: currentAIRefinement,
+            refinementMode: refinementService.currentMode
+        ) { [weak self] finalText, wasSkipped in
+            self?.handleEditReviewComplete(finalText: finalText, wasSkipped: wasSkipped)
+        }
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 480),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "Review & Improve Transcription"
+        window.contentView = NSHostingView(rootView: contentView)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.level = .floating
+        
+        // Store reference and set up cleanup
+        editReviewWindow = window
+        
+        // Set up window delegate to clean up when closed
+        let delegate = LearningWindowDelegate { [weak self] in
+            self?.editReviewWindow = nil
+        }
+        window.delegate = delegate
+        
+        print("Edit Review window created and shown")
+    }
+    
+    private func showABTestingWindow() {
+        // Close any existing A/B testing window
+        abTestingWindow?.close()
+        
+        let contentView = ABTestingWindow(
+            originalTranscription: currentOriginalTranscription,
+            optionA: currentABOptionA,
+            optionB: currentABOptionB,
+            refinementMode: refinementService.currentMode
+        ) { [weak self] selectedOption in
+            self?.handleABTestComplete(selectedOption: selectedOption)
+        }
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "Choose Your Preference"
+        window.contentView = NSHostingView(rootView: contentView)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.level = .floating
+        
+        // Store reference and set up cleanup
+        abTestingWindow = window
+        
+        // Set up window delegate to clean up when closed
+        let delegate = LearningWindowDelegate { [weak self] in
+            self?.abTestingWindow = nil
+        }
+        window.delegate = delegate
+        
+        print("A/B Testing window created and shown")
+    }
     
     private func generateABOptions() {
         // For now, create simple variations
@@ -381,7 +461,8 @@ final class AppViewModel: ObservableObject {
     }
     
     func handleEditReviewComplete(finalText: String, wasSkipped: Bool) {
-        showEditReview = false
+        editReviewWindow?.close()
+        editReviewWindow = nil
         
         // Submit to learning service
         learningService.submitEditReview(
@@ -397,7 +478,8 @@ final class AppViewModel: ObservableObject {
     }
     
     func handleABTestComplete(selectedOption: String) {
-        showABTesting = false
+        abTestingWindow?.close()
+        abTestingWindow = nil
         
         // Submit A/B test result to learning service
         learningService.submitABTest(
@@ -518,5 +600,20 @@ final class AppViewModel: ObservableObject {
                 }
             }
         }
+    }
+}
+
+// MARK: - Learning Window Delegate
+
+class LearningWindowDelegate: NSObject, NSWindowDelegate {
+    private let onClose: () -> Void
+    
+    init(onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        super.init()
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        onClose()
     }
 }
