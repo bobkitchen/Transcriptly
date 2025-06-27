@@ -41,8 +41,8 @@ struct ABTestingWindow: View {
             // Header
             VStack(spacing: 8) {
                 HStack {
-                    Image(systemName: "ab.rectangle")
-                        .foregroundColor(.purple)
+                    Image(systemName: "text.alignleft")
+                        .foregroundColor(.white)
                         .font(.title2)
                     
                     Text("Choose Your Preference")

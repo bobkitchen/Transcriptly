@@ -314,33 +314,70 @@ final class AppViewModel: ObservableObject {
     private func generateABOptions() {
         // For now, create simple variations
         // In a real implementation, this would use different AI parameters
-        let baseText = currentAIRefinement
+        let baseText = currentAIRefinement.isEmpty ? currentOriginalTranscription : currentAIRefinement
         
-        // Option A: Current refinement
+        print("Generating A/B options from base text: '\(baseText)'")
+        
+        // Option A: Current refinement (or original if refinement failed)
         currentABOptionA = baseText
         
         // Option B: Slight variation (more formal/less formal)
         currentABOptionB = createVariation(of: baseText)
+        
+        print("Option A: '\(currentABOptionA)'")
+        print("Option B: '\(currentABOptionB)'")
     }
     
     private func createVariation(of text: String) -> String {
-        // Simple variation: toggle contractions
+        guard !text.isEmpty else { return "Option B (no text)" }
+        
+        // Simple variation: toggle contractions and formality
         var variation = text
+        var hasChanges = false
         
         // Expand contractions for a more formal variant
         let contractions = [
             "don't": "do not",
-            "won't": "will not",
+            "won't": "will not", 
             "can't": "cannot",
             "I'm": "I am",
             "you're": "you are",
             "it's": "it is",
-            "we're": "we are",
-            "they're": "they are"
+            "we're": "we are", 
+            "they're": "they are",
+            "that's": "that is",
+            "there's": "there is"
         ]
         
         for (contraction, expansion) in contractions {
-            variation = variation.replacingOccurrences(of: contraction, with: expansion, options: .caseInsensitive)
+            let newVariation = variation.replacingOccurrences(of: contraction, with: expansion, options: .caseInsensitive)
+            if newVariation != variation {
+                variation = newVariation
+                hasChanges = true
+            }
+        }
+        
+        // If no contractions found, try other variations
+        if !hasChanges {
+            // Try making it more concise by removing filler words
+            let fillerWords = ["really", "actually", "basically", "obviously", "clearly"]
+            for filler in fillerWords {
+                let pattern = "\\b\(filler)\\s+"
+                if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                    let range = NSRange(location: 0, length: variation.utf16.count)
+                    let newVariation = regex.stringByReplacingMatches(in: variation, options: [], range: range, withTemplate: "")
+                    if newVariation != variation {
+                        variation = newVariation.trimmingCharacters(in: .whitespaces)
+                        hasChanges = true
+                        break
+                    }
+                }
+            }
+        }
+        
+        // If still no changes, add a simple variation
+        if !hasChanges {
+            variation = text + " (refined)"
         }
         
         return variation

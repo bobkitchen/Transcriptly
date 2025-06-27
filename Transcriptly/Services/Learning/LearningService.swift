@@ -39,11 +39,22 @@ class LearningService: ObservableObject {
         refined: String,
         refinementMode: RefinementMode
     ) {
-        guard isLearningEnabled else { return }
-        guard original.split(separator: " ").count >= 20 else {
+        guard isLearningEnabled else { 
+            print("Learning disabled, skipping learning processing")
+            return 
+        }
+        
+        let wordCount = original.split(separator: " ").count
+        print("Processing transcription: \(wordCount) words, original: '\(original)', refined: '\(refined)'")
+        
+        guard wordCount >= 20 else {
             // Too short for edit review, consider A/B testing
+            print("Short transcription (\(wordCount) words), considering A/B testing")
             if sessionCount < 50 {
+                print("Session count (\(sessionCount)) < 50, triggering A/B test")
                 shouldShowABTest = true
+            } else {
+                print("Session count (\(sessionCount)) >= 50, skipping A/B test")
             }
             return
         }
