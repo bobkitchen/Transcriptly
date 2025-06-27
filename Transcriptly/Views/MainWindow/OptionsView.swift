@@ -13,11 +13,6 @@ struct OptionsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Section header
-            Text("Options")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
             // Checkbox options
             VStack(alignment: .leading, spacing: 4) {
                 OptionToggle(

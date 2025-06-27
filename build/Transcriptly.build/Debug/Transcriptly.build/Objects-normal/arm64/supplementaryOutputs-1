@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/App/TranscriptlyApp.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptlyApp.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptlyApp.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptlyApp.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptlyApp.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptlyApp.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Models/AppViewModel.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AppViewModel.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AppViewModel.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AppViewModel.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AppViewModel.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AppViewModel.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Services/AudioService.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AudioService.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AudioService.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AudioService.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AudioService.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/AudioService.swiftdeps"
+  }
+}

@@ -8,32 +8,21 @@
 import SwiftUI
 
 struct MainWindowView: View {
+    @StateObject var viewModel = AppViewModel()
+    @State private var selectedSection: SidebarSection = .home
+    
     var body: some View {
-        VStack(spacing: 0) {
-            // Main content area with proper margins (20pt)
-            VStack(spacing: 16) {
-                // Recording section
-                RecordingView()
-                
-                Divider()
-                
-                // Refinement mode section
-                RefinementModeView()
-                
-                Divider()
-                
-                // Options section
-                OptionsView()
-                
-                Spacer()
-            }
-            .padding(20) // Standard 20pt margins
+        HStack(spacing: 0) {
+            SidebarView(selectedSection: $selectedSection)
             
-            // Status bar
-            StatusView()
+            Divider()
+            
+            MainContentView(
+                selectedSection: $selectedSection,
+                viewModel: viewModel
+            )
         }
-        .frame(width: 400, height: 500) // Fixed window size as specified
-        .background(Color(.windowBackgroundColor)) // Respects system appearance
+        .frame(minWidth: 800, minHeight: 600)
     }
 }
 

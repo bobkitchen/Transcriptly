@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StatusView: View {
-    @State private var currentStatus: AppStatus = .ready
+    @EnvironmentObject var appViewModel: AppViewModel
     
     var body: some View {
         VStack(spacing: 0) {
@@ -17,16 +17,16 @@ struct StatusView: View {
             
             // Status bar area
             HStack {
-                Text("Status: \(currentStatus.displayText)")
+                Text("Status: \(appViewModel.statusText)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
                 
                 // Optional status indicator
-                if currentStatus != .ready {
-                    Image(systemName: currentStatus.iconName)
+                if appViewModel.currentStatus != .ready {
+                    Image(systemName: appViewModel.currentStatus.iconName)
                         .font(.caption)
-                        .foregroundColor(currentStatus.color)
+                        .foregroundColor(appViewModel.currentStatus.color)
                 }
             }
             .padding(.horizontal, 20)

@@ -7,9 +7,13 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
-final class MenuBarController {
+final class MenuBarController: ObservableObject {
     private var statusItem: NSStatusItem?
+    private var waveformView: MenuBarWaveformView?
+    private var cancellables = Set<AnyCancellable>()
+    private var isRecording = false
     
     init() {
         setupMenuBar()
@@ -73,7 +77,56 @@ final class MenuBarController {
         NSApp.terminate(nil)
     }
     
+    func setRecordingState(_ recording: Bool) {
+        isRecording = recording
+        DispatchQueue.main.async { [weak self] in
+            self?.updateMenuBarIcon()
+        }
+    }
+    
+    private func updateMenuBarIcon() {
+        guard let button = statusItem?.button else { return }
+        
+        if isRecording {
+            // Show animated waveform
+            setupWaveformView()
+        } else {
+            // Show static microphone icon
+            waveformView?.removeFromSuperview()
+            waveformView = nil
+            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Transcriptly")
+            button.imagePosition = .imageOnly
+        }
+    }
+    
+    private func setupWaveformView() {
+        guard let button = statusItem?.button else { return }
+        
+        // Remove existing waveform if any
+        waveformView?.removeFromSuperview()
+        
+        // Create and add waveform view
+        let waveform = MenuBarWaveformView(frame: NSRect(x: 0, y: 0, width: 40, height: 22))
+        waveformView = waveform
+        
+        // Clear the button image and add waveform as subview
+        button.image = nil
+        button.addSubview(waveform)
+        
+        // Center the waveform in the button
+        waveform.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            waveform.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            waveform.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            waveform.widthAnchor.constraint(equalToConstant: 40),
+            waveform.heightAnchor.constraint(equalToConstant: 22)
+        ])
+        
+        waveform.startAnimating()
+    }
+    
     deinit {
+        waveformView?.stopAnimating()
         statusItem?.isVisible = false
         statusItem = nil
     }
