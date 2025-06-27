@@ -86,26 +86,8 @@ final class AppViewModel: ObservableObject {
             }
         }
         
-        // Observe learning service state with debounce to avoid race conditions
-        learningService.$shouldShowEditReview
-            .receive(on: DispatchQueue.main)
-            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
-            .sink { [weak self] shouldShow in
-                if shouldShow {
-                    self?.showEditReviewWindow()
-                }
-            }
-            .store(in: &cancellables)
-        
-        learningService.$shouldShowABTest
-            .receive(on: DispatchQueue.main)
-            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
-            .sink { [weak self] shouldShow in
-                if shouldShow {
-                    self?.showABTestingWindow()
-                }
-            }
-            .store(in: &cancellables)
+        // Note: Removed Combine observers for learning service flags to prevent race conditions
+        // Learning window presentation is now handled directly in processTranscription
     }
     
     var cancellables = Set<AnyCancellable>()
@@ -252,14 +234,14 @@ final class AppViewModel: ObservableObject {
             // Wait a moment for learning service to update its state
             try? await Task.sleep(for: .milliseconds(100))
             
-            // Check if learning windows will appear - if so, don't auto-paste
+            // Learning windows are now handled directly in createLearningSession
+            // If no learning window was shown, proceed with normal flow
             await MainActor.run {
-                if !learningService.shouldShowEditReview && !learningService.shouldShowABTest {
+                if !showEditReview && !showABTesting {
                     // No learning windows - proceed with normal flow
                     completeTranscriptionWithText(refinedText)
                 }
-                // If learning windows should appear, they will be shown by the observers
-                // and completion will happen when user finishes the learning interaction
+                // If learning windows appeared, completion will happen when user finishes interaction
             }
         } catch {
             await MainActor.run {
@@ -288,54 +270,43 @@ final class AppViewModel: ObservableObject {
         userFinalVersion: String,
         wasSkipped: Bool
     ) async {
-        // Store current transcription data for learning windows FIRST
+        // Store current transcription data for learning windows
         await MainActor.run {
             self.currentOriginalTranscription = originalTranscription
             self.currentAIRefinement = aiRefinement
             print("Stored learning data - Original: '\(originalTranscription)', AI: '\(aiRefinement)'")
         }
         
-        // Small delay to ensure data is fully set before triggering learning UI
-        try? await Task.sleep(for: .milliseconds(25))
-        
-        // Then process with learning service (which may trigger UI updates)
-        await MainActor.run {
-            learningService.processCompletedTranscription(
+        // Check if learning should be triggered - call learning service for decision
+        let shouldShowLearning = await MainActor.run {
+            return learningService.shouldTriggerLearning(
                 original: originalTranscription,
                 refined: aiRefinement,
                 refinementMode: refinementService.currentMode
             )
         }
+        
+        // Directly control sheet presentation based on learning decision
+        await MainActor.run {
+            switch shouldShowLearning {
+            case .editReview:
+                print("Directly showing Edit Review window")
+                self.showEditReview = true
+            case .abTesting:
+                print("Directly showing A/B Testing window")
+                self.generateABOptions()
+                self.showABTesting = true
+            case .none:
+                print("No learning window needed")
+                break
+            }
+        }
+        
         print("Learning session processed successfully")
     }
     
     // MARK: - Learning Window Management
-    
-    private func showEditReviewWindow() {
-        // Only show the sheet if we have data
-        if !currentOriginalTranscription.isEmpty && !currentAIRefinement.isEmpty {
-            print("Showing Edit Review with data - Original: '\(currentOriginalTranscription)', AI: '\(currentAIRefinement)'")
-            showEditReview = true
-        } else {
-            print("WARNING: Attempting to show Edit Review with empty data - Original: '\(currentOriginalTranscription)', AI: '\(currentAIRefinement)'")
-            // Reset the learning service flag to prevent infinite loop
-            learningService.shouldShowEditReview = false
-        }
-    }
-    
-    private func showABTestingWindow() {
-        // Only show if we have data
-        if !currentOriginalTranscription.isEmpty {
-            print("Showing A/B Testing with data - Original: '\(currentOriginalTranscription)'")
-            // Generate two different refinement options for A/B testing
-            generateABOptions()
-            showABTesting = true
-        } else {
-            print("WARNING: Attempting to show A/B Testing with empty data - Original: '\(currentOriginalTranscription)'")
-            // Reset the learning service flag to prevent infinite loop
-            learningService.shouldShowABTest = false
-        }
-    }
+    // Note: Learning windows are now controlled directly in createLearningSession to prevent race conditions
     
     private func generateABOptions() {
         // For now, create simple variations

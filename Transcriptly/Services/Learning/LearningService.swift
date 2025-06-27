@@ -8,8 +8,8 @@ class LearningService: ObservableObject {
     
     @Published var isLearningEnabled = true
     @Published var sessionCount = 0
-    @Published var shouldShowEditReview = false
-    @Published var shouldShowABTest = false
+    // Note: Removed @Published flags to prevent race conditions
+    // Now using direct decision method instead
     @Published var learningQuality: LearningQuality = .minimal
     
     private let supabase = SupabaseManager.shared
@@ -23,6 +23,12 @@ class LearningService: ObservableObject {
         case excellent  // 100+ sessions
     }
     
+    enum LearningDecision {
+        case editReview
+        case abTesting
+        case none
+    }
+    
     private init() {
         Task {
             await loadSessionCount()
@@ -31,17 +37,18 @@ class LearningService: ObservableObject {
     
     // MARK: - Critical: Text-Only Learning Entry Point
     
-    /// The ONLY method that receives data for learning
+    /// Determines what learning action should be taken for a completed transcription
     /// Called AFTER transcription is complete and refined
     /// NEVER called during audio recording
-    func processCompletedTranscription(
+    /// Returns the decision synchronously to prevent race conditions
+    func shouldTriggerLearning(
         original: String,
         refined: String,
         refinementMode: RefinementMode
-    ) {
+    ) -> LearningDecision {
         guard isLearningEnabled else { 
             print("Learning disabled, skipping learning processing")
-            return 
+            return .none
         }
         
         let wordCount = original.split(separator: " ").count
@@ -51,27 +58,26 @@ class LearningService: ObservableObject {
             // Too short for edit review, consider A/B testing
             print("Short transcription (\(wordCount) words), considering A/B testing")
             if sessionCount < 50 {
-                print("Session count (\(sessionCount)) < 50, triggering A/B test")
-                shouldShowABTest = true
+                print("Session count (\(sessionCount)) < 50, returning A/B test decision")
+                return .abTesting
             } else {
                 print("Session count (\(sessionCount)) >= 50, skipping A/B test")
+                return .none
             }
-            return
         }
         
         // Determine if we should show edit review
         print("Session count: \(sessionCount)")
         if sessionCount < 10 {
-            print("Session count < 10, triggering Edit Review")
-            shouldShowEditReview = true
+            print("Session count < 10, returning Edit Review decision")
+            return .editReview
         } else {
             // Random 1 in 5 chance
             let randomValue = Int.random(in: 1...5)
             let shouldShow = randomValue == 1
             print("Session count >= 10, random value: \(randomValue), shouldShow: \(shouldShow)")
-            shouldShowEditReview = shouldShow
+            return shouldShow ? .editReview : .none
         }
-        print("shouldShowEditReview set to: \(shouldShowEditReview)")
     }
     
     // MARK: - Edit Review Processing
@@ -83,7 +89,7 @@ class LearningService: ObservableObject {
         refinementMode: RefinementMode,
         skipLearning: Bool
     ) {
-        shouldShowEditReview = false
+        // Note: No longer need to reset flags since we removed reactive approach
         
         Task {
             let session = LearningSession(
@@ -131,7 +137,7 @@ class LearningService: ObservableObject {
         selected: String,
         refinementMode: RefinementMode
     ) {
-        shouldShowABTest = false
+        // Note: No longer need to reset flags since we removed reactive approach
         
         Task {
             let session = LearningSession(
