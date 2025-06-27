@@ -19,6 +19,16 @@ final class AppViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
     @Published var selectedSidebarSection: SidebarSection = .home
     
+    // Learning window states
+    @Published var showEditReview = false
+    @Published var showABTesting = false
+    
+    // Current transcription data for learning
+    @Published var currentOriginalTranscription = ""
+    @Published var currentAIRefinement = ""
+    @Published var currentABOptionA = ""
+    @Published var currentABOptionB = ""
+    
     private let permissionsService = PermissionsService()
     private let audioService = AudioService()
     private let keyboardShortcutService = KeyboardShortcutService()
@@ -74,6 +84,25 @@ final class AppViewModel: ObservableObject {
                 await self?.handleCancel()
             }
         }
+        
+        // Observe learning service state
+        learningService.$shouldShowEditReview
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] shouldShow in
+                if shouldShow {
+                    self?.showEditReviewWindow()
+                }
+            }
+            .store(in: &cancellables)
+        
+        learningService.$shouldShowABTest
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] shouldShow in
+                if shouldShow {
+                    self?.showABTestingWindow()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     var cancellables = Set<AnyCancellable>()
@@ -209,7 +238,7 @@ final class AppViewModel: ObservableObject {
                 self.transcribedText = refinedText
             }
             
-            // Create learning session for successful transcription + refinement
+            // Create learning session and check if learning windows should appear
             await createLearningSession(
                 originalTranscription: text,
                 aiRefinement: refinedText,
@@ -217,20 +246,17 @@ final class AppViewModel: ObservableObject {
                 wasSkipped: false
             )
             
-            // Copy to clipboard first
-            await MainActor.run {
-                self.pasteService.copyTextToClipboard(refinedText)
-            }
+            // Wait a moment for learning service to update its state
+            try? await Task.sleep(for: .milliseconds(100))
             
-            // Automatically paste into foreground application
-            let pasteSuccess = await pasteService.pasteAtCursorLocation()
-            
+            // Check if learning windows will appear - if so, don't auto-paste
             await MainActor.run {
-                if !pasteSuccess {
-                    self.errorMessage = "Text copied to clipboard but failed to paste automatically"
+                if !learningService.shouldShowEditReview && !learningService.shouldShowABTest {
+                    // No learning windows - proceed with normal flow
+                    completeTranscriptionWithText(refinedText)
                 }
-                // Show completion notification
-                self.showCompletionNotification()
+                // If learning windows should appear, they will be shown by the observers
+                // and completion will happen when user finishes the learning interaction
             }
         } catch {
             await MainActor.run {
@@ -246,20 +272,9 @@ final class AppViewModel: ObservableObject {
                 wasSkipped: true
             )
             
-            // Copy fallback text to clipboard
+            // For failed refinement, proceed with fallback text immediately
             await MainActor.run {
-                self.pasteService.copyTextToClipboard(text)
-            }
-            
-            // Try to paste fallback text
-            let pasteSuccess = await pasteService.pasteAtCursorLocation()
-            
-            await MainActor.run {
-                if !pasteSuccess {
-                    self.errorMessage = "Text copied to clipboard but failed to paste automatically"
-                }
-                // Show completion notification even on error
-                self.showCompletionNotification()
+                completeTranscriptionWithText(text)
             }
         }
     }
@@ -270,7 +285,11 @@ final class AppViewModel: ObservableObject {
         userFinalVersion: String,
         wasSkipped: Bool
     ) async {
+        // Store current transcription data for learning windows
         await MainActor.run {
+            self.currentOriginalTranscription = originalTranscription
+            self.currentAIRefinement = aiRefinement
+            
             learningService.processCompletedTranscription(
                 original: originalTranscription,
                 refined: aiRefinement,
@@ -278,6 +297,110 @@ final class AppViewModel: ObservableObject {
             )
         }
         print("Learning session processed successfully")
+    }
+    
+    // MARK: - Learning Window Management
+    
+    private func showEditReviewWindow() {
+        showEditReview = true
+    }
+    
+    private func showABTestingWindow() {
+        // Generate two different refinement options for A/B testing
+        generateABOptions()
+        showABTesting = true
+    }
+    
+    private func generateABOptions() {
+        // For now, create simple variations
+        // In a real implementation, this would use different AI parameters
+        let baseText = currentAIRefinement
+        
+        // Option A: Current refinement
+        currentABOptionA = baseText
+        
+        // Option B: Slight variation (more formal/less formal)
+        currentABOptionB = createVariation(of: baseText)
+    }
+    
+    private func createVariation(of text: String) -> String {
+        // Simple variation: toggle contractions
+        var variation = text
+        
+        // Expand contractions for a more formal variant
+        let contractions = [
+            "don't": "do not",
+            "won't": "will not",
+            "can't": "cannot",
+            "I'm": "I am",
+            "you're": "you are",
+            "it's": "it is",
+            "we're": "we are",
+            "they're": "they are"
+        ]
+        
+        for (contraction, expansion) in contractions {
+            variation = variation.replacingOccurrences(of: contraction, with: expansion, options: .caseInsensitive)
+        }
+        
+        return variation
+    }
+    
+    func handleEditReviewComplete(finalText: String, wasSkipped: Bool) {
+        showEditReview = false
+        
+        // Submit to learning service
+        learningService.submitEditReview(
+            original: currentOriginalTranscription,
+            aiRefined: currentAIRefinement,
+            userFinal: finalText,
+            refinementMode: refinementService.currentMode,
+            skipLearning: wasSkipped
+        )
+        
+        // Use the final text for pasting
+        completeTranscriptionWithText(finalText)
+    }
+    
+    func handleABTestComplete(selectedOption: String) {
+        showABTesting = false
+        
+        // Submit A/B test result to learning service
+        learningService.submitABTest(
+            original: currentOriginalTranscription,
+            optionA: currentABOptionA,
+            optionB: currentABOptionB,
+            selected: selectedOption,
+            refinementMode: refinementService.currentMode
+        )
+        
+        // Use the selected option for pasting
+        completeTranscriptionWithText(selectedOption)
+    }
+    
+    private func completeTranscriptionWithText(_ text: String) {
+        Task {
+            // Update the transcribed text
+            await MainActor.run {
+                self.transcribedText = text
+            }
+            
+            // Copy to clipboard
+            await MainActor.run {
+                self.pasteService.copyTextToClipboard(text)
+            }
+            
+            // Paste automatically
+            let pasteSuccess = await pasteService.pasteAtCursorLocation()
+            
+            await MainActor.run {
+                if !pasteSuccess {
+                    self.errorMessage = "Text copied to clipboard but failed to paste automatically"
+                }
+                // Show completion notification
+                self.showCompletionNotification()
+            }
+        }
     }
     
     func cancelRecording() async {

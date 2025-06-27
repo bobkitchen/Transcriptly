@@ -13,6 +13,7 @@ class MenuBarWaveformView: NSView {
     private let barCount = 8
     private let barWidth: CGFloat = 3
     private let barSpacing: CGFloat = 1
+    private var isIdleState = false
     
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -25,8 +26,16 @@ class MenuBarWaveformView: NSView {
     }
     
     private func setupBars() {
-        // Initialize bar heights
-        barHeights = Array(repeating: 0.3, count: barCount)
+        // Initialize bar heights with a static waveform pattern for idle state
+        barHeights = [0.4, 0.7, 0.9, 0.6, 0.8, 0.5, 0.7, 0.3]
+    }
+    
+    func setIdleState(_ idle: Bool) {
+        isIdleState = idle
+        if idle {
+            setupBars() // Reset to static pattern
+            needsDisplay = true
+        }
     }
     
     override func draw(_ dirtyRect: NSRect) {
@@ -34,8 +43,11 @@ class MenuBarWaveformView: NSView {
         
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         
-        // Set bar color (white for menu bar)
-        context.setFillColor(NSColor.controlAccentColor.cgColor)
+        // Set bar color - dimmer for idle, brighter for recording
+        let color = isIdleState ? 
+            NSColor.controlAccentColor.withAlphaComponent(0.6) : 
+            NSColor.controlAccentColor
+        context.setFillColor(color.cgColor)
         
         let totalWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * barSpacing
         let startX = (bounds.width - totalWidth) / 2

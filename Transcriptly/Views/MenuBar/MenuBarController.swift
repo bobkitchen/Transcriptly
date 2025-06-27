@@ -9,11 +9,20 @@ import SwiftUI
 import AppKit
 import Combine
 
+enum MenuBarState {
+    case idle
+    case recording
+    case processing
+}
+
 final class MenuBarController: ObservableObject {
     private var statusItem: NSStatusItem?
     private var waveformView: MenuBarWaveformView?
+    private var processingView: MenuBarProcessingView?
     private var cancellables = Set<AnyCancellable>()
+    private var currentState: MenuBarState = .idle
     private var isRecording = false
+    private var isProcessing = false
     
     init() {
         setupMenuBar()
@@ -26,11 +35,8 @@ final class MenuBarController: ObservableObject {
             
             guard let statusItem = self?.statusItem else { return }
             
-            // Set up menu bar icon
-            if let button = statusItem.button {
-                button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Transcriptly")
-                button.imagePosition = .imageOnly
-            }
+            // Set up initial idle state
+            self?.updateMenuBarIcon()
             
             // Create menu
             let menu = NSMenu()
@@ -79,6 +85,24 @@ final class MenuBarController: ObservableObject {
     
     func setRecordingState(_ recording: Bool) {
         isRecording = recording
+        updateState()
+    }
+    
+    func setProcessingState(_ processing: Bool) {
+        isProcessing = processing
+        updateState()
+    }
+    
+    private func updateState() {
+        // Priority: recording > processing > idle
+        if isRecording {
+            currentState = .recording
+        } else if isProcessing {
+            currentState = .processing
+        } else {
+            currentState = .idle
+        }
+        
         DispatchQueue.main.async { [weak self] in
             self?.updateMenuBarIcon()
         }
@@ -87,46 +111,80 @@ final class MenuBarController: ObservableObject {
     private func updateMenuBarIcon() {
         guard let button = statusItem?.button else { return }
         
-        if isRecording {
-            // Show animated waveform
-            setupWaveformView()
-        } else {
-            // Show static microphone icon
-            waveformView?.removeFromSuperview()
-            waveformView = nil
-            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Transcriptly")
-            button.imagePosition = .imageOnly
+        // Clean up any existing views
+        cleanupViews()
+        
+        switch currentState {
+        case .idle:
+            setupIdleWaveform()
+        case .recording:
+            setupRecordingWaveform()
+        case .processing:
+            setupProcessingView()
         }
     }
     
-    private func setupWaveformView() {
+    private func cleanupViews() {
         guard let button = statusItem?.button else { return }
         
-        // Remove existing waveform if any
+        waveformView?.stopAnimating()
         waveformView?.removeFromSuperview()
+        waveformView = nil
         
-        // Create and add waveform view
+        processingView?.stopAnimating()
+        processingView?.removeFromSuperview()
+        processingView = nil
+        
+        button.image = nil
+    }
+    
+    private func setupIdleWaveform() {
+        guard let button = statusItem?.button else { return }
+        
         let waveform = MenuBarWaveformView(frame: NSRect(x: 0, y: 0, width: 40, height: 22))
+        waveform.setIdleState(true)
         waveformView = waveform
         
-        // Clear the button image and add waveform as subview
-        button.image = nil
         button.addSubview(waveform)
+        setupViewConstraints(for: waveform, in: button)
+    }
+    
+    private func setupRecordingWaveform() {
+        guard let button = statusItem?.button else { return }
         
-        // Center the waveform in the button
-        waveform.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            waveform.centerXAnchor.constraint(equalTo: button.centerXAnchor),
-            waveform.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-            waveform.widthAnchor.constraint(equalToConstant: 40),
-            waveform.heightAnchor.constraint(equalToConstant: 22)
-        ])
+        let waveform = MenuBarWaveformView(frame: NSRect(x: 0, y: 0, width: 40, height: 22))
+        waveform.setIdleState(false)
+        waveformView = waveform
         
+        button.addSubview(waveform)
+        setupViewConstraints(for: waveform, in: button)
         waveform.startAnimating()
     }
     
+    private func setupProcessingView() {
+        guard let button = statusItem?.button else { return }
+        
+        let processing = MenuBarProcessingView(frame: NSRect(x: 0, y: 0, width: 40, height: 22))
+        processingView = processing
+        
+        button.addSubview(processing)
+        setupViewConstraints(for: processing, in: button)
+        processing.startAnimating()
+    }
+    
+    private func setupViewConstraints(for view: NSView, in button: NSButton) {
+        view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            view.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            view.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            view.widthAnchor.constraint(equalToConstant: 40),
+            view.heightAnchor.constraint(equalToConstant: 22)
+        ])
+    }
+    
+    
     deinit {
-        waveformView?.stopAnimating()
+        cleanupViews()
         statusItem?.isVisible = false
         statusItem = nil
     }

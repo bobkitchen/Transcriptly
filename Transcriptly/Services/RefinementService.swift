@@ -127,15 +127,23 @@ class RefinementService: ObservableObject {
             throw RefinementError.promptNotFound
         }
         
+        var refinedText: String
+        
         // Try Foundation Models first, fallback to placeholder if unavailable
         #if canImport(FoundationModels)
         if let session = languageModelSession {
-            return try await refineWithFoundationModels(text: text, prompt: prompt, session: session)
+            refinedText = try await refineWithFoundationModels(text: text, prompt: prompt, session: session)
+        } else {
+            refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
         }
+        #else
+        refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
         #endif
         
-        // Fallback to sophisticated placeholder refinement
-        return try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
+        // Apply learned patterns as final step
+        refinedText = await LearningService.shared.applyLearnedPatterns(to: refinedText, mode: currentMode)
+        
+        return refinedText
     }
     
     #if canImport(FoundationModels)
