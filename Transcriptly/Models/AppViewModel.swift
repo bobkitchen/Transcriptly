@@ -206,8 +206,20 @@ final class AppViewModel: ObservableObject {
             let refinedText = try await refinementService.refine(text)
             await MainActor.run {
                 self.transcribedText = refinedText
-                // Continue with paste operation
+            }
+            
+            // Copy to clipboard first
+            await MainActor.run {
                 self.pasteService.copyTextToClipboard(refinedText)
+            }
+            
+            // Automatically paste into foreground application
+            let pasteSuccess = await pasteService.pasteAtCursorLocation()
+            
+            await MainActor.run {
+                if !pasteSuccess {
+                    self.errorMessage = "Text copied to clipboard but failed to paste automatically"
+                }
                 // Show completion notification
                 self.showCompletionNotification()
             }
@@ -215,7 +227,20 @@ final class AppViewModel: ObservableObject {
             await MainActor.run {
                 self.errorMessage = "Refinement failed: \(error.localizedDescription)"
                 self.transcribedText = text // Fall back to original text
+            }
+            
+            // Copy fallback text to clipboard
+            await MainActor.run {
                 self.pasteService.copyTextToClipboard(text)
+            }
+            
+            // Try to paste fallback text
+            let pasteSuccess = await pasteService.pasteAtCursorLocation()
+            
+            await MainActor.run {
+                if !pasteSuccess {
+                    self.errorMessage = "Text copied to clipboard but failed to paste automatically"
+                }
                 // Show completion notification even on error
                 self.showCompletionNotification()
             }

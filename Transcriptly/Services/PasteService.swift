@@ -36,6 +36,9 @@ final class PasteService: ObservableObject {
     }
     
     func pasteAtCursorLocation() async -> Bool {
+        // Small delay to ensure clipboard is set and app is ready
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        
         // Get the current text from clipboard
         let pasteboard = NSPasteboard.general
         guard let clipboardText = pasteboard.string(forType: .string), !clipboardText.isEmpty else {
@@ -53,16 +56,25 @@ final class PasteService: ObservableObject {
         // This approach simulates Cmd+V to paste at the current cursor location
         // It works with most applications that support standard paste operations
         
-        let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: 0x09, keyDown: true) // 'V' key
-        let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: 0x09, keyDown: false)
+        guard let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: 0x09, keyDown: true), // 'V' key
+              let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: 0x09, keyDown: false) else {
+            await MainActor.run {
+                self.clipboardError = "Failed to create paste keyboard events"
+            }
+            return false
+        }
         
         // Add Cmd modifier
-        keyDown?.flags = .maskCommand
-        keyUp?.flags = .maskCommand
+        keyDown.flags = .maskCommand
+        keyUp.flags = .maskCommand
         
-        // Post the key events
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
+        // Post the key events with a small delay between them
+        keyDown.post(tap: .cghidEventTap)
+        
+        // Small delay between key down and key up
+        try? await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        
+        keyUp.post(tap: .cghidEventTap)
         
         await MainActor.run {
             clipboardError = nil
