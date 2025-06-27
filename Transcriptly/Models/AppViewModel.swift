@@ -26,6 +26,7 @@ final class AppViewModel: ObservableObject {
     private let pasteService = PasteService()
     @Published var refinementService = RefinementService()
     @Published var capsuleController = CapsuleController()
+    private let learningService = LearningService.shared
     
     init() {
         // Initialize status based on permissions
@@ -208,6 +209,14 @@ final class AppViewModel: ObservableObject {
                 self.transcribedText = refinedText
             }
             
+            // Create learning session for successful transcription + refinement
+            await createLearningSession(
+                originalTranscription: text,
+                aiRefinement: refinedText,
+                userFinalVersion: refinedText, // For now, same as AI refinement
+                wasSkipped: false
+            )
+            
             // Copy to clipboard first
             await MainActor.run {
                 self.pasteService.copyTextToClipboard(refinedText)
@@ -229,6 +238,14 @@ final class AppViewModel: ObservableObject {
                 self.transcribedText = text // Fall back to original text
             }
             
+            // Create learning session for failed refinement
+            await createLearningSession(
+                originalTranscription: text,
+                aiRefinement: "", // Failed to refine
+                userFinalVersion: text, // Fallback to original
+                wasSkipped: true
+            )
+            
             // Copy fallback text to clipboard
             await MainActor.run {
                 self.pasteService.copyTextToClipboard(text)
@@ -245,6 +262,22 @@ final class AppViewModel: ObservableObject {
                 self.showCompletionNotification()
             }
         }
+    }
+    
+    private func createLearningSession(
+        originalTranscription: String,
+        aiRefinement: String,
+        userFinalVersion: String,
+        wasSkipped: Bool
+    ) async {
+        await MainActor.run {
+            learningService.processCompletedTranscription(
+                original: originalTranscription,
+                refined: aiRefinement,
+                refinementMode: refinementService.currentMode
+            )
+        }
+        print("Learning session processed successfully")
     }
     
     func cancelRecording() async {
