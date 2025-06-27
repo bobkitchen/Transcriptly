@@ -11,6 +11,7 @@ import Combine
 import AVFoundation
 import UserNotifications
 
+
 final class AppViewModel: ObservableObject {
     @Published var currentStatus: AppStatus = .ready
     @Published var isRecording = false
@@ -285,11 +286,18 @@ final class AppViewModel: ObservableObject {
         userFinalVersion: String,
         wasSkipped: Bool
     ) async {
-        // Store current transcription data for learning windows
+        // Store current transcription data for learning windows FIRST
         await MainActor.run {
             self.currentOriginalTranscription = originalTranscription
             self.currentAIRefinement = aiRefinement
-            
+            print("Stored learning data - Original: '\(originalTranscription)', AI: '\(aiRefinement)'")
+        }
+        
+        // Small delay to ensure data is fully set before triggering learning UI
+        try? await Task.sleep(for: .milliseconds(50))
+        
+        // Then process with learning service (which may trigger UI updates)
+        await MainActor.run {
             learningService.processCompletedTranscription(
                 original: originalTranscription,
                 refined: aiRefinement,
@@ -302,13 +310,29 @@ final class AppViewModel: ObservableObject {
     // MARK: - Learning Window Management
     
     private func showEditReviewWindow() {
-        showEditReview = true
+        // Only show the sheet if we have data
+        if !currentOriginalTranscription.isEmpty && !currentAIRefinement.isEmpty {
+            print("Showing Edit Review with data - Original: '\(currentOriginalTranscription)', AI: '\(currentAIRefinement)'")
+            showEditReview = true
+        } else {
+            print("WARNING: Attempting to show Edit Review with empty data - Original: '\(currentOriginalTranscription)', AI: '\(currentAIRefinement)'")
+            // Reset the learning service flag to prevent infinite loop
+            learningService.shouldShowEditReview = false
+        }
     }
     
     private func showABTestingWindow() {
-        // Generate two different refinement options for A/B testing
-        generateABOptions()
-        showABTesting = true
+        // Only show if we have data
+        if !currentOriginalTranscription.isEmpty {
+            print("Showing A/B Testing with data - Original: '\(currentOriginalTranscription)'")
+            // Generate two different refinement options for A/B testing
+            generateABOptions()
+            showABTesting = true
+        } else {
+            print("WARNING: Attempting to show A/B Testing with empty data - Original: '\(currentOriginalTranscription)'")
+            // Reset the learning service flag to prevent infinite loop
+            learningService.shouldShowABTest = false
+        }
     }
     
     private func generateABOptions() {

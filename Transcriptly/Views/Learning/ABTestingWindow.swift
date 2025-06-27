@@ -34,6 +34,12 @@ struct ABTestingWindow: View {
         self.optionB = optionB
         self.refinementMode = refinementMode
         self.onComplete = onComplete
+        
+        print("ABTestingWindow initialized with:")
+        print("  Original: '\(originalTranscription)'")
+        print("  Option A: '\(optionA)'")
+        print("  Option B: '\(optionB)'")
+        print("  Mode: \(refinementMode.rawValue)")
     }
     
     var body: some View {

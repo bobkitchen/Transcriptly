@@ -60,12 +60,18 @@ class LearningService: ObservableObject {
         }
         
         // Determine if we should show edit review
+        print("Session count: \(sessionCount)")
         if sessionCount < 10 {
+            print("Session count < 10, triggering Edit Review")
             shouldShowEditReview = true
         } else {
             // Random 1 in 5 chance
-            shouldShowEditReview = Int.random(in: 1...5) == 1
+            let randomValue = Int.random(in: 1...5)
+            let shouldShow = randomValue == 1
+            print("Session count >= 10, random value: \(randomValue), shouldShow: \(shouldShow)")
+            shouldShowEditReview = shouldShow
         }
+        print("shouldShowEditReview set to: \(shouldShowEditReview)")
     }
     
     // MARK: - Edit Review Processing

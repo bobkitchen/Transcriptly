@@ -34,6 +34,11 @@ struct EditReviewWindow: View {
         self.refinementMode = refinementMode
         self.onComplete = onComplete
         _userEditedText = State(initialValue: aiRefinement)
+        
+        print("EditReviewWindow initialized with:")
+        print("  Original: '\(originalTranscription)'")
+        print("  AI Refinement: '\(aiRefinement)'")
+        print("  Mode: \(refinementMode.rawValue)")
     }
     
     var body: some View {
