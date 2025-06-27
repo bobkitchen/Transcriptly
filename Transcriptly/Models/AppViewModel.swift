@@ -86,9 +86,10 @@ final class AppViewModel: ObservableObject {
             }
         }
         
-        // Observe learning service state
+        // Observe learning service state with debounce to avoid race conditions
         learningService.$shouldShowEditReview
             .receive(on: DispatchQueue.main)
+            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
             .sink { [weak self] shouldShow in
                 if shouldShow {
                     self?.showEditReviewWindow()
@@ -98,6 +99,7 @@ final class AppViewModel: ObservableObject {
         
         learningService.$shouldShowABTest
             .receive(on: DispatchQueue.main)
+            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
             .sink { [weak self] shouldShow in
                 if shouldShow {
                     self?.showABTestingWindow()
@@ -294,7 +296,7 @@ final class AppViewModel: ObservableObject {
         }
         
         // Small delay to ensure data is fully set before triggering learning UI
-        try? await Task.sleep(for: .milliseconds(50))
+        try? await Task.sleep(for: .milliseconds(25))
         
         // Then process with learning service (which may trigger UI updates)
         await MainActor.run {
