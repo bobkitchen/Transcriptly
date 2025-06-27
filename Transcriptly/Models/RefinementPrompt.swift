@@ -11,7 +11,7 @@ struct RefinementPrompt: Codable {
     let mode: RefinementMode
     var userPrompt: String
     let defaultPrompt: String
-    let maxCharacters: Int = 500
+    let maxCharacters: Int = 2000
     
     static func defaultPrompts() -> [RefinementMode: RefinementPrompt] {
         // Temporary prompts - will be replaced with user's prompts in Task 2.1.2

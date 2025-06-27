@@ -102,11 +102,11 @@ struct CollapsiblePromptEditorView: View {
                         }
                     
                     HStack {
-                        Text("\(characterCount)/500")
+                        Text("\(characterCount)/2000")
                             .font(.caption)
-                            .foregroundColor(characterCount > 500 ? .red : .secondary)
+                            .foregroundColor(characterCount > 2000 ? .red : .secondary)
                         Spacer()
-                        if characterCount > 500 {
+                        if characterCount > 2000 {
                             Text("Too many characters")
                                 .font(.caption)
                                 .foregroundColor(.red)

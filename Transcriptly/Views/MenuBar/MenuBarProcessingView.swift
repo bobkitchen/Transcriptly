@@ -33,8 +33,8 @@ class MenuBarProcessingView: NSView {
         
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         
-        // Set color for processing state
-        context.setFillColor(NSColor.systemOrange.cgColor)
+        // Set color for processing state - white for consistency
+        context.setFillColor(NSColor.white.cgColor)
         
         let centerX = bounds.width / 2
         let centerY = bounds.height / 2

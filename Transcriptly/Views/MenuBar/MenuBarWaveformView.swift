@@ -43,10 +43,10 @@ class MenuBarWaveformView: NSView {
         
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         
-        // Set bar color - dimmer for idle, brighter for recording
+        // Set bar color - white with different opacity for idle vs recording
         let color = isIdleState ? 
-            NSColor.controlAccentColor.withAlphaComponent(0.6) : 
-            NSColor.controlAccentColor
+            NSColor.white.withAlphaComponent(0.6) : 
+            NSColor.white
         context.setFillColor(color.cgColor)
         
         let totalWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * barSpacing

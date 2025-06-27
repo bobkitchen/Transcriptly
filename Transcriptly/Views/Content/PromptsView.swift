@@ -96,9 +96,9 @@ struct PromptsView: View {
                 if isEditing {
                     HStack {
                         Spacer()
-                        Text("\(editingPrompt.count)/500 characters")
+                        Text("\(editingPrompt.count)/2000 characters")
                             .font(.caption)
-                            .foregroundColor(editingPrompt.count > 500 ? .red : .secondary)
+                            .foregroundColor(editingPrompt.count > 2000 ? .red : .secondary)
                     }
                 }
             }
