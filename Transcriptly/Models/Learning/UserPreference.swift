@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserPreference: Codable {
+struct UserPreference: Codable, Sendable {
     enum PreferenceType: String, Codable {
         case formality
         case conciseness

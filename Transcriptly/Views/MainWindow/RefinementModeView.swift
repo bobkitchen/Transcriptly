@@ -72,7 +72,7 @@ struct RefinementModeButton: View {
     }
 }
 
-enum RefinementMode: String, CaseIterable, Codable {
+enum RefinementMode: String, CaseIterable, Codable, Sendable {
     case email
     case cleanup
     case professional

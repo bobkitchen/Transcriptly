@@ -1,6 +1,6 @@
 import Foundation
 
-struct LearningSession: Codable {
+struct LearningSession: Codable, Sendable {
     let id: UUID
     var userId: UUID?
     let timestamp: Date

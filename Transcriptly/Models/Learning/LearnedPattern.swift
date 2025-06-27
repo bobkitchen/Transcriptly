@@ -1,6 +1,6 @@
 import Foundation
 
-struct LearnedPattern: Codable, Identifiable {
+struct LearnedPattern: Codable, Identifiable, Sendable {
     let id: UUID
     var userId: UUID?
     let originalPhrase: String
