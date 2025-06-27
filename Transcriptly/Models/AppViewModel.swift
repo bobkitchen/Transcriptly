@@ -11,6 +11,7 @@ import Combine
 import AVFoundation
 import UserNotifications
 import AppKit
+import ObjectiveC
 
 
 final class AppViewModel: ObservableObject {
@@ -322,7 +323,9 @@ final class AppViewModel: ObservableObject {
             aiRefinement: currentAIRefinement,
             refinementMode: refinementService.currentMode
         ) { [weak self] finalText, wasSkipped in
-            self?.handleEditReviewComplete(finalText: finalText, wasSkipped: wasSkipped)
+            Task { @MainActor in
+                self?.handleEditReviewComplete(finalText: finalText, wasSkipped: wasSkipped)
+            }
         }
         
         let window = NSWindow(
@@ -338,14 +341,20 @@ final class AppViewModel: ObservableObject {
         window.makeKeyAndOrderFront(nil)
         window.level = .floating
         
+        // CRITICAL: Prevent autorelease pool crash when window closes
+        window.isReleasedWhenClosed = false
+        
         // Store reference and set up cleanup
         editReviewWindow = window
         
-        // Set up window delegate to clean up when closed
-        let delegate = LearningWindowDelegate { [weak self] in
-            self?.editReviewWindow = nil
+        // Set up window delegate to clean up when closed (saves original SwiftUI delegate)
+        let delegate = LearningWindowDelegate(window: window) { [weak self] in
+            self?.cleanupEditReviewWindow()
         }
         window.delegate = delegate
+        
+        // Keep strong reference to delegate to prevent deallocation
+        objc_setAssociatedObject(window, "editReviewDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         
         print("Edit Review window created and shown")
     }
@@ -360,7 +369,9 @@ final class AppViewModel: ObservableObject {
             optionB: currentABOptionB,
             refinementMode: refinementService.currentMode
         ) { [weak self] selectedOption in
-            self?.handleABTestComplete(selectedOption: selectedOption)
+            Task { @MainActor in
+                self?.handleABTestComplete(selectedOption: selectedOption)
+            }
         }
         
         let window = NSWindow(
@@ -376,16 +387,54 @@ final class AppViewModel: ObservableObject {
         window.makeKeyAndOrderFront(nil)
         window.level = .floating
         
+        // CRITICAL: Prevent autorelease pool crash when window closes
+        window.isReleasedWhenClosed = false
+        
         // Store reference and set up cleanup
         abTestingWindow = window
         
-        // Set up window delegate to clean up when closed
-        let delegate = LearningWindowDelegate { [weak self] in
-            self?.abTestingWindow = nil
+        // Set up window delegate to clean up when closed (saves original SwiftUI delegate)
+        let delegate = LearningWindowDelegate(window: window) { [weak self] in
+            self?.cleanupABTestingWindow()
         }
         window.delegate = delegate
         
+        // Keep strong reference to delegate to prevent deallocation
+        objc_setAssociatedObject(window, "abTestingDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        
         print("A/B Testing window created and shown")
+    }
+    
+    // MARK: - Safe Window Cleanup
+    
+    private func cleanupEditReviewWindow() {
+        guard let window = editReviewWindow else { return }
+        
+        // Clear associated objects - delegate restoration happens in windowWillClose
+        objc_setAssociatedObject(window, "editReviewDelegate", nil, .OBJC_ASSOCIATION_ASSIGN)
+        
+        // Close and clear reference
+        if window.isVisible {
+            window.close()
+        }
+        editReviewWindow = nil
+        
+        print("Edit Review window cleaned up safely")
+    }
+    
+    private func cleanupABTestingWindow() {
+        guard let window = abTestingWindow else { return }
+        
+        // Clear associated objects - delegate restoration happens in windowWillClose
+        objc_setAssociatedObject(window, "abTestingDelegate", nil, .OBJC_ASSOCIATION_ASSIGN)
+        
+        // Close and clear reference
+        if window.isVisible {
+            window.close()
+        }
+        abTestingWindow = nil
+        
+        print("A/B Testing window cleaned up safely")
     }
     
     private func generateABOptions() {
@@ -461,8 +510,8 @@ final class AppViewModel: ObservableObject {
     }
     
     func handleEditReviewComplete(finalText: String, wasSkipped: Bool) {
-        editReviewWindow?.close()
-        editReviewWindow = nil
+        // Clean up window safely
+        cleanupEditReviewWindow()
         
         // Submit to learning service
         learningService.submitEditReview(
@@ -478,8 +527,8 @@ final class AppViewModel: ObservableObject {
     }
     
     func handleABTestComplete(selectedOption: String) {
-        abTestingWindow?.close()
-        abTestingWindow = nil
+        // Clean up window safely
+        cleanupABTestingWindow()
         
         // Submit A/B test result to learning service
         learningService.submitABTest(
@@ -606,14 +655,30 @@ final class AppViewModel: ObservableObject {
 // MARK: - Learning Window Delegate
 
 class LearningWindowDelegate: NSObject, NSWindowDelegate {
-    private let onClose: () -> Void
+    private var onClose: (() -> Void)?
+    private weak var window: NSWindow?
+    private weak var originalDelegate: NSWindowDelegate?
     
-    init(onClose: @escaping () -> Void) {
+    init(window: NSWindow, onClose: @escaping () -> Void) {
+        self.window = window
         self.onClose = onClose
+        // Save the original SwiftUI delegate before overriding
+        self.originalDelegate = window.delegate
         super.init()
     }
     
     func windowWillClose(_ notification: Notification) {
-        onClose()
+        // Restore original SwiftUI delegate for proper cleanup
+        window?.delegate = originalDelegate
+        
+        // Call our cleanup once and clear to prevent double-calls
+        let cleanup = onClose
+        onClose = nil
+        cleanup?()
+    }
+    
+    deinit {
+        onClose = nil
+        originalDelegate = nil
     }
 }
