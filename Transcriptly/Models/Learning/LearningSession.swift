@@ -2,6 +2,7 @@ import Foundation
 
 struct LearningSession: Codable {
     let id: UUID
+    var userId: UUID?
     let timestamp: Date
     let originalTranscription: String
     let aiRefinement: String
@@ -10,6 +11,7 @@ struct LearningSession: Codable {
     let textLength: Int
     let learningType: LearningType
     let wasSkipped: Bool
+    var deviceId: String?
     
     enum LearningType: String, Codable {
         case editReview

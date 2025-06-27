@@ -1,10 +1,12 @@
 -- Transcriptly Phase 3 - Learning System Supabase Schema
--- Create this schema in Supabase dashboard
+-- Run this in Supabase SQL editor
+-- Enable RLS (Row Level Security) on all tables
 
 -- Users table (if not exists)
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE,
+    device_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -21,6 +23,7 @@ CREATE TABLE learning_sessions (
     learning_type TEXT NOT NULL,
     was_skipped BOOLEAN DEFAULT FALSE,
     device_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT text_length_positive CHECK (text_length > 0)
 );
 
@@ -51,7 +54,26 @@ CREATE TABLE user_preferences (
     CONSTRAINT value_range CHECK (value >= -1 AND value <= 1)
 );
 
--- Indexes for performance
+-- Enable Row Level Security
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learning_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learned_patterns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view own data" ON users
+    FOR ALL USING (auth.uid() = id);
+
+CREATE POLICY "Users can view own sessions" ON learning_sessions
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own patterns" ON learned_patterns
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own preferences" ON user_preferences
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Create indexes for performance
 CREATE INDEX idx_learning_sessions_user_timestamp ON learning_sessions(user_id, timestamp DESC);
 CREATE INDEX idx_patterns_user_active ON learned_patterns(user_id, is_active);
 CREATE INDEX idx_patterns_confidence ON learned_patterns(confidence DESC);

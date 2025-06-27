@@ -67,13 +67,20 @@ This happens through two mechanisms:
 3. Text → AI refinement
 4. Refined text → Review window
 5. User edits → Learning system
-6. Approved text → Pasted + Stored in database
+6. Approved text → Pasted + Stored in Supabase (with local cache)
 ```
 
 ### Storage Structure
-- **Local**: SQLite for offline capability
-- **Cloud**: Supabase for sync and backup
+- **Primary Database**: Supabase (from the outset)
+- **Local Cache**: For offline capability using Supabase's offline features
+- **Real-time Sync**: Built-in from day one
 - **Schema**: Supports user preferences, patterns, and analytics
+
+### Database Architecture
+- **Supabase-First**: All data primarily stored in Supabase
+- **Offline Support**: Local caching for offline operation
+- **Sync Strategy**: Real-time sync when online, queue changes when offline
+- **No SQLite**: Use Supabase's built-in offline capabilities
 
 ### Learning Application
 - **Immediate**: Learned patterns apply right away
