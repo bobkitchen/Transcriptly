@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Auth
 
 @MainActor
 class LearningService: ObservableObject {

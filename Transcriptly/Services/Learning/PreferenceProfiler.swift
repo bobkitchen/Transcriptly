@@ -1,4 +1,5 @@
 import Foundation
+import Auth
 
 class PreferenceProfiler {
     private let supabase = SupabaseManager.shared

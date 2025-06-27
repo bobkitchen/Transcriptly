@@ -1,4 +1,5 @@
 import Foundation
+import Auth
 
 class PatternMatcher {
     private let supabase = SupabaseManager.shared

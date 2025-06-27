@@ -1,14 +1,12 @@
 import Foundation
 import Combine
-// TODO: Add when installing Supabase SDK
-// import Supabase
+import Supabase
 
 @MainActor
 class SupabaseManager: ObservableObject {
     static let shared = SupabaseManager()
     
-    // TODO: Uncomment when Supabase SDK is installed
-    // private let client: SupabaseClient
+    private let client: SupabaseClient
     @Published var currentUser: User?
     @Published var isAuthenticated = false
     @Published var isSyncing = false
@@ -18,43 +16,24 @@ class SupabaseManager: ObservableObject {
     private var cachedPatterns: [LearnedPattern] = []
     private var cancellables = Set<AnyCancellable>()
     
-    // Temporary User struct until Supabase SDK is installed
-    struct User: Codable {
-        let id: UUID
-        let email: String?
-    }
-    
     private init() {
-        // TODO: Uncomment when Supabase SDK is installed
-        /*
         // Initialize Supabase client
-        guard let url = URL(string: SupabaseConfig.supabaseURL) else {
-            fatalError("Invalid Supabase URL")
+        client = SupabaseConfig.shared.client
+        
+        // Set up authentication and monitoring
+        Task {
+            await setupAuthListener()
+            await checkCurrentUser()
         }
         
-        client = SupabaseClient(
-            supabaseURL: url, 
-            supabaseKey: SupabaseConfig.supabaseAnonKey
-        )
-        */
-        
-        // Set up for development
-        setupDevelopmentMode()
-        
-        // TODO: Uncomment when Supabase SDK is installed
-        // Task {
-        //     await setupAuthListener()
-        //     await checkCurrentUser()
-        // }
-        
         setupNetworkMonitoring()
+        
+        // Offline queue starts empty (in-memory only)
     }
     
     // MARK: - Authentication
     
     func signIn(email: String, password: String) async throws {
-        // TODO: Implement with Supabase SDK
-        /*
         let response = try await client.auth.signIn(
             email: email,
             password: password
@@ -62,39 +41,22 @@ class SupabaseManager: ObservableObject {
         currentUser = response.user
         isAuthenticated = true
         await downloadUserData()
-        */
-        
-        // Development mode placeholder
-        currentUser = User(id: UUID(), email: email)
-        isAuthenticated = true
-        print("Development mode: Signed in as \(email)")
     }
     
     func signUp(email: String, password: String) async throws {
-        // TODO: Implement with Supabase SDK
-        /*
         let response = try await client.auth.signUp(
             email: email,
             password: password
         )
         currentUser = response.user
         isAuthenticated = true
-        */
-        
-        // Development mode placeholder
-        currentUser = User(id: UUID(), email: email)
-        isAuthenticated = true
-        print("Development mode: Signed up as \(email)")
     }
     
     func signOut() async throws {
-        // TODO: Implement with Supabase SDK
-        // try await client.auth.signOut()
-        
+        try await client.auth.signOut()
         currentUser = nil
         isAuthenticated = false
         cachedPatterns.removeAll()
-        print("Development mode: Signed out")
     }
     
     // MARK: - Learning Sessions
@@ -109,15 +71,13 @@ class SupabaseManager: ObservableObject {
         sessionData.userId = userId
         sessionData.deviceId = getDeviceId()
         
-        // TODO: Implement with Supabase SDK
-        /*
+        isSyncing = true
+        defer { isSyncing = false }
+        
         try await client
             .from("learning_sessions")
             .insert(sessionData)
             .execute()
-        */
-        
-        print("Development mode: Saved learning session for user \(userId)")
     }
     
     // MARK: - Pattern Management
@@ -131,28 +91,39 @@ class SupabaseManager: ObservableObject {
         var patternData = pattern
         patternData.userId = userId
         
-        // TODO: Implement with Supabase SDK
-        /*
-        // Try to update existing pattern first
-        let existing = try await client
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Try to find existing pattern
+        let existingQuery = try await client
             .from("learned_patterns")
             .select()
             .eq("user_id", value: userId)
             .eq("original_phrase", value: pattern.originalPhrase)
             .eq("corrected_phrase", value: pattern.correctedPhrase)
-            .single()
+            .limit(1)
             .execute()
         
-        if existing.data != nil {
+        let existingPatterns = try existingQuery.value as [LearnedPattern]
+        if let existingPattern = existingPatterns.first {
             // Update existing pattern
+            let updatedPattern = LearnedPattern(
+                id: existingPattern.id,
+                userId: userId,
+                originalPhrase: existingPattern.originalPhrase,
+                correctedPhrase: existingPattern.correctedPhrase,
+                occurrenceCount: existingPattern.occurrenceCount + 1,
+                firstSeen: existingPattern.firstSeen,
+                lastSeen: Date(),
+                refinementMode: pattern.refinementMode,
+                confidence: min(1.0, existingPattern.confidence + 0.1),
+                isActive: true
+            )
+            
             try await client
                 .from("learned_patterns")
-                .update([
-                    "occurrence_count": pattern.occurrenceCount + 1,
-                    "last_seen": Date(),
-                    "confidence": min(1.0, pattern.confidence + 0.1)
-                ])
-                .eq("id", value: pattern.id)
+                .update(updatedPattern)
+                .eq("id", value: existingPattern.id)
                 .execute()
         } else {
             // Insert new pattern
@@ -161,22 +132,9 @@ class SupabaseManager: ObservableObject {
                 .insert(patternData)
                 .execute()
         }
-        */
         
-        // Update local cache for development
-        if let index = cachedPatterns.firstIndex(where: { 
-            $0.originalPhrase == pattern.originalPhrase && 
-            $0.correctedPhrase == pattern.correctedPhrase 
-        }) {
-            var updated = cachedPatterns[index]
-            updated.occurrenceCount += 1
-            updated.confidence = min(1.0, updated.confidence + 0.1)
-            cachedPatterns[index] = updated
-        } else {
-            cachedPatterns.append(patternData)
-        }
-        
-        print("Development mode: Saved/updated pattern: \(pattern.originalPhrase) -> \(pattern.correctedPhrase)")
+        // Update local cache
+        await refreshPatternCache()
     }
     
     func getActivePatterns() async throws -> [LearnedPattern] {
@@ -185,8 +143,9 @@ class SupabaseManager: ObservableObject {
         
         guard let userId = currentUser?.id else { return [] }
         
-        // TODO: Implement with Supabase SDK
-        /*
+        isSyncing = true
+        defer { isSyncing = false }
+        
         let response = try await client
             .from("learned_patterns")
             .select()
@@ -196,15 +155,9 @@ class SupabaseManager: ObservableObject {
             .order("confidence", ascending: false)
             .execute()
         
-        let patterns = try response.decoded(to: [LearnedPattern].self)
+        let patterns = try response.value as [LearnedPattern]
         cachedPatterns = patterns
         return patterns
-        */
-        
-        // Return cached patterns for development
-        let activePatterns = cachedPatterns.filter { $0.isActive && $0.occurrenceCount >= 3 }
-        print("Development mode: Returning \(activePatterns.count) active patterns")
-        return activePatterns.sorted { $0.confidence > $1.confidence }
     }
     
     // MARK: - Preferences
@@ -218,33 +171,28 @@ class SupabaseManager: ObservableObject {
         var prefData = preference
         prefData.userId = userId
         
-        // TODO: Implement with Supabase SDK
-        /*
+        isSyncing = true
+        defer { isSyncing = false }
+        
         try await client
             .from("user_preferences")
             .upsert(prefData)
             .execute()
-        */
-        
-        print("Development mode: Saved preference \(preference.type): \(preference.value)")
     }
     
     func getPreferences() async throws -> [UserPreference] {
         guard let userId = currentUser?.id else { return [] }
         
-        // TODO: Implement with Supabase SDK
-        /*
+        isSyncing = true
+        defer { isSyncing = false }
+        
         let response = try await client
             .from("user_preferences")
             .select()
             .eq("user_id", value: userId)
             .execute()
         
-        return try response.decoded(to: [UserPreference].self)
-        */
-        
-        print("Development mode: Returning empty preferences")
-        return []
+        return try response.value as [UserPreference]
     }
     
     // MARK: - Data Management
@@ -252,8 +200,9 @@ class SupabaseManager: ObservableObject {
     func clearAllUserData() async throws {
         guard let userId = currentUser?.id else { return }
         
-        // TODO: Implement with Supabase SDK
-        /*
+        isSyncing = true
+        defer { isSyncing = false }
+        
         try await client
             .from("learning_sessions")
             .delete()
@@ -271,15 +220,13 @@ class SupabaseManager: ObservableObject {
             .delete()
             .eq("user_id", value: userId)
             .execute()
-        */
         
         cachedPatterns.removeAll()
-        print("Development mode: Cleared all user data")
     }
     
     // MARK: - Offline Support
     
-    private enum PendingOperation: Codable {
+    private enum PendingOperation {
         case saveLearningSession(LearningSession)
         case savePattern(LearnedPattern)
         case savePreference(UserPreference)
@@ -287,14 +234,12 @@ class SupabaseManager: ObservableObject {
     
     private func queueOfflineOperation(_ operation: PendingOperation) {
         offlineQueue.append(operation)
-        // TODO: Persist to UserDefaults when Codable is fully implemented
-        print("Development mode: Queued offline operation")
+        // Note: Offline queue is now in-memory only for simplicity
+        // Could be enhanced to persist to UserDefaults if needed
     }
     
     private func processOfflineQueue() async {
         guard isAuthenticated, isOnline else { return }
-        
-        print("Development mode: Processing \(offlineQueue.count) offline operations")
         
         for operation in offlineQueue {
             do {
@@ -332,38 +277,46 @@ class SupabaseManager: ObservableObject {
             .store(in: &cancellables)
     }
     
-    private func setupDevelopmentMode() {
-        // For development without Supabase SDK
-        print("SupabaseManager running in development mode")
-        print("TODO: Install Supabase SDK and configure project")
-    }
-    
-    // TODO: Uncomment when Supabase SDK is installed
-    /*
     private func setupAuthListener() async {
         for await (event, session) in client.auth.authStateChanges {
-            switch event {
-            case .signedIn:
-                currentUser = session?.user
-                isAuthenticated = true
+            await MainActor.run {
+                switch event {
+                case .signedIn:
+                    currentUser = session?.user
+                    isAuthenticated = true
+                case .signedOut:
+                    currentUser = nil
+                    isAuthenticated = false
+                    cachedPatterns.removeAll()
+                default:
+                    break
+                }
+            }
+            
+            if event == .signedIn {
                 await downloadUserData()
-            case .signedOut:
-                currentUser = nil
-                isAuthenticated = false
-            default:
-                break
             }
         }
     }
     
     private func checkCurrentUser() async {
         if let user = try? await client.auth.user() {
-            currentUser = user
-            isAuthenticated = true
+            await MainActor.run {
+                currentUser = user
+                isAuthenticated = true
+            }
             await downloadUserData()
         }
     }
-    */
+    
+    private func refreshPatternCache() async {
+        do {
+            _ = try await getActivePatterns()
+        } catch {
+            print("Failed to refresh pattern cache: \(error)")
+        }
+    }
+    
     
     private func downloadUserData() async {
         do {
