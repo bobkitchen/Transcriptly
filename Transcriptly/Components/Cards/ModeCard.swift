@@ -17,6 +17,9 @@ struct ModeCard: View {
     let onAppsConfig: (() -> Void)?
     
     @State private var isHovered = false
+    @State private var showAppPicker = false
+    @State private var assignedApps: [AppAssignment] = []
+    @ObservedObject private var assignmentManager = AppAssignmentManager.shared
     
     private var isSelected: Bool {
         selectedMode == mode
@@ -72,16 +75,20 @@ struct ModeCard: View {
                                     .buttonStyle(CompactButtonStyle())
                                 }
                                 
-                                if let appsConfig = onAppsConfig {
-                                    Button(action: appsConfig) {
-                                        HStack(spacing: DesignSystem.spacingTiny) {
-                                            Text("Apps")
-                                            Image(systemName: "chevron.down")
-                                                .font(.system(size: 10))
-                                        }
+                                Button(action: { 
+                                    if let appsConfig = onAppsConfig {
+                                        appsConfig()
+                                    } else {
+                                        showAppPicker = true
                                     }
-                                    .buttonStyle(CompactButtonStyle())
+                                }) {
+                                    HStack(spacing: DesignSystem.spacingTiny) {
+                                        Text("Apps")
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 10))
+                                    }
                                 }
+                                .buttonStyle(CompactButtonStyle())
                             }
                         }
                     }
@@ -137,6 +144,22 @@ struct ModeCard: View {
                         }
                     }
                     
+                    // Real assigned apps (if any)
+                    if !assignedApps.isEmpty {
+                        Text("•")
+                            .foregroundColor(.tertiaryText)
+                        
+                        HStack(spacing: DesignSystem.spacingTiny) {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.tertiaryText)
+                            
+                            Text("\(assignedApps.count) app\(assignedApps.count == 1 ? "" : "s")")
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(.tertiaryText)
+                        }
+                    }
+                    
                     Spacer()
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -154,6 +177,41 @@ struct ModeCard: View {
                 isHovered = hovering
             }
         }
+        .sheet(isPresented: $showAppPicker) {
+            AppPickerView(
+                isPresented: $showAppPicker,
+                mode: mode,
+                onAppSelected: { app in
+                    Task {
+                        await assignApp(app)
+                    }
+                }
+            )
+        }
+        .onAppear {
+            loadAssignedApps()
+        }
+    }
+    
+    // MARK: - App Assignment Functions
+    
+    private func assignApp(_ app: AppInfo) async {
+        let assignment = AppAssignment(
+            appInfo: app,
+            mode: mode,
+            isUserOverride: true
+        )
+        
+        do {
+            try await assignmentManager.saveAssignment(assignment)
+            loadAssignedApps()
+        } catch {
+            print("Failed to assign app: \(error)")
+        }
+    }
+    
+    private func loadAssignedApps() {
+        assignedApps = assignmentManager.getAssignedApps(for: mode)
     }
 }
 
@@ -188,6 +246,41 @@ struct CompactButtonStyle: ButtonStyle {
                     )
                 }
             }
+    }
+}
+
+// MARK: - Supporting Views
+
+struct AsyncAppIcon: View {
+    let bundleId: String
+    @State private var icon: NSImage?
+    
+    var body: some View {
+        Group {
+            if let icon = icon {
+                Image(nsImage: icon)
+                    .resizable()
+            } else {
+                Image(systemName: "app.fill")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .onAppear {
+            loadIcon()
+        }
+    }
+    
+    private func loadIcon() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let workspace = NSWorkspace.shared
+            let appURL = workspace.urlForApplication(withBundleIdentifier: bundleId)
+            
+            let appIcon = appURL.map { workspace.icon(forFile: $0.path) }
+            
+            DispatchQueue.main.async {
+                icon = appIcon
+            }
+        }
     }
 }
 
