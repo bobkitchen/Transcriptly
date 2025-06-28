@@ -89,7 +89,10 @@ class AppAssignmentManager: ObservableObject {
     }
     
     func getAssignedApps(for mode: RefinementMode) -> [AppAssignment] {
-        return userAssignments.filter { $0.assignedMode == mode }
+        let filtered = userAssignments.filter { $0.assignedMode == mode }
+        print("DEBUG AppAssignmentManager: getAssignedApps for \(mode.displayName) - Total assignments: \(userAssignments.count), Filtered: \(filtered.count)")
+        print("DEBUG AppAssignmentManager: All assignments: \(userAssignments.map { "\($0.appName) -> \($0.assignedMode.displayName)" })")
+        return filtered
     }
     
     // MARK: - Bulk Operations

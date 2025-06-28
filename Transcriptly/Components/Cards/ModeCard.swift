@@ -248,8 +248,12 @@ struct ModeCard: View {
         do {
             try await assignmentManager.saveAssignment(assignment)
             print("DEBUG: Successfully saved assignment: \(app.displayName) -> \(mode.displayName)")
+            
+            // Force reload on main thread and trigger UI update
             await MainActor.run {
+                print("DEBUG: About to reload assigned apps for \(mode.displayName)")
                 loadAssignedApps()
+                print("DEBUG: Finished reloading assigned apps for \(mode.displayName)")
             }
         } catch {
             print("Failed to assign app: \(error)")
