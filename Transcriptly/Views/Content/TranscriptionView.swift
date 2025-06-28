@@ -7,14 +7,14 @@
 //
 
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 struct TranscriptionView: View {
     @ObservedObject var viewModel: AppViewModel
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showEditPrompt = false
     @State private var editingMode: RefinementMode?
-    @State private var showAppPicker = false
-    @State private var appPickerMode: RefinementMode?
     
     var body: some View {
         ScrollView {
@@ -40,8 +40,7 @@ struct TranscriptionView: View {
                                 print("DEBUG: showEditPrompt set to: \(showEditPrompt)")
                             },
                             onAppsConfig: mode != .raw ? {
-                                appPickerMode = mode
-                                showAppPicker = true
+                                openApplicationPicker(for: mode)
                             } : nil
                         )
                     }
@@ -217,22 +216,52 @@ struct TranscriptionView: View {
                 print("DEBUG: EditPromptSheet appeared for mode: \(wrapper.mode)")
             }
         }
-        .sheet(isPresented: $showAppPicker) {
-            if let mode = appPickerMode {
-                SimpleAppPicker(
-                    isPresented: $showAppPicker,
-                    mode: mode,
-                    onAppSelected: { app in
-                        Task {
-                            await assignApp(app, to: mode)
-                        }
-                    }
-                )
-            }
-        }
     }
     
     // MARK: - App Assignment
+    
+    private func openApplicationPicker(for mode: RefinementMode) {
+        let panel = NSOpenPanel()
+        panel.title = "Select Application for \(mode.displayName)"
+        panel.message = "Choose an application to automatically switch to \(mode.displayName) mode when using it."
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        
+        // Start in Applications folder
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                // Create AppInfo from selected app
+                if let bundle = Bundle(url: url) {
+                    let appInfo = AppInfo(
+                        bundleIdentifier: bundle.bundleIdentifier ?? url.lastPathComponent,
+                        localizedName: bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? 
+                                     bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? 
+                                     url.deletingPathExtension().lastPathComponent,
+                        executablePath: url.path
+                    )
+                    
+                    Task {
+                        await assignApp(appInfo, to: mode)
+                    }
+                } else {
+                    // Fallback for apps without bundles
+                    let appInfo = AppInfo(
+                        bundleIdentifier: url.lastPathComponent,
+                        localizedName: url.deletingPathExtension().lastPathComponent,
+                        executablePath: url.path
+                    )
+                    
+                    Task {
+                        await assignApp(appInfo, to: mode)
+                    }
+                }
+            }
+        }
+    }
     
     private func assignApp(_ app: AppInfo, to mode: RefinementMode) async {
         let assignmentManager = AppAssignmentManager.shared
