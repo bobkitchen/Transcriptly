@@ -55,7 +55,7 @@ struct LiquidGlassCard: View {
 struct LiquidGlassSidebar: View {
     var body: some View {
         LiquidGlassBackground(
-            material: .sidebar,
+            material: .ultraThinMaterial,
             cornerRadius: 0,
             strokeOpacity: 0.05
         )
@@ -65,7 +65,7 @@ struct LiquidGlassSidebar: View {
 struct LiquidGlassHeader: View {
     var body: some View {
         LiquidGlassBackground(
-            material: .headerView,
+            material: .thickMaterial,
             cornerRadius: 0,
             strokeOpacity: 0.1
         )
