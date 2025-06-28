@@ -111,7 +111,14 @@ class AppDetectionService: ObservableObject {
     }
     
     private func loadSettings() {
-        isAutoDetectionEnabled = UserDefaults.standard.object(forKey: "appDetectionEnabled") as? Bool ?? true
+        // Check if the key exists first, if not, default to true
+        if UserDefaults.standard.object(forKey: "appDetectionEnabled") != nil {
+            isAutoDetectionEnabled = UserDefaults.standard.bool(forKey: "appDetectionEnabled")
+        } else {
+            isAutoDetectionEnabled = true
+            // Save the default value
+            UserDefaults.standard.set(true, forKey: "appDetectionEnabled")
+        }
     }
     
     private func saveSettings() {
