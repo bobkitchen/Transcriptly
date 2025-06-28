@@ -14,9 +14,19 @@ class CapsuleController: ObservableObject {
     @Published var isCapsuleModeActive = false
     private weak var viewModel: AppViewModel?
     private var storedMainWindow: NSWindow?
+    private var recordingStateObserver: AnyCancellable?
     
     func setViewModel(_ viewModel: AppViewModel) {
         self.viewModel = viewModel
+        
+        // Subscribe to recording state changes to keep capsule in sync
+        recordingStateObserver = viewModel.$isRecording
+            .sink { [weak self] isRecording in
+                // Force update the capsule window if it exists
+                if self?.isCapsuleModeActive == true {
+                    self?.capsuleWindowController?.updateRecordingState(isRecording)
+                }
+            }
     }
     
     func enterCapsuleMode() {

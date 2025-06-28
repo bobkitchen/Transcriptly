@@ -82,6 +82,7 @@ final class AppViewModel: ObservableObject {
         // Set up keyboard shortcut handlers
         keyboardShortcutService.onShortcutPressed = { [weak self] in
             Task { @MainActor in
+                print("⌨️ Recording shortcut triggered")
                 await self?.handleKeyboardShortcut()
             }
         }
@@ -182,7 +183,15 @@ final class AppViewModel: ObservableObject {
         
         // Do app detection after recording starts successfully
         Task {
+            // Add small delay to ensure app focus has switched
+            try? await Task.sleep(nanoseconds: 200_000_000) // 200ms delay
+            
             let (app, recommendedMode) = await appDetectionService.detectAndRecommendMode()
+            
+            print("🔍 App Detection Results:")
+            print("   - Detection Enabled: \(appDetectionService.isAutoDetectionEnabled)")
+            print("   - Detected App: \(app?.displayName ?? "nil") [\(app?.bundleIdentifier ?? "nil")]")
+            print("   - Recommended Mode: \(recommendedMode?.displayName ?? "nil")")
             
             await MainActor.run {
                 // Store detected app
@@ -193,6 +202,7 @@ final class AppViewModel: ObservableObject {
                     autoSelectedMode = mode
                     refinementService.currentMode = mode
                     showModeDetectionIndicator = true
+                    print("   ✅ Applied mode: \(mode.displayName)")
                     
                     // Hide indicator after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -200,6 +210,7 @@ final class AppViewModel: ObservableObject {
                     }
                 } else {
                     autoSelectedMode = nil
+                    print("   ⚠️ No mode recommendation")
                 }
             }
         }
