@@ -13,8 +13,8 @@ struct TranscriptionView: View {
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showEditPrompt = false
     @State private var editingMode: RefinementMode?
-    @State private var showAppConfigAlert = false
-    @State private var appConfigMode: RefinementMode?
+    @State private var showAppPicker = false
+    @State private var appPickerMode: RefinementMode?
     
     var body: some View {
         ScrollView {
@@ -40,8 +40,8 @@ struct TranscriptionView: View {
                                 print("DEBUG: showEditPrompt set to: \(showEditPrompt)")
                             },
                             onAppsConfig: mode != .raw ? {
-                                appConfigMode = mode
-                                showAppConfigAlert = true
+                                appPickerMode = mode
+                                showAppPicker = true
                             } : nil
                         )
                     }
@@ -217,12 +217,37 @@ struct TranscriptionView: View {
                 print("DEBUG: EditPromptSheet appeared for mode: \(wrapper.mode)")
             }
         }
-        .alert("App Configuration", isPresented: $showAppConfigAlert) {
-            Button("OK") { }
-        } message: {
-            if let mode = appConfigMode {
-                Text("App-specific configuration for \(mode.displayName) will be available in a future update. This feature will allow you to automatically route transcriptions to specific applications.")
+        .sheet(isPresented: $showAppPicker) {
+            if let mode = appPickerMode {
+                AppPickerView(
+                    isPresented: $showAppPicker,
+                    mode: mode,
+                    onAppSelected: { app in
+                        Task {
+                            await assignApp(app, to: mode)
+                        }
+                    }
+                )
             }
+        }
+    }
+    
+    // MARK: - App Assignment
+    
+    private func assignApp(_ app: AppInfo, to mode: RefinementMode) async {
+        let assignmentManager = AppAssignmentManager.shared
+        
+        let assignment = AppAssignment(
+            appInfo: app,
+            mode: mode,
+            isUserOverride: true
+        )
+        
+        do {
+            try await assignmentManager.saveAssignment(assignment)
+            print("Successfully assigned \(app.displayName) to \(mode.displayName) mode")
+        } catch {
+            print("Failed to assign app: \(error)")
         }
     }
     
