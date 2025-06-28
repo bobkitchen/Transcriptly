@@ -10,17 +10,17 @@ import SwiftUI
 
 /// Animated waveform for recording state
 struct CapsuleWaveform: View {
-    @State private var amplitudes = Array(repeating: 0.3, count: CapsuleDesignSystem.waveformBarCount)
+    @State private var amplitudes = Array(repeating: 0.3, count: 6) // Fewer bars
     @State private var timer: Timer?
     
     var body: some View {
-        HStack(spacing: CapsuleDesignSystem.waveformBarSpacing) {
-            ForEach(0..<CapsuleDesignSystem.waveformBarCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
+        HStack(spacing: 1) { // Tighter spacing
+            ForEach(0..<6, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 0.5)
                     .fill(Color.white.opacity(CapsuleDesignSystem.waveformActiveOpacity))
                     .frame(
-                        width: CapsuleDesignSystem.waveformBarWidth,
-                        height: CGFloat(amplitudes[index] * Double(CapsuleDesignSystem.waveformHeight))
+                        width: 1.5, // Thinner bars
+                        height: max(2, CGFloat(amplitudes[index] * 14)) // Scale to fit smaller height
                     )
                     .animation(.easeInOut(duration: 0.3), value: amplitudes[index])
             }
@@ -54,13 +54,13 @@ struct CapsuleWaveform: View {
 /// Static waveform for idle state
 struct CapsuleWaveformIdle: View {
     var body: some View {
-        HStack(spacing: CapsuleDesignSystem.waveformBarSpacing) {
-            ForEach(0..<CapsuleDesignSystem.waveformBarCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
+        HStack(spacing: 1) { // Tighter spacing
+            ForEach(0..<6, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 0.5)
                     .fill(Color.white.opacity(CapsuleDesignSystem.waveformIdleOpacity))
                     .frame(
-                        width: CapsuleDesignSystem.waveformBarWidth,
-                        height: CGFloat(CapsuleDesignSystem.waveformHeight * 0.3)
+                        width: 1.5, // Thinner bars
+                        height: 4 // Fixed small height for idle state
                     )
             }
         }

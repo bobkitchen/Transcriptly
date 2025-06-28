@@ -15,7 +15,7 @@ struct ExpandedCapsuleView: View {
     let onClose: () -> Void
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             // Record button (left)
             Button(action: { 
                 Task {
@@ -24,10 +24,10 @@ struct ExpandedCapsuleView: View {
             }) {
                 Circle()
                     .fill(recordButtonColor)
-                    .frame(width: CapsuleDesignSystem.recordButtonSize, height: CapsuleDesignSystem.recordButtonSize)
+                    .frame(width: 20, height: 20) // Smaller button
                     .overlay(
                         Image(systemName: recordButtonIcon)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.white)
                     )
                     .scaleEffect(viewModel.isRecording ? 0.9 : 1.0)
@@ -36,24 +36,22 @@ struct ExpandedCapsuleView: View {
             .buttonStyle(.plain)
             .help(viewModel.isRecording ? "Stop Recording (⌘⇧V)" : "Start Recording (⌘⇧V)")
             
-            Spacer()
-            
-            // Center content area
-            VStack(spacing: 2) {
+            // Center content area (no spacers, let it take available space)
+            VStack(spacing: 1) {
                 // Waveform
                 if viewModel.isRecording {
                     CapsuleWaveform()
-                        .frame(height: CapsuleDesignSystem.waveformHeight)
+                        .frame(height: 14) // Smaller waveform
                         .transition(.opacity.combined(with: .scale))
                 } else {
                     CapsuleWaveformIdle()
-                        .frame(height: CapsuleDesignSystem.waveformHeight)
+                        .frame(height: 14) // Smaller waveform
                         .transition(.opacity.combined(with: .scale))
                 }
                 
                 // Current mode name
                 Text(viewModel.refinementService.currentMode.displayName)
-                    .font(CapsuleDesignSystem.modeNameFont)
+                    .font(.system(size: 8, weight: .medium)) // Smaller font
                     .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
                     .lineLimit(1)
                     .fixedSize()
@@ -61,24 +59,22 @@ struct ExpandedCapsuleView: View {
             .frame(maxWidth: .infinity)
             .animation(CapsuleDesignSystem.springAnimation, value: viewModel.isRecording)
             
-            Spacer()
-            
             // Expand button (right)
             Button(action: onClose) {
                 Circle()
                     .fill(Color.white.opacity(0.2))
-                    .frame(width: CapsuleDesignSystem.expandButtonSize, height: CapsuleDesignSystem.expandButtonSize)
+                    .frame(width: 16, height: 16) // Smaller button
                     .overlay(
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 8))
+                            .font(.system(size: 6))
                             .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
                     )
             }
             .buttonStyle(.plain)
             .help("Return to Main Window")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8) // Reduced padding
+        .padding(.vertical, 6) // Reduced padding
         .frame(
             width: CapsuleDesignSystem.expandedSize.width,
             height: CapsuleDesignSystem.expandedSize.height
