@@ -205,15 +205,16 @@ struct TranscriptionView: View {
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)
-        .sheet(isPresented: $showEditPrompt) {
-            if let mode = editingMode {
-                EditPromptSheet(
-                    mode: mode,
-                    viewModel: viewModel
-                )
-                .onAppear {
-                    print("DEBUG: EditPromptSheet appeared for mode: \(mode)")
-                }
+        .sheet(item: Binding<EditingModeWrapper?>(
+            get: { showEditPrompt && editingMode != nil ? EditingModeWrapper(mode: editingMode!) : nil },
+            set: { _ in showEditPrompt = false; editingMode = nil }
+        )) { wrapper in
+            EditPromptSheet(
+                mode: wrapper.mode,
+                viewModel: viewModel
+            )
+            .onAppear {
+                print("DEBUG: EditPromptSheet appeared for mode: \(wrapper.mode)")
             }
         }
         .alert("App Configuration", isPresented: $showAppConfigAlert) {
@@ -487,6 +488,13 @@ struct EditPromptSheet: View {
         .frame(width: 500, height: 450)
         .liquidGlassBackground(material: .regularMaterial, cornerRadius: DesignSystem.cornerRadiusLarge)
     }
+}
+
+// MARK: - Helper Types
+
+struct EditingModeWrapper: Identifiable {
+    let id = UUID()
+    let mode: RefinementMode
 }
 
 #Preview {
