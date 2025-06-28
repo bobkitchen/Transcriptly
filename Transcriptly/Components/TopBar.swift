@@ -13,6 +13,7 @@ import Combine
 /// Subtle top bar with essential controls - redesigned to be visually secondary to sidebar
 struct TopBar: View {
     @ObservedObject var viewModel: AppViewModel
+    let showCapsuleMode: () -> Void
     @State private var recordingTime: TimeInterval = 0
     
     var body: some View {
@@ -47,15 +48,13 @@ struct TopBar: View {
             )
             
             // Capsule mode button
-            Button(action: {
-                viewModel.capsuleController.toggleCapsuleMode()
-            }) {
+            Button(action: showCapsuleMode) {
                 Image(systemName: "capsule")
                     .font(.system(size: 14))
-                    .foregroundColor(viewModel.capsuleController.isCapsuleModeActive ? .accentColor : .secondaryText)
+                    .foregroundColor(.secondaryText)
             }
             .buttonStyle(.plain)
-            .help(viewModel.capsuleController.isCapsuleModeActive ? "Exit Capsule Mode" : "Enter Capsule Mode")
+            .help("Enter Floating Capsule Mode")
         }
         .padding(.horizontal, DesignSystem.marginStandard)
         .padding(.vertical, 8) // Reduced from 12
@@ -149,13 +148,16 @@ struct CompactRecordButton: View {
 }
 
 #Preview {
-    TopBar(viewModel: AppViewModel())
-        .padding(40)
-        .background(
-            LinearGradient(
-                colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+    TopBar(
+        viewModel: AppViewModel(),
+        showCapsuleMode: { print("Show capsule mode") }
+    )
+    .padding(40)
+    .background(
+        LinearGradient(
+            colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
+    )
 }
