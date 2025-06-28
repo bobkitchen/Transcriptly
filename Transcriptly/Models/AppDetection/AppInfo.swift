@@ -27,12 +27,16 @@ struct AppInfo: Codable, Equatable, Sendable {
     }
     
     var isSystemApp: Bool {
-        bundleIdentifier.hasPrefix("com.apple.") && 
-        !bundleIdentifier.contains("mail") &&
-        !bundleIdentifier.contains("messages") &&
-        !bundleIdentifier.contains("notes") &&
-        !bundleIdentifier.contains("textedit") &&
-        !bundleIdentifier.contains("Terminal")
+        let lowercaseBundleId = bundleIdentifier.lowercased()
+        return lowercaseBundleId.hasPrefix("com.apple.") && 
+        !lowercaseBundleId.contains("mail") &&
+        !lowercaseBundleId.contains("messages") &&
+        !lowercaseBundleId.contains("notes") &&
+        !lowercaseBundleId.contains("textedit") &&
+        !lowercaseBundleId.contains("terminal") &&
+        !lowercaseBundleId.contains("safari") &&
+        !lowercaseBundleId.contains("facetime") &&
+        !lowercaseBundleId.contains("pages")
     }
     
     var displayName: String {
