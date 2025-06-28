@@ -164,30 +164,10 @@ final class AppViewModel: ObservableObject {
             return false 
         }
         
-        // Detect app and recommend mode before starting recording
-        let (app, recommendedMode) = await appDetectionService.detectAndRecommendMode()
-        
         await MainActor.run {
             errorMessage = nil
             currentStatus = .recording
             recordingStartTime = Date()
-            
-            // Store detected app
-            detectedApp = app
-            
-            // Apply mode recommendation if available
-            if let mode = recommendedMode {
-                autoSelectedMode = mode
-                refinementService.currentMode = mode
-                showModeDetectionIndicator = true
-                
-                // Hide indicator after 3 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    self.showModeDetectionIndicator = false
-                }
-            } else {
-                autoSelectedMode = nil
-            }
         }
         
         let success = await audioService.startRecording()
@@ -196,6 +176,31 @@ final class AppViewModel: ObservableObject {
             await MainActor.run {
                 currentStatus = .ready
                 errorMessage = "Failed to start recording. Please check your microphone."
+            }
+            return false
+        }
+        
+        // Do app detection after recording starts successfully
+        Task {
+            let (app, recommendedMode) = await appDetectionService.detectAndRecommendMode()
+            
+            await MainActor.run {
+                // Store detected app
+                detectedApp = app
+                
+                // Apply mode recommendation if available
+                if let mode = recommendedMode {
+                    autoSelectedMode = mode
+                    refinementService.currentMode = mode
+                    showModeDetectionIndicator = true
+                    
+                    // Hide indicator after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        self.showModeDetectionIndicator = false
+                    }
+                } else {
+                    autoSelectedMode = nil
+                }
             }
         }
         
