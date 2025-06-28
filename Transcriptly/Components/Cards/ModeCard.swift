@@ -26,6 +26,16 @@ struct ModeCard: View {
         selectedMode == mode
     }
     
+    private var assignedAppNames: String {
+        let names = assignedApps.map { $0.appName }
+        if names.count <= 3 {
+            return names.joined(separator: ", ")
+        } else {
+            let firstThree = names.prefix(3).joined(separator: ", ")
+            return "\(firstThree), +\(names.count - 3) more"
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
             // Main content
@@ -151,13 +161,14 @@ struct ModeCard: View {
                             .foregroundColor(.tertiaryText)
                         
                         HStack(spacing: DesignSystem.spacingTiny) {
-                            Image(systemName: "app.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.tertiaryText)
-                            
-                            Text("\(assignedApps.count) app\(assignedApps.count == 1 ? "" : "s")")
+                            Text("Assigned:")
                                 .font(DesignSystem.Typography.bodySmall)
                                 .foregroundColor(.tertiaryText)
+                            
+                            Text(assignedAppNames)
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(.accentColor)
+                                .lineLimit(1)
                         }
                     }
                     
