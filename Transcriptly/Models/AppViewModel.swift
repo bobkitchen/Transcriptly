@@ -41,6 +41,12 @@ final class AppViewModel: ObservableObject {
     @Published var capsuleController = CapsuleController()
     private let learningService = LearningService.shared
     private let historyService = TranscriptionHistoryService.shared
+    private let appDetectionService = AppDetectionService.shared
+    
+    // App detection state
+    @Published var detectedApp: AppInfo?
+    @Published var autoSelectedMode: RefinementMode?
+    @Published var showModeDetectionIndicator = false
     
     // Recording metadata for history
     private var recordingStartTime: Date?
@@ -158,10 +164,30 @@ final class AppViewModel: ObservableObject {
             return false 
         }
         
+        // Detect app and recommend mode before starting recording
+        let (app, recommendedMode) = await appDetectionService.detectAndRecommendMode()
+        
         await MainActor.run {
             errorMessage = nil
             currentStatus = .recording
-            recordingStartTime = Date() // Track recording start time
+            recordingStartTime = Date()
+            
+            // Store detected app
+            detectedApp = app
+            
+            // Apply mode recommendation if available
+            if let mode = recommendedMode {
+                autoSelectedMode = mode
+                refinementService.currentMode = mode
+                showModeDetectionIndicator = true
+                
+                // Hide indicator after 3 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    self.showModeDetectionIndicator = false
+                }
+            } else {
+                autoSelectedMode = nil
+            }
         }
         
         let success = await audioService.startRecording()

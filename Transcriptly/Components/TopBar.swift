@@ -25,6 +25,14 @@ struct TopBar: View {
             
             Spacer()
             
+            // App detection indicator
+            if viewModel.showModeDetectionIndicator,
+               let app = viewModel.detectedApp,
+               let mode = viewModel.autoSelectedMode {
+                AppDetectionIndicator(app: app, mode: mode)
+                    .transition(.scale.combined(with: .opacity))
+            }
+            
             // Mode dropdown
             Picker("Mode", selection: $viewModel.refinementService.currentMode) {
                 ForEach(RefinementMode.allCases, id: \.self) { mode in
@@ -35,6 +43,12 @@ struct TopBar: View {
             .frame(width: 140)
             .font(.system(size: 12))
             .foregroundColor(.secondaryText)
+            .onChange(of: viewModel.refinementService.currentMode) { _, newMode in
+                // User override - hide auto-detection indicator if it was shown
+                if newMode != viewModel.autoSelectedMode {
+                    viewModel.showModeDetectionIndicator = false
+                }
+            }
             
             // Compact Record button
             CompactRecordButton(
@@ -67,6 +81,7 @@ struct TopBar: View {
                 .frame(height: 0.5),
             alignment: .bottom
         )
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.showModeDetectionIndicator)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
             if viewModel.isRecording {
                 recordingTime += 1
@@ -144,6 +159,51 @@ struct CompactRecordButton: View {
         let minutes = Int(interval) / 60
         let seconds = Int(interval) % 60
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+struct AppDetectionIndicator: View {
+    let app: AppInfo
+    let mode: RefinementMode
+    @State private var appIcon: NSImage?
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingSmall) {
+            // App icon
+            Group {
+                if let icon = appIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                } else {
+                    Image(systemName: "app.fill")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(width: 16, height: 16)
+            
+            Text("\(app.displayName) → \(mode.displayName)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.accentColor)
+        }
+        .padding(.horizontal, DesignSystem.spacingSmall)
+        .padding(.vertical, DesignSystem.spacingTiny)
+        .background(Color.accentColor.opacity(0.1))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
+        .onAppear {
+            loadAppIcon()
+        }
+    }
+    
+    private func loadAppIcon() {
+        guard let executablePath = app.executablePath else { return }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let icon = NSWorkspace.shared.icon(forFile: executablePath)
+            
+            DispatchQueue.main.async {
+                appIcon = icon
+            }
+        }
     }
 }
 
