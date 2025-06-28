@@ -35,6 +35,9 @@ class AppAssignmentManager: ObservableObject {
         var assignmentData = assignment
         assignmentData.userId = supabase.currentUser?.id
         
+        print("DEBUG: About to save assignment - User ID: \(assignmentData.userId?.uuidString ?? "nil")")
+        print("DEBUG: Supabase authenticated: \(supabase.isAuthenticated)")
+        
         try await supabase.saveAppAssignment(assignmentData)
         
         // Update local cache
@@ -102,7 +105,9 @@ class AppAssignmentManager: ObservableObject {
         defer { isLoading = false }
         
         do {
+            print("DEBUG: Loading assignments from Supabase...")
             let assignments = try await supabase.getAllAppAssignments()
+            print("DEBUG: Received \(assignments.count) assignments from Supabase")
             userAssignments = assignments
             
             // Update cache
@@ -111,6 +116,9 @@ class AppAssignmentManager: ObservableObject {
             )
             
             print("AppAssignmentManager: Loaded \(assignments.count) assignments")
+            for assignment in assignments {
+                print("  - \(assignment.appName) -> \(assignment.assignedMode.displayName)")
+            }
         } catch {
             print("AppAssignmentManager: Failed to load app assignments: \(error)")
         }
