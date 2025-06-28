@@ -219,8 +219,10 @@ struct ModeCard: View {
                         executablePath: url.path
                     )
                     
-                    Task {
-                        await assignApp(appInfo)
+                    DispatchQueue.main.async {
+                        Task {
+                            await assignApp(appInfo)
+                        }
                     }
                 } else {
                     // Fallback for apps without bundles
@@ -230,8 +232,10 @@ struct ModeCard: View {
                         executablePath: url.path
                     )
                     
-                    Task {
-                        await assignApp(appInfo)
+                    DispatchQueue.main.async {
+                        Task {
+                            await assignApp(appInfo)
+                        }
                     }
                 }
             }

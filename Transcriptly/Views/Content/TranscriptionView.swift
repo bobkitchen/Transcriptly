@@ -244,8 +244,10 @@ struct TranscriptionView: View {
                         executablePath: url.path
                     )
                     
-                    Task {
-                        await assignApp(appInfo, to: mode)
+                    DispatchQueue.main.async {
+                        Task {
+                            await assignApp(appInfo, to: mode)
+                        }
                     }
                 } else {
                     // Fallback for apps without bundles
@@ -255,8 +257,10 @@ struct TranscriptionView: View {
                         executablePath: url.path
                     )
                     
-                    Task {
-                        await assignApp(appInfo, to: mode)
+                    DispatchQueue.main.async {
+                        Task {
+                            await assignApp(appInfo, to: mode)
+                        }
                     }
                 }
             }
