@@ -28,6 +28,7 @@ struct ModeCard: View {
     
     private var assignedAppNames: String {
         let names = assignedApps.map { $0.appName }
+        print("DEBUG: Mode \(mode.displayName) has \(assignedApps.count) assigned apps: \(names)")
         if names.count <= 3 {
             return names.joined(separator: ", ")
         } else {
@@ -155,21 +156,19 @@ struct ModeCard: View {
                         }
                     }
                     
-                    // Real assigned apps (if any)
-                    if !assignedApps.isEmpty {
-                        Text("•")
+                    // Real assigned apps (always show for debugging)
+                    Text("•")
+                        .foregroundColor(.tertiaryText)
+                    
+                    HStack(spacing: DesignSystem.spacingTiny) {
+                        Text("Assigned:")
+                            .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(.tertiaryText)
                         
-                        HStack(spacing: DesignSystem.spacingTiny) {
-                            Text("Assigned:")
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(.tertiaryText)
-                            
-                            Text(assignedAppNames)
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(.accentColor)
-                                .lineLimit(1)
-                        }
+                        Text(assignedApps.isEmpty ? "None" : assignedAppNames)
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(assignedApps.isEmpty ? .tertiaryText : .accentColor)
+                            .lineLimit(1)
                     }
                     
                     Spacer()
@@ -248,7 +247,10 @@ struct ModeCard: View {
         
         do {
             try await assignmentManager.saveAssignment(assignment)
-            loadAssignedApps()
+            print("DEBUG: Successfully saved assignment: \(app.displayName) -> \(mode.displayName)")
+            await MainActor.run {
+                loadAssignedApps()
+            }
         } catch {
             print("Failed to assign app: \(error)")
         }
@@ -256,6 +258,7 @@ struct ModeCard: View {
     
     private func loadAssignedApps() {
         assignedApps = assignmentManager.getAssignedApps(for: mode)
+        print("DEBUG: Loaded \(assignedApps.count) apps for \(mode.displayName): \(assignedApps.map { $0.appName })")
     }
 }
 
