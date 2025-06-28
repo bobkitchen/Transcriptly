@@ -151,7 +151,8 @@ class AppDetectionService: ObservableObject {
             "com.apple.TextEdit",
             "com.apple.Safari",
             "com.apple.FaceTime",
-            "com.apple.iWork.Pages"
+            "com.apple.iWork.Pages",
+            "com.apple.Terminal"
         ]
         
         return allowedSystemApps.contains(app.bundleIdentifier)

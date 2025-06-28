@@ -157,6 +157,12 @@ final class KeyboardShortcutService: ObservableObject {
             }
         }
         
+        // Trim whitespace from key character
+        keyChar = keyChar.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Debug logging
+        print("Parsing shortcut: '\(shortcutString)' -> modifiers: \(modifiers), keyChar: '\(keyChar)'")
+        
         // Convert key character to key code
         let keyCode = keyCodeForCharacter(keyChar)
         
@@ -265,7 +271,10 @@ final class KeyboardShortcutService: ObservableObject {
     private func cleanupCarbonHotkeys() {
         // Unregister all hotkeys
         for hotKeyRef in hotKeyRefs {
-            UnregisterEventHotKey(hotKeyRef)
+            let status = UnregisterEventHotKey(hotKeyRef)
+            if status != noErr {
+                print("⚠️ Failed to unregister hotkey, status: \(status)")
+            }
         }
         hotKeyRefs.removeAll()
         
@@ -288,8 +297,12 @@ final class KeyboardShortcutService: ObservableObject {
         
         if status == noErr, let hotKey = hotKeyRef {
             hotKeyRefs.append(hotKey)
+            print("✅ Successfully registered hotkey: \(shortcutString) (keyCode: \(parsed.keyCode), modifiers: \(parsed.modifiers))")
+        } else if status == -9878 {
+            // eventHotKeyExistsErr - hotkey already registered
+            print("⚠️ Hotkey already registered: \(shortcutString) (this is usually fine)")
         } else {
-            print("Failed to register hotkey: \(shortcutString), status: \(status)")
+            print("❌ Failed to register hotkey: \(shortcutString), status: \(status)")
         }
     }
     

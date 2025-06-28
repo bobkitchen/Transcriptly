@@ -52,6 +52,7 @@ struct DefaultAppMappings {
         "com.sublimetext.4": .cleanup,
         "com.github.atom": .cleanup,
         "com.coteditor.CotEditor": .cleanup,
+        "com.apple.Terminal": .cleanup,
         
         // Browsers default to cleanup
         "com.apple.Safari": .cleanup,

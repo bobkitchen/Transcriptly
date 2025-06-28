@@ -8,22 +8,18 @@
 import SwiftUI
 
 struct MainWindowView: View {
-    @StateObject var viewModel = AppViewModel()
-    @StateObject private var capsuleManager: CapsuleWindowManager
+    @EnvironmentObject var viewModel: AppViewModel
     @State private var selectedSection: SidebarSection = .home
-    
-    init() {
-        let vm = AppViewModel()
-        self._viewModel = StateObject(wrappedValue: vm)
-        self._capsuleManager = StateObject(wrappedValue: CapsuleWindowManager(viewModel: vm))
-    }
     
     var body: some View {
         VStack(spacing: 0) {
             // Subtle Top Bar
             TopBar(
                 viewModel: viewModel,
-                showCapsuleMode: capsuleManager.showCapsule
+                showCapsuleMode: {
+                    // Use the viewModel's capsule controller
+                    viewModel.capsuleController.enterCapsuleMode()
+                }
             )
             
             // Main Content with sidebar getting visual priority
@@ -41,12 +37,6 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 920, minHeight: 640) // Adjusted for new layout
         .background(Color.primaryBackground)
-        .onReceive(NotificationCenter.default.publisher(for: .capsuleClosed)) { _ in
-            // Bring main window to front when capsule closes
-            DispatchQueue.main.async {
-                NSApp.activate(ignoringOtherApps: true)
-            }
-        }
     }
 }
 

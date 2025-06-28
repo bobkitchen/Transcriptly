@@ -31,7 +31,8 @@ struct AppInfo: Codable, Equatable, Sendable {
         !bundleIdentifier.contains("mail") &&
         !bundleIdentifier.contains("messages") &&
         !bundleIdentifier.contains("notes") &&
-        !bundleIdentifier.contains("textedit")
+        !bundleIdentifier.contains("textedit") &&
+        !bundleIdentifier.contains("Terminal")
     }
     
     var displayName: String {
