@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 /// Expanded 150×40px capsule interface with full functionality
 struct ExpandedCapsuleView: View {
@@ -49,12 +50,34 @@ struct ExpandedCapsuleView: View {
                         .transition(.opacity.combined(with: .scale))
                 }
                 
-                // Current mode name
-                Text(viewModel.refinementService.currentMode.displayName)
-                    .font(.system(size: 8, weight: .medium)) // Smaller font
-                    .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
+                // App detection info (if available)
+                if let app = viewModel.detectedApp {
+                    HStack(spacing: 2) {
+                        AsyncAppIcon(bundleId: app.bundleIdentifier)
+                            .frame(width: 8, height: 8)
+                        
+                        Text(app.displayName)
+                            .font(.system(size: 6, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        Text("→")
+                            .font(.system(size: 6))
+                            .foregroundColor(.white.opacity(0.5))
+                        
+                        Text(viewModel.refinementService.currentMode.displayName)
+                            .font(.system(size: 6, weight: .medium))
+                            .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
+                    }
                     .lineLimit(1)
                     .fixedSize()
+                } else {
+                    // Current mode name (fallback)
+                    Text(viewModel.refinementService.currentMode.displayName)
+                        .font(.system(size: 8, weight: .medium)) // Smaller font
+                        .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
+                        .lineLimit(1)
+                        .fixedSize()
+                }
             }
             .frame(maxWidth: .infinity)
             .animation(CapsuleDesignSystem.springAnimation, value: viewModel.isRecording)
@@ -144,6 +167,7 @@ struct ExpandedCapsuleView: View {
         }
     }
 }
+
 
 #Preview {
     ZStack {
