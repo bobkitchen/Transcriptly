@@ -253,15 +253,10 @@ struct ModeCard: View {
             try await assignmentManager.saveAssignment(assignment)
             print("DEBUG: Successfully saved assignment: \(app.displayName) -> \(mode.displayName)")
             
-            // Force reload of all assignments from storage
-            await assignmentManager.loadAssignments()
-            
-            // Force reload on main thread and trigger UI update
-            await MainActor.run {
-                print("DEBUG: About to reload assigned apps for \(mode.displayName)")
-                loadAssignedApps()
-                print("DEBUG: Finished reloading assigned apps for \(mode.displayName)")
-            }
+            // Immediate UI update without async/await complications
+            print("DEBUG: About to reload assigned apps for \(mode.displayName)")
+            loadAssignedApps()
+            print("DEBUG: Finished reloading assigned apps for \(mode.displayName)")
         } catch {
             print("DEBUG: Failed to assign app: \(error)")
         }
