@@ -178,7 +178,7 @@ struct ModeCard: View {
             }
         }
         .sheet(isPresented: $showAppPicker) {
-            AppPickerView(
+            SimpleAppPicker(
                 isPresented: $showAppPicker,
                 mode: mode,
                 onAppSelected: { app in

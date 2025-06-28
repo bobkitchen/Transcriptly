@@ -219,7 +219,7 @@ struct TranscriptionView: View {
         }
         .sheet(isPresented: $showAppPicker) {
             if let mode = appPickerMode {
-                AppPickerView(
+                SimpleAppPicker(
                     isPresented: $showAppPicker,
                     mode: mode,
                     onAppSelected: { app in
