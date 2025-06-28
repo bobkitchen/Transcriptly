@@ -196,7 +196,7 @@ struct CompactButtonStyle: ButtonStyle {
 struct ModeStatistics {
     let usageCount: Int
     let lastEditedDisplay: String?
-    let assignedApps: [AppInfo]
+    let assignedApps: [PreviewAppInfo]
     
     static let sampleData: [RefinementMode: ModeStatistics] = [
         .cleanup: ModeStatistics(
@@ -208,24 +208,24 @@ struct ModeStatistics {
             usageCount: 43,
             lastEditedDisplay: "1 week ago",
             assignedApps: [
-                AppInfo(name: "Mail"),
-                AppInfo(name: "Outlook")
+                PreviewAppInfo(name: "Mail"),
+                PreviewAppInfo(name: "Outlook")
             ]
         ),
         .messaging: ModeStatistics(
             usageCount: 89,
             lastEditedDisplay: "3 days ago",
             assignedApps: [
-                AppInfo(name: "Messages"),
-                AppInfo(name: "Slack"),
-                AppInfo(name: "Discord"),
-                AppInfo(name: "Teams")
+                PreviewAppInfo(name: "Messages"),
+                PreviewAppInfo(name: "Slack"),
+                PreviewAppInfo(name: "Discord"),
+                PreviewAppInfo(name: "Teams")
             ]
         )
     ]
 }
 
-struct AppInfo {
+struct PreviewAppInfo {
     let name: String
 }
 

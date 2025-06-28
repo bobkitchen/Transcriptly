@@ -176,12 +176,78 @@ class SupabaseManager: ObservableObject {
         cachedPatterns.removeAll()
     }
     
+    // MARK: - App Assignments
+    
+    func saveAppAssignment(_ assignment: AppAssignment) async throws {
+        guard let userId = currentUser?.id else {
+            queueOfflineOperation(.saveAppAssignment(assignment))
+            return
+        }
+        
+        var assignmentData = assignment
+        assignmentData.userId = userId
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Temporarily disabled for build compatibility
+        // TODO: Re-enable once SDK compatibility is resolved
+        print("App assignment would be saved: \(assignmentData.appName) -> \(assignmentData.assignedMode.displayName)")
+    }
+    
+    func getAppAssignment(bundleId: String) async throws -> AppAssignment? {
+        guard let userId = currentUser?.id else { return nil }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Temporarily return nil - would query Supabase
+        // TODO: Implement proper Supabase query once SDK compatibility is resolved
+        print("Would fetch app assignment for bundle ID: \(bundleId)")
+        return nil
+    }
+    
+    func getAllAppAssignments() async throws -> [AppAssignment] {
+        guard let userId = currentUser?.id else { return [] }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Temporarily return empty - would query Supabase
+        // TODO: Implement proper Supabase query once SDK compatibility is resolved
+        print("Would fetch all app assignments for user: \(userId)")
+        return []
+    }
+    
+    func removeAppAssignment(bundleId: String) async throws {
+        guard let userId = currentUser?.id else { return }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Temporarily disabled for build compatibility
+        // TODO: Re-enable once SDK compatibility is resolved
+        print("Would remove app assignment for bundle ID: \(bundleId)")
+    }
+    
+    func clearAllAppAssignments() async throws {
+        guard let userId = currentUser?.id else { return }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // Temporarily disabled for build compatibility
+        // TODO: Re-enable once SDK compatibility is resolved
+        print("Would clear all app assignments")
+    }
+    
     // MARK: - Offline Support
     
     private enum PendingOperation {
         case saveLearningSession(LearningSession)
         case savePattern(LearnedPattern)
         case savePreference(UserPreference)
+        case saveAppAssignment(AppAssignment)
     }
     
     private func queueOfflineOperation(_ operation: PendingOperation) {
@@ -202,6 +268,8 @@ class SupabaseManager: ObservableObject {
                     try await saveOrUpdatePattern(pattern)
                 case .savePreference(let preference):
                     try await saveOrUpdatePreference(preference)
+                case .saveAppAssignment(let assignment):
+                    try await saveAppAssignment(assignment)
                 }
             } catch {
                 print("Failed to sync offline operation: \(error)")

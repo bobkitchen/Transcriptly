@@ -254,7 +254,7 @@ struct TranscriptionView: View {
             }()
             
             // For now, use empty assigned apps (future feature)
-            let assignedApps: [AppInfo] = []
+            let assignedApps: [PreviewAppInfo] = []
             
             result[mode] = ModeStatistics(
                 usageCount: usageCount,
