@@ -3,7 +3,7 @@
 //  Transcriptly
 //
 //  Created by Claude Code on 6/26/25.
-//  Updated by Claude Code on 6/27/25 for Phase 3.
+//  Updated by Claude Code on 6/28/25 for Phase 4 Fixes - Liquid Glass Design
 //
 
 import SwiftUI
@@ -19,184 +19,69 @@ struct LearningView: View {
     @State private var selectedPattern: LearnedPattern?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header
-            HStack {
-                Text("Learning")
-                    .font(.title)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                if supabaseManager.isSyncing {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Syncing...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            
-            // Learning Controls
-            VStack(spacing: 12) {
-                // Authentication Status
-                HStack {
-                    Image(systemName: supabaseManager.isAuthenticated ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundColor(supabaseManager.isAuthenticated ? .green : .orange)
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+                // Header section
+                VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                    Text("Learning")
+                        .font(DesignSystem.Typography.titleLarge)
+                        .foregroundColor(.primaryText)
+                        .padding(.top, DesignSystem.marginStandard)
                     
-                    Text(supabaseManager.isAuthenticated ? "Signed in to cloud" : "Sign in to sync across devices")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    if !supabaseManager.isAuthenticated {
-                        Button("Sign In") {
-                            // TODO: Implement auth UI
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color.secondary.opacity(0.1))
-                .cornerRadius(8)
-                
-                // Learning Status & Controls
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("Learning Status:")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text(learningService.isLearningEnabled ? "Active" : "Paused")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(learningService.isLearningEnabled ? .green : .orange)
-                        }
-                        
-                        HStack {
-                            Text("Sessions:")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(learningService.sessionCount)")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                            
-                            Text("(\(learningQualityText))")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 8) {
-                        Button(learningService.isLearningEnabled ? "Pause" : "Resume") {
-                            if learningService.isLearningEnabled {
-                                learningService.pauseLearning()
-                            } else {
-                                learningService.resumeLearning()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button("Reset All") {
-                            showResetAlert = true
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .foregroundColor(.red)
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color.secondary.opacity(0.05))
-                .cornerRadius(8)
-            }
-            
-            // Learned Patterns Section
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Learned Patterns")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Button("Refresh") {
-                        loadPatterns()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    Text("Transcriptly learns from your corrections to improve accuracy over time")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.secondaryText)
                 }
                 
-                if isLoading {
+                // Authentication Status Card
+                AuthStatusCard()
+                
+                // Learning Status Card
+                LearningStatusCard(
+                    learningService: learningService,
+                    onResetTapped: { showResetAlert = true }
+                )
+                
+                // Learned Patterns Section
+                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
                     HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Loading patterns...")
-                            .foregroundColor(.secondary)
-                    }
-                } else if learnedPatterns.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "brain")
-                            .font(.system(size: 40))
-                            .foregroundColor(.secondary)
+                        Text("Learned Patterns")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(.primaryText)
                         
-                        Text("No patterns learned yet")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                        Spacer()
                         
-                        Text("As you use Transcriptly, it will learn from your corrections and preferences to improve accuracy.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        Button("Refresh") {
+                            loadPatterns()
+                        }
+                        .buttonStyle(CompactButtonStyle())
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
+                    
+                    if isLoading {
+                        LoadingCard()
+                    } else if learnedPatterns.isEmpty {
+                        EmptyPatternsCard()
+                    } else {
+                        VStack(spacing: DesignSystem.spacingSmall) {
                             ForEach(learnedPatterns) { pattern in
-                                PatternRowView(pattern: pattern) {
+                                PatternCard(pattern: pattern) {
                                     selectedPattern = pattern
                                 }
                             }
                         }
                     }
                 }
-            }
-            
-            if let error = error {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Dismiss") {
+                
+                // Error Display
+                if let error = error {
+                    ErrorCard(error: error) {
                         self.error = nil
                     }
-                    .buttonStyle(.plain)
-                    .font(.caption)
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
             }
-            
-            Spacer()
+            .padding(DesignSystem.marginStandard)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .background(Color.primaryBackground)
         .onAppear {
             loadPatterns()
             loadPreferences()
@@ -232,6 +117,15 @@ struct LearningView: View {
         case .basic: return "Basic"
         case .good: return "Good"
         case .excellent: return "Excellent"
+        }
+    }
+    
+    private var learningQualityColor: Color {
+        switch learningService.learningQuality {
+        case .minimal: return .orange
+        case .basic: return .yellow
+        case .good: return .blue
+        case .excellent: return .green
         }
     }
     
@@ -286,58 +180,281 @@ struct LearningView: View {
     }
 }
 
-struct PatternRowView: View {
-    let pattern: LearnedPattern
-    let onDelete: () -> Void
+// MARK: - Supporting Views
+
+struct AuthStatusCard: View {
+    @ObservedObject private var supabaseManager = SupabaseManager.shared
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(pattern.originalPhrase)
-                    .font(.body)
-                    .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            HStack(spacing: DesignSystem.spacingMedium) {
+                Image(systemName: supabaseManager.isAuthenticated ? "checkmark.circle.fill" : "cloud.slash")
+                    .font(.system(size: 20))
+                    .foregroundColor(supabaseManager.isAuthenticated ? .green : .orange)
+                    .symbolRenderingMode(.hierarchical)
                 
-                Image(systemName: "arrow.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text(pattern.correctedPhrase)
-                    .font(.body)
-                    .foregroundColor(.blue)
+                VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
+                    Text(supabaseManager.isAuthenticated ? "Connected to Cloud" : "Offline Mode")
+                        .font(DesignSystem.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primaryText)
+                    
+                    Text(supabaseManager.isAuthenticated ? "Learning data syncs across devices" : "Sign in to sync learning data across devices")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                }
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(pattern.occurrenceCount)x")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("\(Int(pattern.confidence * 100))%")
-                        .font(.caption2)
-                        .foregroundColor(pattern.confidence > 0.8 ? .green : .orange)
+                if supabaseManager.isSyncing {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else if !supabaseManager.isAuthenticated {
+                    Button("Sign In") {
+                        // TODO: Implement auth UI
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(true) // Disabled for now
                 }
-                
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-                .buttonStyle(.plain)
-                .help("Delete this pattern")
-            }
-            
-            if let mode = pattern.refinementMode {
-                Text("Mode: \(mode.rawValue)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(Color.secondary.opacity(0.05))
-        .cornerRadius(8)
+        .padding(DesignSystem.spacingLarge)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+    }
+}
+
+struct LearningStatusCard: View {
+    @ObservedObject var learningService: LearningService
+    let onResetTapped: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            HStack(spacing: DesignSystem.spacingMedium) {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 20))
+                    .foregroundColor(.accentColor)
+                    .symbolRenderingMode(.hierarchical)
+                
+                Text("Learning Status")
+                    .font(DesignSystem.Typography.bodyLarge)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+                
+                Toggle("", isOn: Binding(
+                    get: { learningService.isLearningEnabled },
+                    set: { enabled in
+                        if enabled {
+                            learningService.resumeLearning()
+                        } else {
+                            learningService.pauseLearning()
+                        }
+                    }
+                ))
+                .toggleStyle(SwitchToggleStyle())
+            }
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
+            VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                HStack {
+                    Text("Sessions: \(learningService.sessionCount)")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.secondaryText)
+                    
+                    Text("•")
+                        .foregroundColor(.tertiaryText)
+                    
+                    Text(learningQualityText)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(learningQualityColor)
+                }
+                
+                if !learningService.isLearningEnabled {
+                    Text("Learning is paused. Enable to continue improving accuracy.")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                        .padding(.vertical, DesignSystem.spacingSmall)
+                        .padding(.horizontal, DesignSystem.spacingMedium)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(DesignSystem.cornerRadiusTiny)
+                }
+                
+                HStack {
+                    Spacer()
+                    Button("Reset All Data") {
+                        onResetTapped()
+                    }
+                    .buttonStyle(CompactButtonStyle())
+                    .foregroundColor(.red)
+                    .disabled(learningService.sessionCount == 0)
+                }
+            }
+        }
+        .padding(DesignSystem.spacingLarge)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+    }
+    
+    private var learningQualityText: String {
+        switch learningService.learningQuality {
+        case .minimal: return "Getting Started"
+        case .basic: return "Learning Basics"
+        case .good: return "Good Progress"
+        case .excellent: return "Highly Trained"
+        }
+    }
+    
+    private var learningQualityColor: Color {
+        switch learningService.learningQuality {
+        case .minimal: return .orange
+        case .basic: return .yellow
+        case .good: return .blue
+        case .excellent: return .green
+        }
+    }
+}
+
+struct LoadingCard: View {
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            ProgressView()
+                .scaleEffect(0.8)
+            
+            Text("Loading patterns...")
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.secondaryText)
+            
+            Spacer()
+        }
+        .padding(DesignSystem.spacingLarge)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+    }
+}
+
+struct EmptyPatternsCard: View {
+    var body: some View {
+        VStack(spacing: DesignSystem.spacingMedium) {
+            Image(systemName: "brain")
+                .font(.system(size: 48))
+                .foregroundColor(.tertiaryText)
+                .symbolRenderingMode(.hierarchical)
+            
+            Text("No patterns learned yet")
+                .font(DesignSystem.Typography.bodyLarge)
+                .fontWeight(.medium)
+                .foregroundColor(.secondaryText)
+            
+            Text("As you use Transcriptly, it will learn from your corrections and preferences to improve accuracy.")
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.tertiaryText)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 300)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignSystem.spacingLarge * 2)
+        .padding(.horizontal, DesignSystem.spacingLarge)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+    }
+}
+
+struct PatternCard: View {
+    let pattern: LearnedPattern
+    let onDelete: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            HStack {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
+                    HStack {
+                        Text(pattern.originalPhrase)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.primaryText)
+                        
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.tertiaryText)
+                        
+                        Text(pattern.correctedPhrase)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.accentColor)
+                            .fontWeight(.medium)
+                    }
+                    
+                    if let mode = pattern.refinementMode {
+                        Text("Mode: \(mode.rawValue)")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(.tertiaryText)
+                    }
+                }
+                
+                Spacer()
+                
+                HStack(spacing: DesignSystem.spacingMedium) {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(pattern.occurrenceCount)x")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(.secondaryText)
+                        
+                        Text("\(Int(pattern.confidence * 100))%")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(pattern.confidence > 0.8 ? .green : .orange)
+                    }
+                    
+                    if isHovered {
+                        Button {
+                            onDelete()
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundColor(.red)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Delete this pattern")
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+            }
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusSmall)
+        .onHover { hovering in
+            withAnimation(DesignSystem.fadeAnimation) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+struct ErrorCard: View {
+    let error: String
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 18))
+                .foregroundColor(.orange)
+            
+            Text(error)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Button("Dismiss") {
+                onDismiss()
+            }
+            .buttonStyle(CompactButtonStyle())
+        }
+        .padding(DesignSystem.spacingLarge)
+        .background(Color.orange.opacity(0.1))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                .strokeBorder(Color.orange.opacity(0.3), lineWidth: 1)
+        )
+        .cornerRadius(DesignSystem.cornerRadiusMedium)
     }
 }
 

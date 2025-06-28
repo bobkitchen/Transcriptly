@@ -106,8 +106,8 @@ struct DesignSystem {
     
     // MARK: - Layout Constants
     struct Layout {
-        static let topBarHeight: CGFloat = 52
-        static let sidebarWidth: CGFloat = 200
+        static let topBarHeight: CGFloat = 40 // Reduced from 52 for subtlety
+        static let sidebarWidth: CGFloat = 220 // Increased from 200 for prominence
         static let sidebarCollapsedWidth: CGFloat = 68
         static let cardHeight: CGFloat = 88
         static let buttonMinHeight: CGFloat = 44

@@ -3,6 +3,7 @@
 //  Transcriptly
 //
 //  Created by Claude Code on 6/26/25.
+//  Updated by Claude Code on 6/28/25 for Phase 4 Fixes - Liquid Glass Design
 //
 
 import SwiftUI
@@ -19,112 +20,195 @@ struct SettingsView: View {
     @State private var showingHistory = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
-            // Account Section (Placeholder)
-            GroupBox("Account") {
-                HStack {
-                    Text("Sign in to sync your preferences")
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Sign In") {
-                        // TODO: Implement in Phase 3
-                    }
-                    .disabled(true)
-                }
-                .padding(.vertical, 4)
-            }
-            
-            // Notifications
-            GroupBox("Notifications") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Play sound on completion", isOn: $playCompletionSound)
-                    Toggle("Show notifications", isOn: $showNotifications)
-                }
-                .padding(.vertical, 4)
-            }
-            
-            // History
-            GroupBox("History") {
-                HStack {
-                    Text("View transcription history")
-                    Spacer()
-                    Button("View History") {
-                        showingHistory = true
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            
-            // Keyboard Shortcuts
-            GroupBox("Keyboard Shortcuts") {
-                VStack(alignment: .leading, spacing: 12) {
-                    ShortcutRow(
-                        title: "Start/Stop Recording",
-                        shortcut: $recordingShortcut,
-                        isEditable: true
-                    )
-                    
-                    ShortcutRow(
-                        title: "Raw Transcription",
-                        shortcut: $rawModeShortcut,
-                        isEditable: true
-                    )
-                    
-                    ShortcutRow(
-                        title: "Clean-up Mode",
-                        shortcut: $cleanupModeShortcut,
-                        isEditable: true
-                    )
-                    
-                    ShortcutRow(
-                        title: "Email Mode",
-                        shortcut: $emailModeShortcut,
-                        isEditable: true
-                    )
-                    
-                    ShortcutRow(
-                        title: "Messaging Mode",
-                        shortcut: $messagingModeShortcut,
-                        isEditable: true
-                    )
-                }
-                .padding(.vertical, 4)
-            }
-            
-            // About
-            GroupBox("About") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Transcriptly")
-                        .font(.headline)
-                    Text("Version 0.6.0")
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 16) {
-                        Button("Help") {
-                            if let url = URL(string: "https://transcriptly.app/help") {
-                                NSWorkspace.shared.open(url)
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+                // Header
+                Text("Settings")
+                    .font(DesignSystem.Typography.titleLarge)
+                    .foregroundColor(.primaryText)
+                    .padding(.top, DesignSystem.marginStandard)
+                
+                // Account Section
+                SettingsCard(
+                    title: "Account",
+                    icon: "person.circle",
+                    accentColor: .blue
+                ) {
+                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                        HStack {
+                            Text("Sign in to sync your preferences")
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.secondaryText)
+                            
+                            Spacer()
+                            
+                            Button("Sign In") {
+                                // TODO: Implement in future phase
                             }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .disabled(true)
                         }
-                        .buttonStyle(.link)
                         
-                        Button("Privacy Policy") {
-                            if let url = URL(string: "https://transcriptly.app/privacy") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.link)
+                        Text("Account features coming soon")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(.tertiaryText)
+                            .padding(.vertical, DesignSystem.spacingTiny)
+                            .padding(.horizontal, DesignSystem.spacingSmall)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(DesignSystem.cornerRadiusTiny)
                     }
                 }
-                .padding(.vertical, 4)
+                
+                // Notifications Section
+                SettingsCard(
+                    title: "Notifications",
+                    icon: "bell",
+                    accentColor: .green
+                ) {
+                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                        Toggle("Play sound on completion", isOn: $playCompletionSound)
+                            .toggleStyle(SwitchToggleStyle())
+                            .tint(.accentColor)
+                        
+                        Divider()
+                            .background(Color.white.opacity(0.1))
+                        
+                        Toggle("Show notifications", isOn: $showNotifications)
+                            .toggleStyle(SwitchToggleStyle())
+                            .tint(.accentColor)
+                    }
+                }
+                
+                // History Section
+                SettingsCard(
+                    title: "History",
+                    icon: "clock.arrow.circlepath",
+                    accentColor: .purple
+                ) {
+                    HStack {
+                        Text("View transcription history")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.secondaryText)
+                        
+                        Spacer()
+                        
+                        Button("View History") {
+                            showingHistory = true
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                    }
+                }
+                
+                // Keyboard Shortcuts Section
+                SettingsCard(
+                    title: "Keyboard Shortcuts",
+                    icon: "keyboard",
+                    accentColor: .orange
+                ) {
+                    VStack(spacing: DesignSystem.spacingSmall) {
+                        ShortcutRow(
+                            title: "Start/Stop Recording",
+                            shortcut: $recordingShortcut,
+                            isEditable: true
+                        )
+                        
+                        Divider().background(Color.white.opacity(0.1))
+                        
+                        ShortcutRow(
+                            title: "Raw Transcription",
+                            shortcut: $rawModeShortcut,
+                            isEditable: true
+                        )
+                        
+                        ShortcutRow(
+                            title: "Clean-up Mode",
+                            shortcut: $cleanupModeShortcut,
+                            isEditable: true
+                        )
+                        
+                        ShortcutRow(
+                            title: "Email Mode",
+                            shortcut: $emailModeShortcut,
+                            isEditable: true
+                        )
+                        
+                        ShortcutRow(
+                            title: "Messaging Mode",
+                            shortcut: $messagingModeShortcut,
+                            isEditable: true
+                        )
+                    }
+                }
+                
+                // About Section
+                SettingsCard(
+                    title: "About",
+                    icon: "info.circle",
+                    accentColor: .gray
+                ) {
+                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                        HStack {
+                            Text("Transcriptly")
+                                .font(DesignSystem.Typography.bodyLarge)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primaryText)
+                            
+                            Spacer()
+                            
+                            Text("Version 1.0.0")
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.secondaryText)
+                        }
+                        
+                        HStack(spacing: DesignSystem.spacingLarge) {
+                            Link("Help", destination: URL(string: "https://transcriptly.app/help")!)
+                                .foregroundColor(.accentColor)
+                                .font(DesignSystem.Typography.body)
+                            
+                            Link("Privacy Policy", destination: URL(string: "https://transcriptly.app/privacy")!)
+                                .foregroundColor(.accentColor)
+                                .font(DesignSystem.Typography.body)
+                        }
+                    }
+                }
             }
-            
-            Spacer()
+            .padding(DesignSystem.marginStandard)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
         }
+    }
+}
+
+// MARK: - Supporting Views
+
+/// Reusable settings card component with Liquid Glass design
+struct SettingsCard<Content: View>: View {
+    let title: String
+    let icon: String
+    let accentColor: Color
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            HStack(spacing: DesignSystem.spacingMedium) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(accentColor)
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width: 24)
+                
+                Text(title)
+                    .font(DesignSystem.Typography.bodyLarge)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primaryText)
+            }
+            
+            content
+        }
+        .padding(DesignSystem.spacingLarge)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
     }
 }
 
@@ -137,17 +221,20 @@ struct ShortcutRow: View {
     var body: some View {
         HStack {
             Text(title)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.primaryText)
+            
             Spacer()
             
             if isWaitingForKeypress {
                 ZStack {
                     Text("Press keys... (ESC to cancel)")
-                        .font(.system(.body, design: .monospaced))
+                        .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(.orange)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, DesignSystem.spacingSmall)
+                        .padding(.vertical, DesignSystem.spacingTiny)
                         .background(Color.orange.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .cornerRadius(DesignSystem.cornerRadiusTiny)
                     
                     KeyboardShortcutRecorder(
                         shortcut: $shortcut,
@@ -171,12 +258,16 @@ struct ShortcutRow: View {
                 }
             } else {
                 Text(shortcut)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.secondaryText)
+                    .padding(.horizontal, DesignSystem.spacingSmall)
+                    .padding(.vertical, DesignSystem.spacingTiny)
+                    .background(Color.tertiaryBackground)
+                    .cornerRadius(DesignSystem.cornerRadiusTiny)
             }
             
             if isEditable {
-                Button(isWaitingForKeypress ? "Cancel" : "Set") {
+                Button(isWaitingForKeypress ? "Cancel" : "Edit") {
                     if isWaitingForKeypress {
                         if let recorderView = findRecorderView() {
                             recorderView.stopRecording()
@@ -186,8 +277,7 @@ struct ShortcutRow: View {
                         isWaitingForKeypress = true
                     }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(CompactButtonStyle())
             }
         }
     }
@@ -217,5 +307,4 @@ struct ShortcutRow: View {
 
 #Preview {
     SettingsView()
-        .padding()
 }

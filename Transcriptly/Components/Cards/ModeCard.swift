@@ -28,6 +28,7 @@ struct ModeCard: View {
             HStack(spacing: DesignSystem.spacingMedium) {
                 // Radio button
                 Button(action: {
+                    print("DEBUG ModeCard: Radio button clicked for \(mode)")
                     withAnimation(DesignSystem.springAnimation) {
                         selectedMode = mode
                     }
@@ -48,6 +49,12 @@ struct ModeCard: View {
                             .font(DesignSystem.Typography.bodyLarge)
                             .fontWeight(.medium)
                             .foregroundColor(.primaryText)
+                            .onTapGesture {
+                                print("DEBUG ModeCard: Title tapped for \(mode)")
+                                withAnimation(DesignSystem.springAnimation) {
+                                    selectedMode = mode
+                                }
+                            }
                         
                         Spacer()
                         
@@ -55,10 +62,20 @@ struct ModeCard: View {
                         if isHovered || isSelected {
                             HStack(spacing: DesignSystem.spacingSmall) {
                                 if mode != .raw {
-                                    Button("Edit") {
-                                        onEdit()
-                                    }
-                                    .buttonStyle(CompactButtonStyle())
+                                    Text("EDIT")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.red)
+                                        .cornerRadius(8)
+                                        .onTapGesture {
+                                            print("DEBUG ModeCard: EDIT TAP GESTURE for \(mode)")
+                                            onEdit()
+                                        }
+                                        .onAppear {
+                                            print("DEBUG ModeCard: Edit button appeared for \(mode)")
+                                        }
                                 }
                                 
                                 if let appsConfig = onAppsConfig {
@@ -72,7 +89,6 @@ struct ModeCard: View {
                                     .buttonStyle(CompactButtonStyle())
                                 }
                             }
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
                         }
                     }
                     
@@ -134,14 +150,12 @@ struct ModeCard: View {
         }
         .padding(DesignSystem.spacingLarge)
         .frame(minHeight: DesignSystem.Layout.cardHeight)
-        .selectableCard(isSelected: isSelected, cornerRadius: DesignSystem.cornerRadiusMedium)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(DesignSystem.springAnimation) {
-                selectedMode = mode
-            }
-        }
+        .padding(8)
+        .background(isSelected ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+        .cornerRadius(8)
+        .border(isSelected ? Color.blue : Color.clear, width: 2)
         .onHover { hovering in
+            print("DEBUG ModeCard: Hover state changed for \(mode): \(hovering)")
             withAnimation(DesignSystem.fadeAnimation) {
                 isHovered = hovering
             }
@@ -184,34 +198,6 @@ struct CompactButtonStyle: ButtonStyle {
 }
 
 // MARK: - Supporting Types
-
-extension RefinementMode {
-    var displayName: String {
-        switch self {
-        case .raw:
-            return "Raw Transcription"
-        case .cleanup:
-            return "Clean-up Mode"
-        case .email:
-            return "Email Mode"
-        case .messaging:
-            return "Messaging Mode"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .raw:
-            return "No AI processing - exactly what you said"
-        case .cleanup:
-            return "Removes filler words and fixes grammar"
-        case .email:
-            return "Professional formatting with greetings and signatures"
-        case .messaging:
-            return "Concise and casual for quick messages"
-        }
-    }
-}
 
 struct ModeStatistics {
     let usageCount: Int

@@ -31,7 +31,7 @@ struct TranscriptionCard: View {
                     HStack(spacing: DesignSystem.spacingTiny) {
                         Image(systemName: transcription.mode.icon)
                             .font(.system(size: 12))
-                        Text(transcription.mode.rawValue)
+                        Text(transcription.mode.displayName)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.secondaryText)
@@ -56,7 +56,7 @@ struct TranscriptionCard: View {
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(.secondaryText)
                     
-                    if let duration = transcription.duration {
+                    if let duration = transcription.durationDisplay {
                         Text("•")
                             .foregroundColor(.tertiaryText)
                         
@@ -150,57 +150,7 @@ struct TranscriptionCard: View {
     }
 }
 
-// MARK: - Supporting Types
-
-struct TranscriptionRecord: Identifiable {
-    let id = UUID()
-    let title: String
-    let content: String
-    let timeAgo: String
-    let wordCount: Int
-    let mode: RefinementMode
-    let duration: String?
-    let preview: String?
-    
-    static let sampleData: [TranscriptionRecord] = [
-        TranscriptionRecord(
-            title: "Email to Sarah",
-            content: "Hi Sarah, I wanted to follow up on our meeting yesterday about the quarterly review...",
-            timeAgo: "10:32 AM",
-            wordCount: 234,
-            mode: .email,
-            duration: "1:23",
-            preview: "Hi Sarah, I wanted to follow up on our meeting yesterday about the quarterly review..."
-        ),
-        TranscriptionRecord(
-            title: "Meeting notes",
-            content: "Today's standup covered the following items: sprint progress, upcoming deadlines...",
-            timeAgo: "9:45 AM",
-            wordCount: 567,
-            mode: .cleanup,
-            duration: "3:45",
-            preview: "Today's standup covered the following items: sprint progress, upcoming deadlines..."
-        ),
-        TranscriptionRecord(
-            title: "Project update",
-            content: "The new feature is progressing well. We've completed the initial implementation...",
-            timeAgo: "Yesterday",
-            wordCount: 1023,
-            mode: .cleanup,
-            duration: "5:12",
-            preview: "The new feature is progressing well. We've completed the initial implementation..."
-        ),
-        TranscriptionRecord(
-            title: "Quick voice memo",
-            content: "Remember to pick up groceries on the way home. Need milk, bread, and eggs.",
-            timeAgo: "2 days ago",
-            wordCount: 89,
-            mode: .messaging,
-            duration: "0:45",
-            preview: "Remember to pick up groceries on the way home. Need milk, bread, and eggs."
-        )
-    ]
-}
+// Note: TranscriptionRecord is now defined in Models/TranscriptionRecord.swift
 
 #Preview {
     VStack(spacing: 12) {

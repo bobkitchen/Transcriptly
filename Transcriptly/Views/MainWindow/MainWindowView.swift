@@ -10,34 +10,27 @@ import SwiftUI
 struct MainWindowView: View {
     @StateObject var viewModel = AppViewModel()
     @State private var selectedSection: SidebarSection = .home
-    @State private var showCapsuleMode = false
     
     var body: some View {
         VStack(spacing: 0) {
-            // Persistent Top Bar
-            TopBar(
-                viewModel: viewModel,
-                showCapsuleMode: $showCapsuleMode
-            )
+            // Subtle Top Bar
+            TopBar(viewModel: viewModel)
             
-            // Main Content
+            // Main Content with sidebar getting visual priority
             HStack(spacing: 0) {
+                // Prominent sidebar
                 SidebarView(selectedSection: $selectedSection)
                 
-                Divider()
-                    .background(Color.dividerColor)
-                
+                // Main content area
                 MainContentView(
                     selectedSection: $selectedSection,
                     viewModel: viewModel
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 920, minHeight: 640) // Adjusted for new layout
         .background(Color.primaryBackground)
-        .sheet(isPresented: $showCapsuleMode) {
-            CapsuleView(viewModel: viewModel)
-        }
     }
 }
 

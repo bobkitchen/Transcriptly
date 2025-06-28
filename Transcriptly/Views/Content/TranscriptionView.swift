@@ -10,8 +10,11 @@ import SwiftUI
 
 struct TranscriptionView: View {
     @ObservedObject var viewModel: AppViewModel
+    @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showEditPrompt = false
     @State private var editingMode: RefinementMode?
+    @State private var showAppConfigAlert = false
+    @State private var appConfigMode: RefinementMode?
     
     var body: some View {
         ScrollView {
@@ -30,12 +33,15 @@ struct TranscriptionView: View {
                             selectedMode: $viewModel.refinementService.currentMode,
                             stats: modeStatistics[mode],
                             onEdit: {
+                                print("DEBUG: Edit button clicked for mode: \(mode)")
                                 editingMode = mode
                                 showEditPrompt = true
+                                print("DEBUG: editingMode set to: \(String(describing: editingMode))")
+                                print("DEBUG: showEditPrompt set to: \(showEditPrompt)")
                             },
                             onAppsConfig: mode != .raw ? {
-                                // TODO: Future Phase 5 - App assignment
-                                print("Configure apps for \(mode.rawValue)")
+                                appConfigMode = mode
+                                showAppConfigAlert = true
                             } : nil
                         )
                     }
@@ -64,6 +70,136 @@ struct TranscriptionView: View {
                             mode: viewModel.refinementService.currentMode
                         )
                     }
+                } else if !viewModel.isRecording && !viewModel.isTranscribing && !viewModel.refinementService.isProcessing {
+                    // Permission denied state or ready state
+                    if !viewModel.canRecord && viewModel.statusText.contains("Microphone access required") {
+                        VStack(spacing: DesignSystem.spacingMedium) {
+                            Text("Microphone Access Required")
+                                .font(DesignSystem.Typography.titleMedium)
+                                .foregroundColor(.orange)
+                            
+                            VStack(spacing: DesignSystem.spacingLarge) {
+                                Image(systemName: "mic.slash.circle")
+                                    .font(.system(size: 64))
+                                    .foregroundColor(.orange)
+                                    .symbolRenderingMode(.hierarchical)
+                                
+                                VStack(spacing: DesignSystem.spacingMedium) {
+                                    Text("Transcriptly needs microphone access to record audio")
+                                        .font(DesignSystem.Typography.bodyLarge)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primaryText)
+                                        .multilineTextAlignment(.center)
+                                    
+                                    VStack(spacing: DesignSystem.spacingSmall) {
+                                        Text("To enable microphone access:")
+                                            .font(DesignSystem.Typography.body)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.secondaryText)
+                                        
+                                        VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
+                                            Text("1. Open System Settings")
+                                            Text("2. Go to Privacy & Security")
+                                            Text("3. Select Microphone")
+                                            Text("4. Enable access for Transcriptly")
+                                        }
+                                        .font(DesignSystem.Typography.bodySmall)
+                                        .foregroundColor(.tertiaryText)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    
+                                    Button("Open System Settings") {
+                                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                                            NSWorkspace.shared.open(url)
+                                        }
+                                    }
+                                    .buttonStyle(PrimaryButtonStyle())
+                                    .padding(.top, DesignSystem.spacingMedium)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DesignSystem.spacingLarge * 2)
+                            .padding(.horizontal, DesignSystem.spacingLarge)
+                            .background(Color.orange.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                                    .strokeBorder(Color.orange.opacity(0.3), lineWidth: 1)
+                            )
+                            .cornerRadius(DesignSystem.cornerRadiusMedium)
+                        }
+                    } else {
+                        // Empty state when no activity and no recent result
+                        VStack(spacing: DesignSystem.spacingMedium) {
+                            Text("Ready to Transcribe")
+                                .font(DesignSystem.Typography.titleMedium)
+                                .foregroundColor(.primaryText)
+                            
+                            VStack(spacing: DesignSystem.spacingLarge) {
+                                Image(systemName: "mic.circle")
+                                    .font(.system(size: 64))
+                                    .foregroundColor(.accentColor)
+                                    .symbolRenderingMode(.hierarchical)
+                                
+                                VStack(spacing: DesignSystem.spacingSmall) {
+                                    Text("Press ⌘⇧V to start recording")
+                                        .font(DesignSystem.Typography.bodyLarge)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primaryText)
+                                    
+                                    Text("Your transcription will appear here with AI refinement applied")
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundColor(.secondaryText)
+                                        .multilineTextAlignment(.center)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DesignSystem.spacingLarge * 2)
+                            .padding(.horizontal, DesignSystem.spacingLarge)
+                            .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+                        }
+                    }
+                }
+                
+                // Error State
+                if let errorMessage = viewModel.errorMessage {
+                    VStack(spacing: DesignSystem.spacingMedium) {
+                        Text("Error")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(.errorColor)
+                        
+                        HStack(spacing: DesignSystem.spacingMedium) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.orange)
+                                .symbolRenderingMode(.hierarchical)
+                            
+                            VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                                Text("Something went wrong")
+                                    .font(DesignSystem.Typography.bodyLarge)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primaryText)
+                                
+                                Text(errorMessage)
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            
+                            Spacer()
+                            
+                            Button("Dismiss") {
+                                viewModel.errorMessage = nil
+                            }
+                            .buttonStyle(CompactButtonStyle())
+                        }
+                        .padding(DesignSystem.spacingLarge)
+                        .background(Color.orange.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                                .strokeBorder(Color.orange.opacity(0.3), lineWidth: 1)
+                        )
+                        .cornerRadius(DesignSystem.cornerRadiusMedium)
+                    }
                 }
             }
             .padding(DesignSystem.marginStandard)
@@ -75,6 +211,16 @@ struct TranscriptionView: View {
                     mode: mode,
                     viewModel: viewModel
                 )
+                .onAppear {
+                    print("DEBUG: EditPromptSheet appeared for mode: \(mode)")
+                }
+            }
+        }
+        .alert("App Configuration", isPresented: $showAppConfigAlert) {
+            Button("OK") { }
+        } message: {
+            if let mode = appConfigMode {
+                Text("App-specific configuration for \(mode.displayName) will be available in a future update. This feature will allow you to automatically route transcriptions to specific applications.")
             }
         }
     }
@@ -82,9 +228,41 @@ struct TranscriptionView: View {
     // MARK: - Computed Properties
     
     private var modeStatistics: [RefinementMode: ModeStatistics] {
-        // TODO: Get actual statistics from viewModel
-        // For now, return sample data
-        ModeStatistics.sampleData
+        _ = historyService.statistics
+        var result: [RefinementMode: ModeStatistics] = [:]
+        
+        for mode in RefinementMode.allCases {
+            let modeTranscriptions = historyService.getTranscriptions(mode: mode)
+            let usageCount = modeTranscriptions.count
+            let lastUsed = modeTranscriptions.first?.timestamp
+            
+            let lastEditedDisplay: String? = {
+                guard let lastUsed = lastUsed else { return nil }
+                let timeInterval = Date().timeIntervalSince(lastUsed)
+                
+                if timeInterval < 86400 { // Less than a day
+                    return "today"
+                } else if timeInterval < 604800 { // Less than a week
+                    let days = Int(timeInterval / 86400)
+                    return "\(days) day\(days == 1 ? "" : "s") ago"
+                } else {
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .short
+                    return formatter.string(from: lastUsed)
+                }
+            }()
+            
+            // For now, use empty assigned apps (future feature)
+            let assignedApps: [AppInfo] = []
+            
+            result[mode] = ModeStatistics(
+                usageCount: usageCount,
+                lastEditedDisplay: lastEditedDisplay,
+                assignedApps: assignedApps
+            )
+        }
+        
+        return result
     }
 }
 
@@ -231,7 +409,10 @@ struct EditPromptSheet: View {
     init(mode: RefinementMode, viewModel: AppViewModel) {
         self.mode = mode
         self.viewModel = viewModel
-        self._prompt = State(initialValue: viewModel.refinementService.prompts[mode]?.userPrompt ?? "")
+        let initialPrompt = viewModel.refinementService.prompts[mode]?.userPrompt ?? ""
+        print("DEBUG EditPromptSheet init: mode=\(mode), initialPrompt='\(initialPrompt)'")
+        print("DEBUG EditPromptSheet init: Available prompts keys: \(viewModel.refinementService.prompts.keys)")
+        self._prompt = State(initialValue: initialPrompt)
     }
     
     var body: some View {

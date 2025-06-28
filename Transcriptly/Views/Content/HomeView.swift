@@ -7,10 +7,14 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct HomeView: View {
     @ObservedObject var viewModel: AppViewModel
+    @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showCapsuleMode = false
+    @State private var showingHistory = false
+    @State private var showExportDialog = false
     
     var body: some View {
         ScrollView {
@@ -22,29 +26,30 @@ struct HomeView: View {
                     .padding(.top, DesignSystem.marginStandard)
                 
                 // Stats Cards
+                let stats = historyService.statistics
                 HStack(spacing: DesignSystem.spacingLarge) {
                     StatCard(
                         icon: "chart.bar.fill",
                         title: "Today",
-                        value: "1,234",
-                        subtitle: "words",
-                        secondaryValue: "12 sessions"
+                        value: "\(stats.todayCount)",
+                        subtitle: stats.todayCount == 1 ? "session" : "sessions",
+                        secondaryValue: todayWordCount
                     )
                     
                     StatCard(
                         icon: "chart.line.uptrend.xyaxis",
                         title: "This Week", 
-                        value: "8,456",
-                        subtitle: "words",
-                        secondaryValue: "45 min saved"
+                        value: "\(stats.weekCount)",
+                        subtitle: stats.weekCount == 1 ? "session" : "sessions",
+                        secondaryValue: weekTimeSaved
                     )
                     
                     StatCard(
                         icon: "target",
-                        title: "Efficiency",
-                        value: "87%",
-                        subtitle: "refined",
-                        secondaryValue: "23 patterns"
+                        title: "Most Used",
+                        value: stats.mostUsedMode?.displayName ?? "None",
+                        subtitle: "mode",
+                        secondaryValue: "\(stats.totalCount) total"
                     )
                 }
                 
@@ -58,16 +63,38 @@ struct HomeView: View {
                         Spacer()
                         
                         Button("View All") {
-                            // Navigate to full history
+                            showingHistory = true
                         }
                         .buttonStyle(.plain)
                         .foregroundColor(.accentColor)
                         .font(DesignSystem.Typography.body)
                     }
                     
-                    VStack(spacing: DesignSystem.spacingSmall) {
-                        ForEach(recentTranscriptions) { transcription in
-                            TranscriptionCard(transcription: transcription)
+                    if recentTranscriptions.isEmpty {
+                        VStack(spacing: DesignSystem.spacingMedium) {
+                            Image(systemName: "mic.circle")
+                                .font(.system(size: 48))
+                                .foregroundColor(.tertiaryText)
+                                .symbolRenderingMode(.hierarchical)
+                            
+                            Text("No transcriptions yet")
+                                .font(DesignSystem.Typography.bodyLarge)
+                                .foregroundColor(.secondaryText)
+                            
+                            Text("Start recording to see your transcription history here")
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.tertiaryText)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.spacingLarge * 2)
+                        .background(Color.secondaryBackground.opacity(0.3))
+                        .cornerRadius(DesignSystem.cornerRadiusMedium)
+                    } else {
+                        VStack(spacing: DesignSystem.spacingSmall) {
+                            ForEach(recentTranscriptions) { transcription in
+                                TranscriptionCard(transcription: transcription)
+                            }
                         }
                     }
                 }
@@ -92,12 +119,12 @@ struct HomeView: View {
                         .buttonStyle(SecondaryButtonStyle())
                         
                         Button("View All History") {
-                            // Navigate to history
+                            showingHistory = true
                         }
                         .buttonStyle(SecondaryButtonStyle())
                         
                         Button("Export Today's Work") {
-                            // Export action
+                            showExportDialog = true
                         }
                         .buttonStyle(SecondaryButtonStyle())
                     }
@@ -106,14 +133,59 @@ struct HomeView: View {
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)
+        .sheet(isPresented: $showingHistory) {
+            HistoryView()
+        }
+        .fileExporter(
+            isPresented: $showExportDialog,
+            document: TranscriptionExportDocument(transcriptions: todayTranscriptions),
+            contentType: .json,
+            defaultFilename: "today-transcriptions"
+        ) { result in
+            switch result {
+            case .success(let url):
+                print("Exported today's transcriptions to: \(url)")
+            case .failure(let error):
+                print("Export failed: \(error)")
+            }
+        }
     }
     
     // MARK: - Computed Properties
     
     private var recentTranscriptions: [TranscriptionRecord] {
-        // TODO: Get actual recent transcriptions from viewModel
-        // For now, return sample data
-        Array(TranscriptionRecord.sampleData.prefix(3))
+        return historyService.getTranscriptions(limit: 3)
+    }
+    
+    private var todayTranscriptions: [TranscriptionRecord] {
+        return historyService.transcriptions.filter { 
+            Calendar.current.isDateInToday($0.timestamp) 
+        }
+    }
+    
+    private var todayWordCount: String {
+        let todayTranscriptions = historyService.transcriptions.filter { 
+            Calendar.current.isDateInToday($0.timestamp) 
+        }
+        let totalWords = todayTranscriptions.map { $0.wordCount }.reduce(0, +)
+        return "\(totalWords) words"
+    }
+    
+    private var weekTimeSaved: String {
+        let weekAgo = Date().addingTimeInterval(-7 * 24 * 3600)
+        let weekTranscriptions = historyService.transcriptions.filter { 
+            $0.timestamp > weekAgo 
+        }
+        let totalDuration = weekTranscriptions.compactMap { $0.duration }.reduce(0, +)
+        
+        let minutes = Int(totalDuration) / 60
+        if minutes < 60 {
+            return "\(minutes) min total"
+        } else {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            return "\(hours)h \(remainingMinutes)m total"
+        }
     }
     
     private func handleRecordingAction() async {

@@ -40,6 +40,10 @@ final class AppViewModel: ObservableObject {
     @Published var refinementService = RefinementService()
     @Published var capsuleController = CapsuleController()
     private let learningService = LearningService.shared
+    private let historyService = TranscriptionHistoryService.shared
+    
+    // Recording metadata for history
+    private var recordingStartTime: Date?
     
     init() {
         // Initialize status based on permissions
@@ -157,6 +161,7 @@ final class AppViewModel: ObservableObject {
         await MainActor.run {
             errorMessage = nil
             currentStatus = .recording
+            recordingStartTime = Date() // Track recording start time
         }
         
         let success = await audioService.startRecording()
@@ -523,7 +528,7 @@ final class AppViewModel: ObservableObject {
         )
         
         // Use the final text for pasting
-        completeTranscriptionWithText(finalText)
+        completeTranscriptionWithText(finalText, learningType: .editReview)
     }
     
     func handleABTestComplete(selectedOption: String) {
@@ -540,11 +545,30 @@ final class AppViewModel: ObservableObject {
         )
         
         // Use the selected option for pasting
-        completeTranscriptionWithText(selectedOption)
+        completeTranscriptionWithText(selectedOption, learningType: .abTesting)
     }
     
-    private func completeTranscriptionWithText(_ text: String) {
+    private func completeTranscriptionWithText(_ text: String, learningType: LearningType? = nil) {
         Task {
+            // Calculate recording duration
+            let duration: TimeInterval? = await MainActor.run {
+                guard let startTime = recordingStartTime else { return nil }
+                return Date().timeIntervalSince(startTime)
+            }
+            
+            // Save transcription to history
+            await MainActor.run {
+                historyService.createAndSaveTranscription(
+                    original: currentOriginalTranscription,
+                    refined: currentAIRefinement,
+                    final: text,
+                    mode: refinementService.currentMode,
+                    duration: duration,
+                    wasLearningTriggered: learningType != nil,
+                    learningType: learningType
+                )
+            }
+            
             // Update the transcribed text
             await MainActor.run {
                 self.transcribedText = text
@@ -564,6 +588,9 @@ final class AppViewModel: ObservableObject {
                 }
                 // Show completion notification
                 self.showCompletionNotification()
+                
+                // Clear recording start time
+                recordingStartTime = nil
             }
         }
     }

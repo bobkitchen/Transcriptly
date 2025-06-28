@@ -14,35 +14,58 @@ struct SidebarView: View {
     @State private var hoveredSection: SidebarSection?
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingSmall) {
-            // Navigation items
-            ForEach(SidebarSection.allCases, id: \.self) { section in
-                SidebarItem(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    isHovered: hoveredSection == section,
-                    isEnabled: section.isEnabled,
-                    isCollapsed: isCollapsed
-                )
-                .onTapGesture {
-                    if section.isEnabled {
-                        withAnimation(DesignSystem.springAnimation) {
-                            selectedSection = section
+        VStack(spacing: 0) {
+            // Sidebar header with more prominence
+            HStack {
+                Text("Navigation")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.tertiaryText)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+            
+            // Navigation items with better spacing
+            VStack(spacing: 2) {
+                ForEach(SidebarSection.allCases, id: \.self) { section in
+                    SidebarItem(
+                        section: section,
+                        isSelected: selectedSection == section,
+                        isHovered: hoveredSection == section,
+                        isEnabled: section.isEnabled,
+                        isCollapsed: isCollapsed
+                    )
+                    .onTapGesture {
+                        if section.isEnabled {
+                            withAnimation(DesignSystem.springAnimation) {
+                                selectedSection = section
+                            }
+                        }
+                    }
+                    .onHover { hovering in
+                        withAnimation(DesignSystem.fadeAnimation) {
+                            hoveredSection = hovering ? section : nil
                         }
                     }
                 }
-                .onHover { hovering in
-                    withAnimation(DesignSystem.fadeAnimation) {
-                        hoveredSection = hovering ? section : nil
-                    }
-                }
             }
+            .padding(.horizontal, 12)
             
             Spacer()
         }
-        .padding(DesignSystem.spacingMedium)
         .frame(width: isCollapsed ? DesignSystem.Layout.sidebarCollapsedWidth : DesignSystem.Layout.sidebarWidth)
-        .liquidGlassSidebar()
+        .background(.thickMaterial) // More prominent material
+        .overlay(
+            // Subtle right border
+            Rectangle()
+                .frame(width: 0.5)
+                .foregroundColor(.white.opacity(0.1)),
+            alignment: .trailing
+        )
         .animation(DesignSystem.springAnimation, value: isCollapsed)
     }
 }

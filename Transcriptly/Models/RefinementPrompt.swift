@@ -14,8 +14,13 @@ struct RefinementPrompt: Codable {
     let maxCharacters: Int = 2000
     
     static func defaultPrompts() -> [RefinementMode: RefinementPrompt] {
-        // Temporary prompts - will be replaced with user's prompts in Task 2.1.2
+        // Create prompts for ALL modes, including raw
         return [
+            .raw: RefinementPrompt(
+                mode: .raw,
+                userPrompt: "",  // Raw mode has no AI processing
+                defaultPrompt: ""
+            ),
             .cleanup: RefinementPrompt(
                 mode: .cleanup,
                 userPrompt: "Remove filler words like 'um', 'uh', 'you know'. Fix grammar and punctuation. Keep the original meaning and tone.",
