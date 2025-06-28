@@ -66,29 +66,54 @@ struct CapsuleContainerView: View {
         // Cancel any pending debounce task
         hoverDebounceTask?.cancel()
         
-        isHovered = hovering
-        print("CapsuleContainer: Hover state: \(hovering), Recording: \(viewModel.isRecording)")
+        print("CapsuleContainer: Hover state: \(hovering), Recording: \(viewModel.isRecording), Current isHovered: \(isHovered)")
         
         if hovering {
+            // Update hover state immediately
+            isHovered = true
+            
             // Expand immediately on hover
             if !isExpanded {
                 print("CapsuleContainer: Expanding on hover")
                 isExpanded = true
             }
         } else {
-            // Debounce collapse to prevent flicker
+            // Debounce hover leave to prevent rapid toggling
             hoverDebounceTask = Task {
-                try? await Task.sleep(nanoseconds: 50_000_000) // 50ms debounce
+                try? await Task.sleep(nanoseconds: 200_000_000) // 200ms debounce for stability
                 
                 await MainActor.run {
-                    // Only collapse if not recording and still not hovered
-                    if !viewModel.isRecording && !isHovered && isExpanded {
-                        print("CapsuleContainer: Collapsing after hover leave")
+                    // Check if we're still not hovered after debounce period
+                    let currentMouseLocation = NSEvent.mouseLocation
+                    let shouldCollapse = !viewModel.isRecording && !isMouseInCapsuleArea(currentMouseLocation)
+                    
+                    if shouldCollapse && isExpanded {
+                        print("CapsuleContainer: Collapsing after confirmed hover leave")
+                        isHovered = false
                         isExpanded = false
                     }
                 }
             }
         }
+    }
+    
+    // Helper to check if mouse is in the capsule area (with buffer)
+    private func isMouseInCapsuleArea(_ mouseLocation: CGPoint) -> Bool {
+        // Get the current window frame and add a buffer area
+        guard let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<CapsuleContainerView> }) else {
+            return false
+        }
+        
+        let windowFrame = window.frame
+        let buffer: CGFloat = 20 // Buffer area around capsule
+        let expandedFrame = CGRect(
+            x: windowFrame.minX - buffer,
+            y: windowFrame.minY - buffer,
+            width: windowFrame.width + (buffer * 2),
+            height: windowFrame.height + (buffer * 2)
+        )
+        
+        return expandedFrame.contains(mouseLocation)
     }
 }
 

@@ -62,7 +62,28 @@ class FloatingCapsuleController: NSWindowController, ObservableObject {
         // Prevent activation to maintain floating behavior
         window.styleMask.insert(.nonactivatingPanel)
         
+        // Add tracking area for more reliable hover detection
+        setupTrackingArea()
+        
         print("FloatingCapsuleController: Window configured")
+    }
+    
+    private func setupTrackingArea() {
+        guard let window = window, let contentView = window.contentView else { return }
+        
+        // Remove existing tracking areas
+        contentView.trackingAreas.forEach { contentView.removeTrackingArea($0) }
+        
+        // Create new tracking area for the entire content view
+        let trackingArea = NSTrackingArea(
+            rect: contentView.bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        
+        contentView.addTrackingArea(trackingArea)
+        print("FloatingCapsuleController: Tracking area setup")
     }
     
     private func setupContentView() {
@@ -127,10 +148,14 @@ class FloatingCapsuleController: NSWindowController, ObservableObject {
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             
             let newSize = CapsuleDesignSystem.expandedSize
-            let currentOrigin = window.frame.origin
+            let currentFrame = window.frame
             
             // Calculate new position to keep centered during expansion
-            let newPosition = screenPositioning.calculateExpandedPosition(from: currentOrigin)
+            let centerX = currentFrame.midX
+            let newX = centerX - (newSize.width / 2)
+            let newPosition = CGPoint(x: newX, y: currentFrame.origin.y)
+            
+            print("FloatingCapsuleController: Expanding from \(currentFrame) to \(NSRect(origin: newPosition, size: newSize))")
             
             window.animator().setFrame(
                 NSRect(origin: newPosition, size: newSize),
@@ -150,10 +175,14 @@ class FloatingCapsuleController: NSWindowController, ObservableObject {
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             
             let newSize = CapsuleDesignSystem.minimalSize
-            let currentOrigin = window.frame.origin
+            let currentFrame = window.frame
             
             // Calculate new position to keep centered during collapse
-            let newPosition = screenPositioning.calculateCollapsedPosition(from: currentOrigin)
+            let centerX = currentFrame.midX
+            let newX = centerX - (newSize.width / 2)
+            let newPosition = CGPoint(x: newX, y: currentFrame.origin.y)
+            
+            print("FloatingCapsuleController: Collapsing from \(currentFrame) to \(NSRect(origin: newPosition, size: newSize))")
             
             window.animator().setFrame(
                 NSRect(origin: newPosition, size: newSize),
