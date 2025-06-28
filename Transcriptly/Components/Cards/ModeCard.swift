@@ -62,20 +62,14 @@ struct ModeCard: View {
                         if isHovered || isSelected {
                             HStack(spacing: DesignSystem.spacingSmall) {
                                 if mode != .raw {
-                                    Text("EDIT")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color.red)
-                                        .cornerRadius(8)
-                                        .onTapGesture {
-                                            print("DEBUG ModeCard: EDIT TAP GESTURE for \(mode)")
-                                            onEdit()
+                                    Button(action: onEdit) {
+                                        HStack(spacing: DesignSystem.spacingTiny) {
+                                            Text("Edit")
+                                            Image(systemName: "pencil")
+                                                .font(.system(size: 10))
                                         }
-                                        .onAppear {
-                                            print("DEBUG ModeCard: Edit button appeared for \(mode)")
-                                        }
+                                    }
+                                    .buttonStyle(CompactButtonStyle())
                                 }
                                 
                                 if let appsConfig = onAppsConfig {
