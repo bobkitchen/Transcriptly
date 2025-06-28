@@ -24,14 +24,16 @@ struct TopBar: View {
             
             Spacer()
             
-            // Quick mode indicator (read-only)
-            Text(viewModel.refinementService.currentMode.displayName)
-                .font(.system(size: 12))
-                .foregroundColor(.secondaryText)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.ultraThinMaterial)
-                .cornerRadius(12)
+            // Mode dropdown
+            Picker("Mode", selection: $viewModel.refinementService.currentMode) {
+                ForEach(RefinementMode.allCases, id: \.self) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(width: 140)
+            .font(.system(size: 12))
+            .foregroundColor(.secondaryText)
             
             // Compact Record button
             CompactRecordButton(
