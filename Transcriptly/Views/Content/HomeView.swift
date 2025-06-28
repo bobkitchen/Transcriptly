@@ -48,6 +48,30 @@ struct HomeView: View {
                     )
                 }
                 
+                // Recent Transcriptions Section
+                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                    HStack {
+                        Text("Recent Transcriptions")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(.primaryText)
+                        
+                        Spacer()
+                        
+                        Button("View All") {
+                            // Navigate to full history
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.accentColor)
+                        .font(DesignSystem.Typography.body)
+                    }
+                    
+                    VStack(spacing: DesignSystem.spacingSmall) {
+                        ForEach(recentTranscriptions) { transcription in
+                            TranscriptionCard(transcription: transcription)
+                        }
+                    }
+                }
+                
                 // Quick Actions Section
                 VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
                     Text("Quick Actions")
@@ -82,6 +106,14 @@ struct HomeView: View {
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var recentTranscriptions: [TranscriptionRecord] {
+        // TODO: Get actual recent transcriptions from viewModel
+        // For now, return sample data
+        Array(TranscriptionRecord.sampleData.prefix(3))
     }
     
     private func handleRecordingAction() async {
