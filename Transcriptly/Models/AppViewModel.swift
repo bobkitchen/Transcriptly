@@ -229,29 +229,44 @@ final class AppViewModel: ObservableObject {
     }
     
     func stopRecording() async -> URL? {
-        guard isRecording else { return nil }
+        print("🛑 stopRecording() called")
+        guard isRecording else { 
+            print("   ❌ Not currently recording")
+            return nil 
+        }
         
+        print("   🎤 Stopping audio service...")
         let recordingURL = await audioService.stopRecording()
         
         if let url = recordingURL {
+            print("   ✅ Recording saved to: \(url.lastPathComponent)")
             // Start transcription after recording completes
             await transcribeRecording(url: url)
+        } else {
+            print("   ❌ No recording URL returned")
         }
         
         return recordingURL
     }
     
     private func transcribeRecording(url: URL) async {
+        print("📝 transcribeRecording() called with: \(url.lastPathComponent)")
+        
         // Check if speech recognition permission is needed
         let hasSpeechPermission = transcriptionService.hasSpeechPermission
+        print("   🔒 Speech permission: \(hasSpeechPermission)")
+        
         if !hasSpeechPermission {
+            print("   🔑 Requesting speech recognition permission...")
             let granted = await transcriptionService.requestSpeechRecognitionPermission()
             if !granted {
+                print("   ❌ Speech recognition permission denied")
                 await MainActor.run {
                     errorMessage = "Speech recognition permission required for transcription"
                 }
                 return
             }
+            print("   ✅ Speech recognition permission granted")
         }
         
         // Clear any previous errors
@@ -260,15 +275,18 @@ final class AppViewModel: ObservableObject {
         }
         
         // Transcribe the audio file
+        print("   🎤 Starting transcription...")
         let transcribedText = await transcriptionService.transcribeAudioFile(at: url)
         
         await MainActor.run {
             if let text = transcribedText, !text.isEmpty {
+                print("   ✅ Transcription successful: '\(text.prefix(50))...'")
                 // Process transcription with refinement
                 Task {
                     await processTranscription(text)
                 }
             } else {
+                print("   ❌ Transcription failed or empty")
                 self.transcribedText = ""
                 self.errorMessage = "Transcription failed. Please try recording again."
             }
@@ -601,14 +619,18 @@ final class AppViewModel: ObservableObject {
     }
     
     private func completeTranscriptionWithText(_ text: String, learningType: LearningType? = nil) {
+        print("🎯 completeTranscriptionWithText() called with: '\(text.prefix(50))...'")
+        
         Task {
             // Calculate recording duration
             let duration: TimeInterval? = await MainActor.run {
                 guard let startTime = recordingStartTime else { return nil }
                 return Date().timeIntervalSince(startTime)
             }
+            print("   ⏱️ Recording duration: \(duration?.formatted() ?? "unknown")")
             
             // Save transcription to history
+            print("   💾 Saving to history...")
             await MainActor.run {
                 historyService.createAndSaveTranscription(
                     original: currentOriginalTranscription,
@@ -627,22 +649,29 @@ final class AppViewModel: ObservableObject {
             }
             
             // Copy to clipboard
+            print("   📋 Copying to clipboard...")
             await MainActor.run {
                 self.pasteService.copyTextToClipboard(text)
             }
+            print("   ✅ Text copied to clipboard")
             
             // Paste automatically
+            print("   📝 Attempting to paste at cursor location...")
             let pasteSuccess = await pasteService.pasteAtCursorLocation()
+            print("   📝 Paste result: \(pasteSuccess ? "✅ Success" : "❌ Failed")")
             
             await MainActor.run {
                 if !pasteSuccess {
+                    print("   ⚠️ Setting error message for paste failure")
                     self.errorMessage = "Text copied to clipboard but failed to paste automatically"
                 }
                 // Show completion notification
+                print("   🔔 Showing completion notification...")
                 self.showCompletionNotification()
                 
                 // Clear recording start time
                 recordingStartTime = nil
+                print("   🏁 Transcription completion flow finished")
             }
         }
     }
