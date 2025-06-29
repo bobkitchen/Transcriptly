@@ -79,6 +79,7 @@ struct LearningView: View {
                     }
                 }
             }
+            .adjustForInsetSidebar()
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)

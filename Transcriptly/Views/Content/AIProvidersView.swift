@@ -79,6 +79,7 @@ struct AIProvidersView: View {
                 .padding(DesignSystem.spacingLarge)
                 .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
             }
+            .adjustForInsetSidebar()
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)

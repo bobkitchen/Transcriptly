@@ -58,13 +58,17 @@ struct InsetSidebarView: View {
         }
         .frame(width: UIPolishDesignSystem.sidebarWidth)
         .padding(.vertical, 12)
-        .background(.regularMaterial)  // Use proper Apple sidebar material
+        .background(.regularMaterial)  // Apple sidebar-equivalent material
         .cornerRadius(UIPolishDesignSystem.sidebarCornerRadius)
         .shadow(
-            color: .black.opacity(0.1),
-            radius: UIPolishDesignSystem.shadowRadius,
+            color: .black.opacity(0.15),
+            radius: 12,
             x: 0,
-            y: UIPolishDesignSystem.shadowOffset.height
+            y: 4
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: UIPolishDesignSystem.sidebarCornerRadius)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
         )
     }
 }

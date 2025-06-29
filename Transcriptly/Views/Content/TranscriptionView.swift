@@ -201,6 +201,7 @@ struct TranscriptionView: View {
                     }
                 }
             }
+            .adjustForInsetSidebar()
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)
