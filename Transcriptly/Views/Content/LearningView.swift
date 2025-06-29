@@ -19,19 +19,27 @@ struct LearningView: View {
     @State private var selectedPattern: LearnedPattern?
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Header section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
-                    Text("Learning")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(.primaryText)
-                        .padding(.top, DesignSystem.marginStandard)
-                    
+        VStack(spacing: 0) {
+            // Simple header (no controls)
+            HStack {
+                Text("Learning")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.regularMaterial.opacity(0.3))
+            
+            // Existing content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+                    // Description
                     Text("Transcriptly learns from your corrections to improve accuracy over time")
                         .font(DesignSystem.Typography.body)
                         .foregroundColor(.secondaryText)
-                }
+                        .padding(.top, DesignSystem.spacingMedium)
                 
                 // Authentication Status Card
                 AuthStatusCard()
@@ -78,10 +86,12 @@ struct LearningView: View {
                         self.error = nil
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .adjustForInsetSidebar()
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForInsetSidebar()
         .background(Color.primaryBackground)
         .onAppear {
             loadPatterns()

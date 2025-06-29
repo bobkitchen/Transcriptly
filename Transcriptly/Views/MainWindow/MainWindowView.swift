@@ -13,31 +13,23 @@ struct MainWindowView: View {
     @State private var selectedSection: SidebarSection = .home
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Enhanced Top Bar
-            TopBar(
+        ZStack(alignment: .topLeading) {
+            // Full-height content (no top bar)
+            MainContentView(
+                selectedSection: $selectedSection,
                 viewModel: viewModel,
-                showCapsuleMode: {
+                onFloat: {
                     // Use the viewModel's capsule controller
                     viewModel.capsuleController.enterCapsuleMode()
                 }
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.primaryBackground)
             
-            // NEW LAYOUT: Full-width content with floating inset sidebar
-            ZStack(alignment: .leading) {
-                // Full-width content area (extends behind sidebar)
-                MainContentView(
-                    selectedSection: $selectedSection,
-                    viewModel: viewModel
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.primaryBackground)
-                
-                // Floating inset sidebar (Apple 2024 standard)
-                InsetSidebarView(selectedSection: $selectedSection)
-                    .padding(.leading, UIPolishDesignSystem.sidebarInset)
-                    .padding(.vertical, UIPolishDesignSystem.sidebarInset)
-            }
+            // Floating inset sidebar (Apple 2024 standard)
+            InsetSidebarView(selectedSection: $selectedSection)
+                .padding(.leading, UIPolishDesignSystem.sidebarInset)
+                .padding(.vertical, UIPolishDesignSystem.sidebarInset)
         }
         .frame(minWidth: 920, minHeight: 640)
         .background(Color.primaryBackground)

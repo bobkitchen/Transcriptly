@@ -12,124 +12,106 @@ import UniformTypeIdentifiers
 struct HomeView: View {
     @ObservedObject var viewModel: AppViewModel
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
-    @State private var showCapsuleMode = false
+    let onFloat: () -> Void
     @State private var showingHistory = false
     @State private var showExportDialog = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Welcome Header
-                Text("Welcome back")
-                    .font(UIPolishDesignSystem.Typography.title)
-                    .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+        VStack(spacing: 0) {
+            // Integrated header (replaces top bar)
+            ContentHeader(
+                viewModel: viewModel,
+                title: "Welcome back",
+                showModeControls: true,
+                showFloatButton: true,
+                onFloat: onFloat
+            )
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
                 
-                // Stats Cards
-                let stats = historyService.statistics
-                HStack(spacing: DesignSystem.spacingLarge) {
-                    StatCard(
-                        icon: "chart.bar.fill",
-                        title: "Today",
-                        value: "\(stats.todayCount)",
-                        subtitle: stats.todayCount == 1 ? "session" : "sessions",
-                        secondaryValue: todayWordCount
-                    )
-                    
-                    StatCard(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "This Week", 
-                        value: "\(stats.weekCount)",
-                        subtitle: stats.weekCount == 1 ? "session" : "sessions",
-                        secondaryValue: weekTimeSaved
-                    )
-                    
-                    StatCard(
-                        icon: "target",
-                        title: "Most Used",
-                        value: stats.mostUsedMode?.displayName ?? "None",
-                        subtitle: "mode",
-                        secondaryValue: "\(stats.totalCount) total"
-                    )
-                }
-                
-                // Recent Transcriptions Section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                    HStack {
-                        Text("Recent Transcriptions")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(.primaryText)
+                    // Stats cards
+                    let stats = historyService.statistics
+                    HStack(spacing: 16) {
+                        StatCard(
+                            icon: "chart.bar.fill",
+                            title: "Today",
+                            value: formatNumber(todayWordCount.components(separatedBy: " ").first.flatMap(Int.init) ?? 0),
+                            subtitle: "words",
+                            secondaryValue: "\(stats.todayCount) sessions"
+                        )
                         
-                        Spacer()
+                        StatCard(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "This Week",
+                            value: formatNumber(weekWordCount),
+                            subtitle: "words",
+                            secondaryValue: weekTimeSaved + " saved"
+                        )
                         
-                        Button("View All") {
-                            showingHistory = true
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.accentColor)
-                        .font(DesignSystem.Typography.body)
+                        StatCard(
+                            icon: "target",
+                            title: "Current Mode",
+                            value: viewModel.refinementService.currentMode.displayName,
+                            subtitle: "active",
+                            secondaryValue: "⌘\(viewModel.refinementService.currentMode.rawValue)"
+                        )
                     }
-                    
-                    if recentTranscriptions.isEmpty {
-                        VStack(spacing: DesignSystem.spacingMedium) {
-                            Image(systemName: "mic.circle")
-                                .font(.system(size: 48))
-                                .foregroundColor(.tertiaryText)
-                                .symbolRenderingMode(.hierarchical)
+                
+                    // Recent transcriptions section
+                    if !recentTranscriptions.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Recent Transcriptions")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.primaryText)
+                                
+                                Spacer()
+                                
+                                Button("View All") {
+                                    showingHistory = true
+                                }
+                                .foregroundColor(.accentColor)
+                                .font(.system(size: 14))
+                            }
                             
-                            Text("No transcriptions yet")
-                                .font(DesignSystem.Typography.bodyLarge)
-                                .foregroundColor(.secondaryText)
-                            
-                            Text("Start recording to see your transcription history here")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(.tertiaryText)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.spacingLarge * 2)
-                        .background(Color.secondaryBackground.opacity(0.3))
-                        .cornerRadius(DesignSystem.cornerRadiusMedium)
-                    } else {
-                        VStack(spacing: DesignSystem.spacingSmall) {
-                            ForEach(recentTranscriptions) { transcription in
-                                TranscriptionCard(transcription: transcription)
+                            VStack(spacing: 8) {
+                                ForEach(Array(recentTranscriptions.prefix(5))) { transcription in
+                                    TranscriptionCard(transcription: transcription)
+                                }
                             }
                         }
                     }
-                }
                 
-                // Quick Actions Section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                    Text("Quick Actions")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(.primaryText)
-                    
-                    HStack(spacing: 12) {
-                        QuickActionButton(
-                            title: viewModel.capsuleController.isCapsuleModeActive ? "Exit Float Mode" : "Enter Float Mode",
-                            icon: "pip.enter",
-                            action: { viewModel.capsuleController.toggleCapsuleMode() },
-                            isProminent: true
-                        )
+                    // Quick actions
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Quick Actions")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primaryText)
                         
-                        QuickActionButton(
-                            title: "View All History",
-                            icon: "clock.arrow.circlepath",
-                            action: { showingHistory = true }
-                        )
-                        
-                        QuickActionButton(
-                            title: "Export Today's Work",
-                            icon: "square.and.arrow.up",
-                            action: { showExportDialog = true }
-                        )
+                        HStack(spacing: 12) {
+                            NewQuickActionButton(
+                                title: "View All History",
+                                icon: "clock.arrow.circlepath",
+                                action: { showingHistory = true }
+                            )
+                            .disabled(recentTranscriptions.isEmpty)
+                            
+                            NewQuickActionButton(
+                                title: "Export Data",
+                                icon: "square.and.arrow.up",
+                                action: { showExportDialog = true }
+                            )
+                            .disabled(recentTranscriptions.isEmpty)
+                        }
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .adjustForInsetSidebar()
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForInsetSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
@@ -169,6 +151,14 @@ struct HomeView: View {
         return "\(totalWords) words"
     }
     
+    private var weekWordCount: Int {
+        let weekAgo = Date().addingTimeInterval(-7 * 24 * 3600)
+        let weekTranscriptions = historyService.transcriptions.filter { 
+            $0.timestamp > weekAgo 
+        }
+        return weekTranscriptions.map { $0.wordCount }.reduce(0, +)
+    }
+    
     private var weekTimeSaved: String {
         let weekAgo = Date().addingTimeInterval(-7 * 24 * 3600)
         let weekTranscriptions = historyService.transcriptions.filter { 
@@ -178,12 +168,18 @@ struct HomeView: View {
         
         let minutes = Int(totalDuration) / 60
         if minutes < 60 {
-            return "\(minutes) min total"
+            return "\(minutes) min"
         } else {
             let hours = minutes / 60
             let remainingMinutes = minutes % 60
-            return "\(hours)h \(remainingMinutes)m total"
+            return "\(hours)h \(remainingMinutes)m"
         }
+    }
+    
+    private func formatNumber(_ number: Int) -> String {
+        if number == 0 { return "0" }
+        if number < 1000 { return "\(number)" }
+        return String(format: "%.1fK", Double(number) / 1000.0)
     }
     
     private func handleRecordingAction() async {
@@ -211,45 +207,23 @@ struct HomeView: View {
     }
 }
 
-struct QuickActionButton: View {
+struct NewQuickActionButton: View {
     let title: String
     let icon: String
     let action: () -> Void
-    let isProminent: Bool
-    
-    init(title: String, icon: String, action: @escaping () -> Void, isProminent: Bool = false) {
-        self.title = title
-        self.icon = icon
-        self.action = action
-        self.isProminent = isProminent
-    }
     
     var body: some View {
-        if isProminent {
-            Button(action: action) {
-                HStack(spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 14))
-                    Text(title)
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
             }
-            .buttonStyle(PrimaryButtonStyle())
-        } else {
-            Button(action: action) {
-                HStack(spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 14))
-                    Text(title)
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .buttonStyle(SecondaryButtonStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
+        .buttonStyle(SecondaryButtonStyle())
     }
 }
 
@@ -270,6 +244,6 @@ struct StatisticView: View {
 }
 
 #Preview {
-    HomeView(viewModel: AppViewModel())
+    HomeView(viewModel: AppViewModel(), onFloat: {})
         .padding()
 }

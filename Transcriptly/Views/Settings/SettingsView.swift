@@ -20,13 +20,22 @@ struct SettingsView: View {
     @State private var showingHistory = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Header
+        VStack(spacing: 0) {
+            // Simple header (no controls)
+            HStack {
                 Text("Settings")
-                    .font(DesignSystem.Typography.titleLarge)
+                    .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.regularMaterial.opacity(0.3))
+            
+            // Existing content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 
                 // Account Section
                 SettingsCard(
@@ -171,10 +180,12 @@ struct SettingsView: View {
                         }
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .adjustForInsetSidebar()
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForInsetSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()

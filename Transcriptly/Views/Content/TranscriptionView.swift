@@ -13,38 +13,41 @@ import UniformTypeIdentifiers
 struct TranscriptionView: View {
     @ObservedObject var viewModel: AppViewModel
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
+    let onFloat: () -> Void
     @State private var showEditPrompt = false
     @State private var editingMode: RefinementMode?
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Section Header
-                Text("AI Refinement Modes")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+        VStack(spacing: 0) {
+            // Integrated header
+            ContentHeader(
+                viewModel: viewModel,
+                title: "AI Refinement Modes",
+                showModeControls: true,
+                showFloatButton: true,
+                onFloat: onFloat
+            )
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
                 
-                // Mode Cards
-                VStack(spacing: DesignSystem.spacingMedium) {
-                    ForEach(RefinementMode.allCases, id: \.self) { mode in
-                        ModeCard(
-                            mode: mode,
-                            selectedMode: $viewModel.refinementService.currentMode,
-                            stats: modeStatistics[mode],
-                            onEdit: {
-                                print("DEBUG: Edit button clicked for mode: \(mode)")
-                                editingMode = mode
-                                showEditPrompt = true
-                                print("DEBUG: editingMode set to: \(String(describing: editingMode))")
-                                print("DEBUG: showEditPrompt set to: \(showEditPrompt)")
-                            },
-                            onAppsConfig: mode != .raw ? {
-                                openApplicationPicker(for: mode)
-                            } : nil
-                        )
+                    VStack(spacing: 12) {
+                        ForEach(RefinementMode.allCases, id: \.self) { mode in
+                            ModeCard(
+                                mode: mode,
+                                selectedMode: $viewModel.refinementService.currentMode,
+                                stats: modeStatistics[mode],
+                                onEdit: {
+                                    editingMode = mode
+                                    showEditPrompt = true
+                                },
+                                onAppsConfig: mode != .raw ? {
+                                    openApplicationPicker(for: mode)
+                                } : nil
+                            )
+                        }
                     }
-                }
                 
                 // Current Status Section
                 if viewModel.isRecording || viewModel.isTranscribing || viewModel.refinementService.isProcessing {
@@ -200,21 +203,26 @@ struct TranscriptionView: View {
                         .cornerRadius(DesignSystem.cornerRadiusMedium)
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .adjustForInsetSidebar()
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForInsetSidebar()
         .background(Color.primaryBackground)
-        .sheet(item: Binding<EditingModeWrapper?>(
-            get: { showEditPrompt && editingMode != nil ? EditingModeWrapper(mode: editingMode!) : nil },
-            set: { _ in showEditPrompt = false; editingMode = nil }
-        )) { wrapper in
-            EditPromptSheet(
-                mode: wrapper.mode,
-                viewModel: viewModel
-            )
-            .onAppear {
-                print("DEBUG: EditPromptSheet appeared for mode: \(wrapper.mode)")
+        .sheet(isPresented: $showEditPrompt) {
+            if let mode = editingMode {
+                EditPromptSheet(
+                    mode: mode,
+                    currentPrompt: viewModel.refinementService.prompts[mode]?.userPrompt ?? "",
+                    onSave: { newPrompt in
+                        viewModel.refinementService.updatePrompt(for: mode, prompt: newPrompt)
+                        showEditPrompt = false
+                    },
+                    onCancel: {
+                        showEditPrompt = false
+                    }
+                )
             }
         }
     }
@@ -462,17 +470,17 @@ struct TranscriptionResultCard: View {
 
 struct EditPromptSheet: View {
     let mode: RefinementMode
-    @ObservedObject var viewModel: AppViewModel
-    @Environment(\.dismiss) var dismiss
+    let currentPrompt: String
+    let onSave: (String) -> Void
+    let onCancel: () -> Void
     @State private var prompt: String
     
-    init(mode: RefinementMode, viewModel: AppViewModel) {
+    init(mode: RefinementMode, currentPrompt: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.mode = mode
-        self.viewModel = viewModel
-        let initialPrompt = viewModel.refinementService.prompts[mode]?.userPrompt ?? ""
-        print("DEBUG EditPromptSheet init: mode=\(mode), initialPrompt='\(initialPrompt)'")
-        print("DEBUG EditPromptSheet init: Available prompts keys: \(viewModel.refinementService.prompts.keys)")
-        self._prompt = State(initialValue: initialPrompt)
+        self.currentPrompt = currentPrompt
+        self.onSave = onSave
+        self.onCancel = onCancel
+        self._prompt = State(initialValue: currentPrompt)
     }
     
     var body: some View {
@@ -486,7 +494,7 @@ struct EditPromptSheet: View {
                 Spacer()
                 
                 Button("Cancel") {
-                    dismiss()
+                    onCancel()
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondaryText)
@@ -513,13 +521,6 @@ struct EditPromptSheet: View {
                         .foregroundColor(prompt.count > 2000 ? .errorColor : .tertiaryText)
                     
                     Spacer()
-                    
-                    Button("Reset to Default") {
-                        prompt = viewModel.refinementService.prompts[mode]?.defaultPrompt ?? ""
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
-                    .font(DesignSystem.Typography.bodySmall)
                 }
             }
             .padding(DesignSystem.marginStandard)
@@ -531,13 +532,12 @@ struct EditPromptSheet: View {
                 Spacer()
                 
                 Button("Cancel") {
-                    dismiss()
+                    onCancel()
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 
                 Button("Save") {
-                    viewModel.refinementService.updatePrompt(for: mode, prompt: prompt)
-                    dismiss()
+                    onSave(prompt)
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(prompt.isEmpty || prompt.count > 2000)
@@ -557,6 +557,6 @@ struct EditingModeWrapper: Identifiable {
 }
 
 #Preview {
-    TranscriptionView(viewModel: AppViewModel())
+    TranscriptionView(viewModel: AppViewModel(), onFloat: {})
         .padding()
 }

@@ -9,13 +9,22 @@ import SwiftUI
 
 struct AIProvidersView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Header
+        VStack(spacing: 0) {
+            // Simple header (no controls)
+            HStack {
                 Text("AI Providers")
-                    .font(DesignSystem.Typography.titleLarge)
+                    .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.regularMaterial.opacity(0.3))
+            
+            // Existing content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 
                 // Coming Soon Card
                 VStack(spacing: DesignSystem.spacingLarge) {
@@ -78,10 +87,12 @@ struct AIProvidersView: View {
                 }
                 .padding(DesignSystem.spacingLarge)
                 .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .adjustForInsetSidebar()
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForInsetSidebar()
         .background(Color.primaryBackground)
     }
 }

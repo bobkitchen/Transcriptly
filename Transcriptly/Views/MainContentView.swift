@@ -10,14 +10,15 @@ import SwiftUI
 struct MainContentView: View {
     @Binding var selectedSection: SidebarSection
     @ObservedObject var viewModel: AppViewModel
+    let onFloat: () -> Void  // Add this parameter
     
     var body: some View {
         Group {
             switch selectedSection {
             case .home:
-                HomeView(viewModel: viewModel)
+                HomeView(viewModel: viewModel, onFloat: onFloat)
             case .transcription:
-                TranscriptionView(viewModel: viewModel)
+                TranscriptionView(viewModel: viewModel, onFloat: onFloat)
             case .aiProviders:
                 AIProvidersView()
             case .learning:
@@ -27,5 +28,6 @@ struct MainContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.primaryBackground)
     }
 }

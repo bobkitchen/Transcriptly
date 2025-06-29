@@ -82,7 +82,10 @@ struct TranscriptionCard: View {
             if isHovered {
                 HStack(spacing: 8) {
                     Button("Copy") {
+                        NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(transcription.content, forType: .string)
+                        // Provide haptic feedback
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     
@@ -112,15 +115,9 @@ struct TranscriptionCard: View {
         }
     }
     
-    private func copyToClipboard() {
-        // TODO: Implement clipboard copying
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(transcription.content, forType: .string)
-    }
     
     private func viewTranscription() {
-        // TODO: Implement view transcription action
-        print("View transcription: \(transcription.title)")
+        TranscriptionDetailWindowManager.shared.showDetailWindow(for: transcription)
     }
 }
 
