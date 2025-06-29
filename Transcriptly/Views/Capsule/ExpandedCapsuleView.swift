@@ -50,22 +50,14 @@ struct ExpandedCapsuleView: View {
                         .transition(.opacity.combined(with: .scale))
                 }
                 
-                // App detection info (if available)
+                // App detection info (if available) - show only mode with app icon
                 if let app = viewModel.detectedApp {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 3) {
                         AsyncAppIcon(bundleId: app.bundleIdentifier)
-                            .frame(width: 8, height: 8)
-                        
-                        Text(app.displayName)
-                            .font(.system(size: 6, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        Text("→")
-                            .font(.system(size: 6))
-                            .foregroundColor(.white.opacity(0.5))
+                            .frame(width: 10, height: 10)
                         
                         Text(viewModel.refinementService.currentMode.displayName)
-                            .font(.system(size: 6, weight: .medium))
+                            .font(.system(size: 7, weight: .medium))
                             .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
                     }
                     .lineLimit(1)
@@ -73,7 +65,7 @@ struct ExpandedCapsuleView: View {
                 } else {
                     // Current mode name (fallback)
                     Text(viewModel.refinementService.currentMode.displayName)
-                        .font(.system(size: 8, weight: .medium)) // Smaller font
+                        .font(.system(size: 8, weight: .medium))
                         .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
                         .lineLimit(1)
                         .fixedSize()
