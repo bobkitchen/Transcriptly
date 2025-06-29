@@ -29,20 +29,15 @@ class AppDetectionService: ObservableObject {
     
     func detectActiveApp() -> AppInfo? {
         guard isAutoDetectionEnabled else {
-            print("🔍 App detection disabled")
             return nil
         }
         
         // Get frontmost application
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
-            print("🔍 No frontmost application found")
             return nil
         }
         
-        print("🔍 Frontmost app: \(frontmostApp.localizedName ?? "Unknown") [\(frontmostApp.bundleIdentifier ?? "nil")]")
-        
         guard frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier else {
-            print("🔍 Skipping Transcriptly itself")
             return nil
         }
         
@@ -50,7 +45,6 @@ class AppDetectionService: ObservableObject {
         
         // Skip system apps that we shouldn't detect
         guard !appInfo.isSystemApp || shouldDetectSystemApp(appInfo) else {
-            print("🔍 Skipping system app: \(appInfo.displayName)")
             return nil
         }
         

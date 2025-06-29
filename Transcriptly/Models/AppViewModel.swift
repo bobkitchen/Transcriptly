@@ -158,7 +158,10 @@ final class AppViewModel: ObservableObject {
     }
     
     func startRecording() async -> Bool {
+        print("🎤 startRecording() called")
+        
         guard permissionsService.hasPermission else { 
+            print("❌ No microphone permission")
             await MainActor.run {
                 errorMessage = "Microphone permission required"
             }
@@ -171,9 +174,11 @@ final class AppViewModel: ObservableObject {
             recordingStartTime = Date()
         }
         
+        print("🎤 Starting audio service...")
         let success = await audioService.startRecording()
         
         if !success {
+            print("❌ Audio service failed to start")
             await MainActor.run {
                 currentStatus = .ready
                 errorMessage = "Failed to start recording. Please check your microphone."
@@ -181,17 +186,24 @@ final class AppViewModel: ObservableObject {
             return false
         }
         
+        print("✅ Recording started successfully")
+        
         // Do app detection after recording starts successfully
         Task {
+            print("🔍 Starting app detection...")
             // Add small delay to ensure app focus has switched
             try? await Task.sleep(nanoseconds: 200_000_000) // 200ms delay
             
             let (app, recommendedMode) = await appDetectionService.detectAndRecommendMode()
             
-            print("🔍 App Detection Results:")
-            print("   - Detection Enabled: \(appDetectionService.isAutoDetectionEnabled)")
-            print("   - Detected App: \(app?.displayName ?? "nil") [\(app?.bundleIdentifier ?? "nil")]")
-            print("   - Recommended Mode: \(recommendedMode?.displayName ?? "nil")")
+            // Debug output for app detection issues
+            if let app = app {
+                print("🔍 Detected: \(app.displayName) → \(recommendedMode?.displayName ?? "No mode")")
+            } else if appDetectionService.isAutoDetectionEnabled {
+                print("🔍 No app detected (auto-detection enabled)")
+            } else {
+                print("🔍 App detection is disabled")
+            }
             
             await MainActor.run {
                 // Store detected app
@@ -202,7 +214,6 @@ final class AppViewModel: ObservableObject {
                     autoSelectedMode = mode
                     refinementService.currentMode = mode
                     showModeDetectionIndicator = true
-                    print("   ✅ Applied mode: \(mode.displayName)")
                     
                     // Hide indicator after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -210,7 +221,6 @@ final class AppViewModel: ObservableObject {
                     }
                 } else {
                     autoSelectedMode = nil
-                    print("   ⚠️ No mode recommendation")
                 }
             }
         }

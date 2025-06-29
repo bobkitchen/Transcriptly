@@ -14,8 +14,8 @@ class CapsuleWindowController: NSWindowController {
     
     convenience init(viewModel: AppViewModel) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 150, height: 40),
-            styleMask: [.borderless, .nonactivatingPanel],
+            contentRect: NSRect(x: 0, y: 0, width: Int(CapsuleDesignSystem.minimalSize.width), height: Int(CapsuleDesignSystem.minimalSize.height)),
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
@@ -29,30 +29,55 @@ class CapsuleWindowController: NSWindowController {
         self.init(window: window)
         self.viewModel = viewModel
         
-        let expandedCapsuleView = ExpandedCapsuleView(
+        let capsuleContainerView = CapsuleContainerView(
             viewModel: viewModel,
-            onHover: { _ in },
+            onExpand: {
+                // Expand window size for expanded state
+                self.setWindowSize(expanded: true)
+            },
+            onCollapse: {
+                // Shrink window size for minimal state
+                self.setWindowSize(expanded: false)
+            },
             onClose: {
                 viewModel.capsuleController.exitCapsuleMode()
             }
         )
-        window.contentView = NSHostingView(rootView: expandedCapsuleView)
+        window.contentView = NSHostingView(rootView: capsuleContainerView)
         
         // Position at top center
         positionAtTopCenter()
     }
     
     func updateRecordingState(_ isRecording: Bool) {
-        // Force update the window content
-        if let viewModel = viewModel {
-            let expandedCapsuleView = ExpandedCapsuleView(
-                viewModel: viewModel,
-                onHover: { _ in },
-                onClose: {
-                    viewModel.capsuleController.exitCapsuleMode()
-                }
-            )
-            window?.contentView = NSHostingView(rootView: expandedCapsuleView)
+        // The CapsuleContainerView will handle state updates automatically through @ObservedObject
+        // No need to recreate the content view
+    }
+    
+    private func setWindowSize(expanded: Bool) {
+        guard let window = window else { return }
+        
+        let newSize: NSSize
+        if expanded {
+            newSize = NSSize(width: CapsuleDesignSystem.expandedSize.width, height: CapsuleDesignSystem.expandedSize.height)
+        } else {
+            newSize = NSSize(width: CapsuleDesignSystem.minimalSize.width, height: CapsuleDesignSystem.minimalSize.height)
+        }
+        
+        // Get current frame and calculate new frame
+        let currentFrame = window.frame
+        let newFrame = NSRect(
+            x: currentFrame.midX - newSize.width / 2,  // Keep centered horizontally
+            y: currentFrame.maxY - newSize.height,     // Keep top edge at same position
+            width: newSize.width,
+            height: newSize.height
+        )
+        
+        // Animate the resize
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(newFrame, display: true)
         }
     }
     

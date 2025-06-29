@@ -53,7 +53,6 @@ struct CapsuleContainerView: View {
             // Keep expanded while recording
             if isRecording {
                 if !isExpanded {
-                    print("CapsuleContainer: Expanding for recording")
                     isExpanded = true
                 }
             }
@@ -66,54 +65,28 @@ struct CapsuleContainerView: View {
         // Cancel any pending debounce task
         hoverDebounceTask?.cancel()
         
-        print("CapsuleContainer: Hover state: \(hovering), Recording: \(viewModel.isRecording), Current isHovered: \(isHovered)")
+        isHovered = hovering
         
         if hovering {
-            // Update hover state immediately
-            isHovered = true
-            
             // Expand immediately on hover
             if !isExpanded {
-                print("CapsuleContainer: Expanding on hover")
                 isExpanded = true
             }
         } else {
-            // Debounce hover leave to prevent rapid toggling
-            hoverDebounceTask = Task {
-                try? await Task.sleep(nanoseconds: 200_000_000) // 200ms debounce for stability
-                
-                await MainActor.run {
-                    // Check if we're still not hovered after debounce period
-                    let currentMouseLocation = NSEvent.mouseLocation
-                    let shouldCollapse = !viewModel.isRecording && !isMouseInCapsuleArea(currentMouseLocation)
+            // Only collapse if not recording
+            if !viewModel.isRecording {
+                // Brief debounce to prevent flicker
+                hoverDebounceTask = Task {
+                    try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
                     
-                    if shouldCollapse && isExpanded {
-                        print("CapsuleContainer: Collapsing after confirmed hover leave")
-                        isHovered = false
-                        isExpanded = false
+                    await MainActor.run {
+                        if !isHovered && !viewModel.isRecording {
+                            isExpanded = false
+                        }
                     }
                 }
             }
         }
-    }
-    
-    // Helper to check if mouse is in the capsule area (with buffer)
-    private func isMouseInCapsuleArea(_ mouseLocation: CGPoint) -> Bool {
-        // Get the current window frame and add a buffer area
-        guard let window = NSApp.windows.first(where: { $0.contentView is NSHostingView<CapsuleContainerView> }) else {
-            return false
-        }
-        
-        let windowFrame = window.frame
-        let buffer: CGFloat = 20 // Buffer area around capsule
-        let expandedFrame = CGRect(
-            x: windowFrame.minX - buffer,
-            y: windowFrame.minY - buffer,
-            width: windowFrame.width + (buffer * 2),
-            height: windowFrame.height + (buffer * 2)
-        )
-        
-        return expandedFrame.contains(mouseLocation)
     }
 }
 

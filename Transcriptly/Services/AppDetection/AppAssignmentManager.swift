@@ -35,10 +35,7 @@ class AppAssignmentManager: ObservableObject {
         var assignmentData = assignment
         assignmentData.userId = supabase.currentUser?.id
         
-        print("DEBUG: About to save assignment - User ID: \(assignmentData.userId?.uuidString ?? "nil")")
-        print("DEBUG: Supabase authenticated: \(supabase.isAuthenticated)")
-        
-        // For now, save locally regardless of authentication status
+        // Save locally regardless of authentication status
         // Update local cache
         cachedAssignments[assignment.appBundleId] = assignmentData
         
@@ -52,14 +49,9 @@ class AppAssignmentManager: ObservableObject {
         // Save to UserDefaults for persistence
         saveToUserDefaults()
         
-        print("AppAssignmentManager: Saved assignment for \(assignment.appName) -> \(assignment.assignedMode.displayName)")
-        
         // Also try to save to Supabase if authenticated
         if supabase.isAuthenticated {
             try await supabase.saveAppAssignment(assignmentData)
-            print("DEBUG: Also saved to Supabase")
-        } else {
-            print("DEBUG: Saved locally only - not authenticated with Supabase")
         }
     }
     
@@ -74,8 +66,6 @@ class AppAssignmentManager: ObservableObject {
         
         // Update published array
         userAssignments.removeAll { $0.appBundleId == app.bundleIdentifier }
-        
-        print("AppAssignmentManager: Removed assignment for \(app.displayName)")
     }
     
     func getAssignment(for app: AppInfo) async -> AppAssignment? {
@@ -92,7 +82,6 @@ class AppAssignmentManager: ObservableObject {
             }
             return assignment
         } catch {
-            print("AppAssignmentManager: Failed to get app assignment: \(error)")
             return nil
         }
     }
@@ -102,10 +91,7 @@ class AppAssignmentManager: ObservableObject {
     }
     
     func getAssignedApps(for mode: RefinementMode) -> [AppAssignment] {
-        let filtered = userAssignments.filter { $0.assignedMode == mode }
-        print("DEBUG AppAssignmentManager: getAssignedApps for \(mode.displayName) - Total assignments: \(userAssignments.count), Filtered: \(filtered.count)")
-        print("DEBUG AppAssignmentManager: All assignments: \(userAssignments.map { "\($0.appName) -> \($0.assignedMode.displayName)" })")
-        return filtered
+        return userAssignments.filter { $0.assignedMode == mode }
     }
     
     // MARK: - Bulk Operations
@@ -120,9 +106,7 @@ class AppAssignmentManager: ObservableObject {
         // Then try to load from Supabase if authenticated
         if supabase.isAuthenticated {
             do {
-                print("DEBUG: Loading assignments from Supabase...")
                 let assignments = try await supabase.getAllAppAssignments()
-                print("DEBUG: Received \(assignments.count) assignments from Supabase")
                 userAssignments = assignments
                 
                 // Update cache
@@ -132,20 +116,8 @@ class AppAssignmentManager: ObservableObject {
                 
                 // Save to UserDefaults as backup
                 saveToUserDefaults()
-                
-                print("AppAssignmentManager: Loaded \(assignments.count) assignments from Supabase")
-                for assignment in assignments {
-                    print("  - \(assignment.appName) -> \(assignment.assignedMode.displayName)")
-                }
             } catch {
-                print("AppAssignmentManager: Failed to load from Supabase: \(error)")
-                print("AppAssignmentManager: Using local assignments instead")
-            }
-        } else {
-            print("AppAssignmentManager: Not authenticated, using local assignments only")
-            print("AppAssignmentManager: Loaded \(userAssignments.count) assignments from UserDefaults")
-            for assignment in userAssignments {
-                print("  - \(assignment.appName) -> \(assignment.assignedMode.displayName)")
+                // Silently use local assignments if Supabase fails
             }
         }
     }
@@ -157,8 +129,6 @@ class AppAssignmentManager: ObservableObject {
         try await supabase.clearAllAppAssignments()
         userAssignments.removeAll()
         cachedAssignments.removeAll()
-        
-        print("AppAssignmentManager: Reset all assignments")
     }
     
     // MARK: - Statistics
@@ -181,15 +151,13 @@ class AppAssignmentManager: ObservableObject {
         do {
             let data = try JSONEncoder().encode(userAssignments)
             UserDefaults.standard.set(data, forKey: "AppAssignments")
-            print("DEBUG: Saved \(userAssignments.count) assignments to UserDefaults")
         } catch {
-            print("DEBUG: Failed to save assignments to UserDefaults: \(error)")
+            print("Failed to save assignments to UserDefaults: \(error)")
         }
     }
     
     private func loadFromUserDefaults() {
         guard let data = UserDefaults.standard.data(forKey: "AppAssignments") else {
-            print("DEBUG: No saved assignments in UserDefaults")
             return
         }
         
@@ -201,10 +169,8 @@ class AppAssignmentManager: ObservableObject {
             cachedAssignments = Dictionary(uniqueKeysWithValues: 
                 assignments.map { ($0.appBundleId, $0) }
             )
-            
-            print("DEBUG: Loaded \(assignments.count) assignments from UserDefaults")
         } catch {
-            print("DEBUG: Failed to load assignments from UserDefaults: \(error)")
+            print("Failed to load assignments from UserDefaults: \(error)")
         }
     }
     

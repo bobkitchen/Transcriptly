@@ -30,6 +30,7 @@ struct DefaultAppMappings {
         "com.skype.skype": .messaging,
         "us.zoom.xos": .messaging,
         "com.apple.FaceTime": .messaging,
+        "net.whatsapp.WhatsApp": .messaging,
         
         // Text editors and writing apps
         "com.apple.TextEdit": .cleanup,

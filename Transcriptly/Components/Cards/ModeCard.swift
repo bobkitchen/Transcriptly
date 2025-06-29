@@ -9,6 +9,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import Combine
 
 /// Unified mode card that combines mode selection and prompt editing
 struct ModeCard: View {
@@ -28,7 +29,6 @@ struct ModeCard: View {
     
     private var assignedAppNames: String {
         let names = assignedApps.map { $0.appName }
-        print("DEBUG: Mode \(mode.displayName) has \(assignedApps.count) assigned apps: \(names)")
         if names.count <= 3 {
             return names.joined(separator: ", ")
         } else {
@@ -43,7 +43,6 @@ struct ModeCard: View {
             HStack(spacing: DesignSystem.spacingMedium) {
                 // Radio button
                 Button(action: {
-                    print("DEBUG ModeCard: Radio button clicked for \(mode)")
                     withAnimation(DesignSystem.springAnimation) {
                         selectedMode = mode
                     }
@@ -65,7 +64,6 @@ struct ModeCard: View {
                             .fontWeight(.medium)
                             .foregroundColor(.primaryText)
                             .onTapGesture {
-                                print("DEBUG ModeCard: Title tapped for \(mode)")
                                 withAnimation(DesignSystem.springAnimation) {
                                     selectedMode = mode
                                 }
@@ -183,12 +181,14 @@ struct ModeCard: View {
         .cornerRadius(8)
         .border(isSelected ? Color.blue : Color.clear, width: 2)
         .onHover { hovering in
-            print("DEBUG ModeCard: Hover state changed for \(mode): \(hovering)")
             withAnimation(DesignSystem.fadeAnimation) {
                 isHovered = hovering
             }
         }
         .onAppear {
+            loadAssignedApps()
+        }
+        .onReceive(assignmentManager.objectWillChange) { _ in
             loadAssignedApps()
         }
     }
@@ -251,20 +251,20 @@ struct ModeCard: View {
         
         do {
             try await assignmentManager.saveAssignment(assignment)
-            print("DEBUG: Successfully saved assignment: \(app.displayName) -> \(mode.displayName)")
             
-            // Immediate UI update without async/await complications
-            print("DEBUG: About to reload assigned apps for \(mode.displayName)")
-            loadAssignedApps()
-            print("DEBUG: Finished reloading assigned apps for \(mode.displayName)")
+            // Immediate UI update on main thread
+            await MainActor.run {
+                loadAssignedApps()
+                // Force SwiftUI view update
+                assignmentManager.objectWillChange.send()
+            }
         } catch {
-            print("DEBUG: Failed to assign app: \(error)")
+            print("Failed to assign app: \(error)")
         }
     }
     
     private func loadAssignedApps() {
         assignedApps = assignmentManager.getAssignedApps(for: mode)
-        print("DEBUG: Loaded \(assignedApps.count) apps for \(mode.displayName): \(assignedApps.map { $0.appName })")
     }
 }
 

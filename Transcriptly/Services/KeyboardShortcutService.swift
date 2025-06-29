@@ -286,7 +286,9 @@ final class KeyboardShortcutService: ObservableObject {
     }
     
     private func registerHotkey(_ shortcutString: String, id: HotKeyID) {
+        print("🔑 Attempting to register: \(shortcutString) for \(id)")
         let parsed = parseShortcutString(shortcutString)
+        print("🔑 Parsed: keyCode=\(parsed.keyCode), modifiers=\(parsed.modifiers)")
         let carbonModifiers = nsFlagsToCarbonModifiers(parsed.modifiers)
         let carbonKeyCode = UInt32(parsed.keyCode)
         

@@ -144,7 +144,6 @@ struct ExpandedCapsuleView: View {
             let recordingURL = await viewModel.stopRecording()
             if recordingURL != nil {
                 // Recording completed successfully
-                print("CapsuleView: Recording completed")
             }
             return
         }
@@ -153,7 +152,6 @@ struct ExpandedCapsuleView: View {
         let hasPermission = await viewModel.checkPermissions()
         if !hasPermission {
             // Permission denied - status will be updated automatically
-            print("CapsuleView: Recording permission denied")
             return
         }
         
@@ -161,9 +159,6 @@ struct ExpandedCapsuleView: View {
         let success = await viewModel.startRecording()
         if !success {
             // Recording failed - error will be shown in status
-            print("CapsuleView: Recording failed to start")
-        } else {
-            print("CapsuleView: Recording started successfully")
         }
     }
 }
