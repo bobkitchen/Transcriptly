@@ -21,26 +21,29 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, DesignSystem.spacingLarge)
             .padding(.vertical, DesignSystem.spacingMedium)
             .frame(minHeight: DesignSystem.Layout.buttonMinHeight)
-            .liquidGlassBackground(
-                material: .ultraThinMaterial,
-                cornerRadius: DesignSystem.cornerRadiusSmall,
-                strokeOpacity: isHovered ? 0.2 : 0.1
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusSmall)
+                    .fill(isHovered ? UIPolishDesignSystem.cardContrastMaterial : .ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusSmall)
+                            .strokeBorder(Color.white.opacity(isHovered ? UIPolishDesignSystem.borderOpacity : 0.1), lineWidth: 0.5)
+                    )
             )
-            .hoverOverlay(isHovered: isHovered, cornerRadius: DesignSystem.cornerRadiusSmall)
-            .scaleEffect(isPressed ? 0.98 : (isHovered ? 1.01 : 1.0))
-            .standardShadow(isHovered: isHovered)
-            .animation(DesignSystem.fastSpringAnimation, value: isHovered)
-            .animation(DesignSystem.quickFadeAnimation, value: isPressed)
+            .scaleEffect(isPressed ? UIPolishDesignSystem.Hover.pressScale : (isHovered ? UIPolishDesignSystem.Hover.buttonScale : 1.0))
+            .shadow(
+                color: .black.opacity(0.1),
+                radius: isHovered ? UIPolishDesignSystem.shadowRadius : 4,
+                y: isHovered ? UIPolishDesignSystem.shadowOffset.height : 2
+            )
+            .animation(UIPolishDesignSystem.Animation.standard, value: isHovered)
+            .animation(UIPolishDesignSystem.Animation.quick, value: isPressed)
             .onHover { hovering in
                 isHovered = hovering
             }
             .onChange(of: configuration.isPressed) { _, pressed in
                 isPressed = pressed
                 if pressed {
-                    NSHapticFeedbackManager.defaultPerformer.perform(
-                        .levelChange,
-                        performanceTime: .now
-                    )
+                    HapticFeedback.selection()
                 }
             }
     }
@@ -72,24 +75,21 @@ struct PrimaryButtonStyle: ButtonStyle {
                 )
             )
             .cornerRadius(DesignSystem.cornerRadiusSmall)
-            .scaleEffect(isPressed ? 0.96 : (isHovered ? 1.02 : 1.0))
+            .scaleEffect(isPressed ? UIPolishDesignSystem.Hover.pressScale : (isHovered ? UIPolishDesignSystem.Hover.buttonScale : 1.0))
             .shadow(
                 color: accentColor.opacity(isHovered ? 0.4 : 0.3),
-                radius: isHovered ? 12 : 8,
-                y: isHovered ? 6 : 4
+                radius: isHovered ? UIPolishDesignSystem.shadowRadius + 4 : UIPolishDesignSystem.shadowRadius,
+                y: isHovered ? UIPolishDesignSystem.shadowOffset.height + 2 : UIPolishDesignSystem.shadowOffset.height
             )
-            .animation(DesignSystem.fastSpringAnimation, value: isHovered)
-            .animation(DesignSystem.quickFadeAnimation, value: isPressed)
+            .animation(UIPolishDesignSystem.Animation.standard, value: isHovered)
+            .animation(UIPolishDesignSystem.Animation.quick, value: isPressed)
             .onHover { hovering in
                 isHovered = hovering
             }
             .onChange(of: configuration.isPressed) { _, pressed in
                 isPressed = pressed
                 if pressed {
-                    NSHapticFeedbackManager.defaultPerformer.perform(
-                        .levelChange,
-                        performanceTime: .now
-                    )
+                    HapticFeedback.selection()
                 }
             }
     }
@@ -141,21 +141,24 @@ struct RecordButtonStyle: ButtonStyle {
             y: 2
         )
         .scaleEffect(
-            isPressed ? 0.95 : 
+            isPressed ? UIPolishDesignSystem.Hover.pressScale : 
             (pulseAnimation && isRecording ? 1.05 : 
-             (isHovered ? 1.02 : 1.0))
+             (isHovered ? UIPolishDesignSystem.Hover.buttonScale : 1.0))
         )
         .animation(
-            isRecording ? Animation.easeInOut(duration: 1).repeatForever(autoreverses: true) : DesignSystem.fastSpringAnimation,
+            isRecording ? Animation.easeInOut(duration: 1).repeatForever(autoreverses: true) : UIPolishDesignSystem.Animation.standard,
             value: pulseAnimation
         )
-        .animation(DesignSystem.fastSpringAnimation, value: isHovered)
-        .animation(DesignSystem.quickFadeAnimation, value: isPressed)
+        .animation(UIPolishDesignSystem.Animation.standard, value: isHovered)
+        .animation(UIPolishDesignSystem.Animation.quick, value: isPressed)
         .onHover { hovering in
             isHovered = hovering
         }
         .onChange(of: configuration.isPressed) { _, pressed in
             isPressed = pressed
+            if pressed {
+                HapticFeedback.selection()
+            }
         }
         .onAppear {
             pulseAnimation = true

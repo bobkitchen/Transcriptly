@@ -176,12 +176,11 @@ struct ModeCard: View {
         }
         .padding(DesignSystem.spacingLarge)
         .frame(minHeight: DesignSystem.Layout.cardHeight)
-        .padding(8)
-        .background(isSelected ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-        .cornerRadius(8)
-        .border(isSelected ? Color.blue : Color.clear, width: 2)
+        .enhancedCard()
+        .nativeSelection(isSelected: isSelected)
+        .hoverScale(isHovered: isHovered)
         .onHover { hovering in
-            withAnimation(DesignSystem.fadeAnimation) {
+            withAnimation(UIPolishDesignSystem.Animation.standard) {
                 isHovered = hovering
             }
         }
@@ -288,15 +287,12 @@ struct CompactButtonStyle: ButtonStyle {
                             .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
                     )
             )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
-            .animation(DesignSystem.quickFadeAnimation, value: isPressed)
+            .scaleEffect(isPressed ? UIPolishDesignSystem.Hover.pressScale : 1.0)
+            .animation(UIPolishDesignSystem.Animation.quick, value: isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
                 isPressed = pressed
                 if pressed {
-                    NSHapticFeedbackManager.defaultPerformer.perform(
-                        .levelChange,
-                        performanceTime: .now
-                    )
+                    HapticFeedback.selection()
                 }
             }
     }

@@ -27,10 +27,11 @@ struct TranscriptionCard: View {
                     
                     Spacer()
                     
-                    // Mode badge
+                    // Mode badge with enhanced color
                     HStack(spacing: DesignSystem.spacingTiny) {
                         Image(systemName: transcription.mode.icon)
                             .font(.system(size: 12))
+                            .foregroundColor(transcription.mode.accentColor)
                         Text(transcription.mode.displayName)
                             .font(.system(size: 11, weight: .medium))
                     }
@@ -106,36 +107,17 @@ struct TranscriptionCard: View {
             }
         }
         .padding(DesignSystem.spacingMedium)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
-                .fill(backgroundMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
-                        .strokeBorder(strokeColor, lineWidth: 0.5)
-                )
-        )
-        .scaleEffect(isHovered ? 1.01 : 1.0)
-        .shadow(
-            color: .black.opacity(isHovered ? 0.12 : 0.08),
-            radius: isHovered ? 10 : 6,
-            y: isHovered ? 4 : 2
-        )
-        .animation(DesignSystem.springAnimation, value: isHovered)
+        .enhancedCard()
+        .hoverScale(isHovered: isHovered)
         .onHover { hovering in
-            isHovered = hovering
+            withAnimation(UIPolishDesignSystem.Animation.standard) {
+                isHovered = hovering
+            }
         }
         .contentShape(Rectangle())
         .onTapGesture {
             viewTranscription()
         }
-    }
-    
-    private var backgroundMaterial: Material {
-        isHovered ? .regularMaterial : .ultraThinMaterial
-    }
-    
-    private var strokeColor: Color {
-        isHovered ? Color.white.opacity(0.15) : Color.white.opacity(0.08)
     }
     
     private func copyToClipboard() {
