@@ -225,18 +225,31 @@ struct QuickActionButton: View {
     }
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
+        if isProminent {
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .buttonStyle(PrimaryButtonStyle())
+        } else {
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(SecondaryButtonStyle())
         }
-        .buttonStyle(isProminent ? .borderedProminent : .bordered)
-        .controlSize(.regular)
     }
 }
 

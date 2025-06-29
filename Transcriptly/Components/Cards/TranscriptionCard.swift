@@ -84,14 +84,12 @@ struct TranscriptionCard: View {
                     Button("Copy") {
                         NSPasteboard.general.setString(transcription.content, forType: .string)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(SecondaryButtonStyle())
                     
                     Button("View") {
                         viewTranscription()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .buttonStyle(PrimaryButtonStyle())
                 }
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
