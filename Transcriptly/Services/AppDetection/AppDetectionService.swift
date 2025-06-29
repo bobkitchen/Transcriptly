@@ -28,27 +28,37 @@ class AppDetectionService: ObservableObject {
     // MARK: - App Detection
     
     func detectActiveApp() -> AppInfo? {
+        print("🔍 AppDetectionService.detectActiveApp() called")
+        
         guard isAutoDetectionEnabled else {
+            print("   ❌ Auto-detection is disabled")
             return nil
         }
         
         // Get frontmost application
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
+            print("   ❌ No frontmost application found")
             return nil
         }
         
+        print("   📱 Frontmost app: \(frontmostApp.localizedName ?? "Unknown") (\(frontmostApp.bundleIdentifier ?? "none"))")
+        
         guard frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier else {
+            print("   ❌ Frontmost app is Transcriptly itself, skipping")
             return nil
         }
         
         let appInfo = AppInfo(from: frontmostApp)
+        print("   📋 AppInfo created: \(appInfo.displayName) (\(appInfo.bundleIdentifier))")
         
         // Skip system apps that we shouldn't detect
         guard !appInfo.isSystemApp || shouldDetectSystemApp(appInfo) else {
+            print("   ❌ System app that should not be detected")
             return nil
         }
         
         currentApp = appInfo
+        print("   ✅ Successfully detected app: \(appInfo.displayName)")
         return appInfo
     }
     
