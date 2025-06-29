@@ -14,7 +14,7 @@ struct ProviderPreferences: Codable {
     var useFallbackHierarchy: Bool = true
     
     // Model selections per provider
-    var openaiTranscriptionModel: String = "whisper-1"
+    var openaiTranscriptionModel: String = "gpt-4o-mini-transcribe"
     var openaiRefinementModel: String = "gpt-4o-mini"
     var openrouterRefinementModel: String = "mistralai/mistral-7b-instruct:free"
     
@@ -24,7 +24,8 @@ struct ProviderPreferences: Codable {
 // Available models for each provider
 struct OpenAIModels {
     static let transcriptionModels = [
-        "whisper-1": "Whisper V1"
+        "gpt-4o-mini-transcribe": "GPT-4o Mini Transcribe",
+        "gpt-4o-transcribe": "GPT-4o Transcribe"
     ]
     
     static let refinementModels = [

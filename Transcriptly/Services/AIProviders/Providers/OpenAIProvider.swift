@@ -108,43 +108,49 @@ extension OpenAIProvider: TranscriptionProvider {
             return .failure(ProviderError.apiKeyMissing)
         }
         
-        // Create multipart form data for Whisper API
-        let boundary = UUID().uuidString
-        var body = Data()
-        
-        // Add model parameter
         let selectedModel = AIProviderManager.shared.preferences.openaiTranscriptionModel
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(selectedModel)\r\n".data(using: .utf8)!)
         
-        // Add language parameter (English)
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-        body.append("en\r\n".data(using: .utf8)!)
+        // GPT-4o transcription uses the chat completions endpoint with audio input
+        // This is a newer approach than Whisper's dedicated audio endpoint
         
-        // Add response format
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
-        body.append("text\r\n".data(using: .utf8)!)
+        // For GPT-4o models, we need to convert audio to base64 and send via chat completions
+        let base64Audio = audio.base64EncodedString()
         
-        // Add audio file
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/m4a\r\n\r\n".data(using: .utf8)!)
-        body.append(audio)
-        body.append("\r\n".data(using: .utf8)!)
+        let requestBody: [String: Any] = [
+            "model": selectedModel,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": [
+                        [
+                            "type": "text",
+                            "text": "Please transcribe this audio file accurately. Return only the transcribed text without any additional commentary."
+                        ],
+                        [
+                            "type": "input_audio",
+                            "input_audio": [
+                                "data": base64Audio,
+                                "format": "m4a"
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "temperature": 0.0,
+            "max_tokens": 1000
+        ]
         
-        // Close boundary
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody) else {
+            return .failure(ProviderError.invalidResponse)
+        }
         
-        // Create request
-        var request = URLRequest(url: URL(string: "\(baseURL)/audio/transcriptions")!)
+        // Create request to chat completions endpoint
+        var request = URLRequest(url: URL(string: "\(baseURL)/chat/completions")!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Transcriptly-macOS/1.0", forHTTPHeaderField: "User-Agent")
-        request.httpBody = body
+        request.httpBody = bodyData
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -160,12 +166,17 @@ extension OpenAIProvider: TranscriptionProvider {
                 }
             }
             
-            // Parse response - Whisper returns plain text for response_format=text
-            if let transcription = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                return .success(transcription)
-            } else {
+            // Parse JSON response
+            guard let jsonResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let choices = jsonResponse["choices"] as? [[String: Any]],
+                  let firstChoice = choices.first,
+                  let message = firstChoice["message"] as? [String: Any],
+                  let content = message["content"] as? String else {
                 return .failure(ProviderError.invalidResponse)
             }
+            
+            let transcription = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return .success(transcription)
             
         } catch {
             return .failure(ProviderError.networkError(error))
