@@ -9,6 +9,7 @@
 import Foundation
 import Speech
 import SwiftUI
+import Combine
 
 @MainActor
 class AppleProvider: ObservableObject {
@@ -52,9 +53,36 @@ extension AppleProvider: AIProvider {
 
 extension AppleProvider: TranscriptionProvider {
     func transcribe(audio: Data) async -> Result<String, Error> {
-        // For now, return a placeholder
-        // TODO: Integrate with existing TranscriptionService
-        return .success("Apple transcription placeholder")
+        // Save audio data to temporary file for Speech Recognition API
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
+        
+        do {
+            try audio.write(to: tempURL)
+            
+            // Use the transcription service for actual transcription
+            let transcriptionService = TranscriptionService()
+            
+            // Check permissions
+            guard transcriptionService.hasSpeechPermission else {
+                return .failure(ProviderError.serviceUnavailable)
+            }
+            
+            // Perform transcription
+            if let text = await transcriptionService.transcribeAudioFile(at: tempURL) {
+                // Clean up temporary file
+                try? FileManager.default.removeItem(at: tempURL)
+                return .success(text)
+            } else {
+                // Clean up temporary file
+                try? FileManager.default.removeItem(at: tempURL)
+                return .failure(ProviderError.serviceUnavailable)
+            }
+            
+        } catch {
+            // Clean up temporary file if it exists
+            try? FileManager.default.removeItem(at: tempURL)
+            return .failure(ProviderError.networkError(error))
+        }
     }
 }
 
@@ -62,8 +90,18 @@ extension AppleProvider: TranscriptionProvider {
 
 extension AppleProvider: RefinementProvider {
     func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
-        // For now, return a placeholder
-        // TODO: Integrate with existing RefinementService
-        return .success("Apple refinement: \(text)")
+        do {
+            // Use the existing refinement service for actual processing
+            let refinementService = RefinementService()
+            await MainActor.run {
+                refinementService.currentMode = mode
+            }
+            
+            let refinedText = try await refinementService.refine(text)
+            return .success(refinedText)
+            
+        } catch {
+            return .failure(ProviderError.custom("Refinement failed: \(error.localizedDescription)"))
+        }
     }
 }

@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 @MainActor
 class OpenRouterProvider: ObservableObject {
@@ -91,7 +92,7 @@ extension OpenRouterProvider: AIProvider {
 
 extension OpenRouterProvider: RefinementProvider {
     func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
-        guard let apiKey = apiKey else {
+        guard apiKey != nil else {
             return .failure(ProviderError.apiKeyMissing)
         }
         

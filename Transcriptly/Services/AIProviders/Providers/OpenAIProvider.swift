@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 @MainActor
 class OpenAIProvider: ObservableObject {
@@ -90,7 +91,7 @@ extension OpenAIProvider: AIProvider {
 
 extension OpenAIProvider: TranscriptionProvider {
     func transcribe(audio: Data) async -> Result<String, Error> {
-        guard let apiKey = apiKey else {
+        guard apiKey != nil else {
             return .failure(ProviderError.apiKeyMissing)
         }
         
@@ -104,7 +105,7 @@ extension OpenAIProvider: TranscriptionProvider {
 
 extension OpenAIProvider: RefinementProvider {
     func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
-        guard let apiKey = apiKey else {
+        guard apiKey != nil else {
             return .failure(ProviderError.apiKeyMissing)
         }
         

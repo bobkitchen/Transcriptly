@@ -42,6 +42,7 @@ final class AppViewModel: ObservableObject {
     private let learningService = LearningService.shared
     private let historyService = TranscriptionHistoryService.shared
     private let appDetectionService = AppDetectionService.shared
+    private let aiProviderManager = AIProviderManager.shared
     
     // App detection state
     @Published var detectedApp: AppInfo?
@@ -242,7 +243,7 @@ final class AppViewModel: ObservableObject {
     }
     
     private func transcribeRecording(url: URL) async {
-        // Check if speech recognition permission is needed
+        // Check if speech recognition permission is needed for Apple provider fallback
         let hasSpeechPermission = transcriptionService.hasSpeechPermission
         if !hasSpeechPermission {
             let granted = await transcriptionService.requestSpeechRecognitionPermission()
@@ -259,70 +260,75 @@ final class AppViewModel: ObservableObject {
             errorMessage = nil
         }
         
-        // Transcribe the audio file
-        let transcribedText = await transcriptionService.transcribeAudioFile(at: url)
+        // Load audio data for AI providers
+        guard let audioData = try? Data(contentsOf: url) else {
+            await MainActor.run {
+                self.errorMessage = "Failed to load audio file"
+            }
+            return
+        }
+        
+        // Use AI Provider Manager for transcription
+        let result = await aiProviderManager.transcribe(audio: audioData)
         
         await MainActor.run {
-            if let text = transcribedText, !text.isEmpty {
-                // Process transcription with refinement
-                Task {
-                    await processTranscription(text)
+            switch result {
+            case .success(let text):
+                if !text.isEmpty {
+                    // Process transcription with refinement
+                    Task {
+                        await processTranscription(text)
+                    }
+                } else {
+                    self.transcribedText = ""
+                    self.errorMessage = "Transcription returned empty text"
                 }
-            } else {
+            case .failure(let error):
                 self.transcribedText = ""
-                self.errorMessage = "Transcription failed. Please try recording again."
+                self.errorMessage = "Transcription failed: \(error.localizedDescription)"
             }
         }
     }
     
     private func processTranscription(_ text: String) async {
-        do {
-            let refinedText = try await refinementService.refine(text)
-            await MainActor.run {
+        // Use AI Provider Manager for refinement
+        let result = await aiProviderManager.refine(text: text, mode: refinementService.currentMode)
+        
+        await MainActor.run {
+            switch result {
+            case .success(let refinedText):
                 self.transcribedText = refinedText
+            case .failure(let error):
+                // Fall back to original text if refinement fails
+                self.transcribedText = text
+                print("Refinement failed, using original text: \(error.localizedDescription)")
             }
-            
-            // Create learning session and check if learning windows should appear
-            await createLearningSession(
-                originalTranscription: text,
-                aiRefinement: refinedText,
-                userFinalVersion: refinedText, // For now, same as AI refinement
-                wasSkipped: false
-            )
-            
-            // Learning windows are now handled directly in createLearningSession
-            // Wait a moment to allow the UI to update, then check if we need to auto-complete
-            try? await Task.sleep(for: .milliseconds(200))
-            
-            await MainActor.run {
-                let hasEditWindow = editReviewWindow != nil
-                let hasABWindow = abTestingWindow != nil
-                print("Post-learning check: editReviewWindow = \(hasEditWindow), abTestingWindow = \(hasABWindow)")
-                if !hasEditWindow && !hasABWindow {
-                    // No learning windows - proceed with normal flow
-                    print("No learning windows shown, proceeding with auto-completion")
-                    completeTranscriptionWithText(refinedText)
-                } else {
-                    print("Learning window shown, waiting for user interaction")
-                }
-            }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = "Refinement failed: \(error.localizedDescription)"
-                self.transcribedText = text // Fall back to original text
-            }
-            
-            // Create learning session for failed refinement
-            await createLearningSession(
-                originalTranscription: text,
-                aiRefinement: "", // Failed to refine
-                userFinalVersion: text, // Fallback to original
-                wasSkipped: true
-            )
-            
-            // For failed refinement, proceed with fallback text immediately
-            await MainActor.run {
-                completeTranscriptionWithText(text)
+        }
+        
+        let finalText = await MainActor.run { self.transcribedText }
+        
+        // Create learning session and check if learning windows should appear
+        await createLearningSession(
+            originalTranscription: text,
+            aiRefinement: finalText,
+            userFinalVersion: finalText, // For now, same as AI refinement
+            wasSkipped: false
+        )
+        
+        // Learning windows are now handled directly in createLearningSession
+        // Wait a moment to allow the UI to update, then check if we need to auto-complete
+        try? await Task.sleep(for: .milliseconds(200))
+        
+        await MainActor.run {
+            let hasEditWindow = editReviewWindow != nil
+            let hasABWindow = abTestingWindow != nil
+            print("Post-learning check: editReviewWindow = \(hasEditWindow), abTestingWindow = \(hasABWindow)")
+            if !hasEditWindow && !hasABWindow {
+                // No learning windows - proceed with normal flow
+                print("No learning windows shown, proceeding with auto-completion")
+                completeTranscriptionWithText(finalText)
+            } else {
+                print("Learning window shown, waiting for user interaction")
             }
         }
     }
