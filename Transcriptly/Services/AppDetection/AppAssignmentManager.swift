@@ -29,6 +29,7 @@ class AppAssignmentManager: ObservableObject {
     // MARK: - Assignment Management
     
     func saveAssignment(_ assignment: AppAssignment) async throws {
+        print("💾 AppAssignmentManager: Saving assignment for '\(assignment.appName)' -> '\(assignment.assignedMode.displayName)'")
         isLoading = true
         defer { isLoading = false }
         
@@ -38,20 +39,25 @@ class AppAssignmentManager: ObservableObject {
         // Save locally regardless of authentication status
         // Update local cache
         cachedAssignments[assignment.appBundleId] = assignmentData
+        print("   ✅ Updated cache")
         
         // Update published array
         if let index = userAssignments.firstIndex(where: { $0.appBundleId == assignment.appBundleId }) {
             userAssignments[index] = assignmentData
+            print("   ✅ Updated existing assignment at index \(index)")
         } else {
             userAssignments.append(assignmentData)
+            print("   ✅ Added new assignment (total: \(userAssignments.count))")
         }
         
         // Save to UserDefaults for persistence
         saveToUserDefaults()
+        print("   ✅ Saved to UserDefaults")
         
         // Also try to save to Supabase if authenticated
         if supabase.isAuthenticated {
             try await supabase.saveAppAssignment(assignmentData)
+            print("   ✅ Saved to Supabase")
         }
     }
     
@@ -91,7 +97,9 @@ class AppAssignmentManager: ObservableObject {
     }
     
     func getAssignedApps(for mode: RefinementMode) -> [AppAssignment] {
-        return userAssignments.filter { $0.assignedMode == mode }
+        let filtered = userAssignments.filter { $0.assignedMode == mode }
+        print("🔎 AppAssignmentManager: Getting apps for '\(mode.displayName)' - Found \(filtered.count) from \(userAssignments.count) total")
+        return filtered
     }
     
     // MARK: - Bulk Operations
@@ -162,6 +170,7 @@ class AppAssignmentManager: ObservableObject {
         }
         
         do {
+            // First try to decode with new format
             let assignments = try JSONDecoder().decode([AppAssignment].self, from: data)
             userAssignments = assignments
             
@@ -169,8 +178,59 @@ class AppAssignmentManager: ObservableObject {
             cachedAssignments = Dictionary(uniqueKeysWithValues: 
                 assignments.map { ($0.appBundleId, $0) }
             )
+            print("✅ Loaded \(assignments.count) assignments from UserDefaults")
         } catch {
-            print("Failed to load assignments from UserDefaults: \(error)")
+            print("Failed to decode with new format, trying migration: \(error)")
+            
+            // Try to load as raw JSON and migrate
+            if let jsonArray = try? JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                var migratedAssignments: [AppAssignment] = []
+                
+                for dict in jsonArray {
+                    if let appBundleId = dict["appBundleId"] as? String,
+                       let appName = dict["appName"] as? String,
+                       let modeString = dict["assignedMode"] as? String {
+                        
+                        // Map old format to new format
+                        let mode: RefinementMode
+                        switch modeString {
+                        case "Raw Transcription", "raw":
+                            mode = .raw
+                        case "Clean-up Mode", "cleanup":
+                            mode = .cleanup
+                        case "Email Mode", "email":
+                            mode = .email
+                        case "Messaging Mode", "messaging":
+                            mode = .messaging
+                        default:
+                            continue // Skip unknown modes
+                        }
+                        
+                        let assignment = AppAssignment(
+                            appInfo: AppInfo(
+                                bundleIdentifier: appBundleId,
+                                localizedName: appName,
+                                executablePath: ""
+                            ),
+                            mode: mode,
+                            isUserOverride: true
+                        )
+                        
+                        migratedAssignments.append(assignment)
+                    }
+                }
+                
+                if !migratedAssignments.isEmpty {
+                    userAssignments = migratedAssignments
+                    cachedAssignments = Dictionary(uniqueKeysWithValues: 
+                        migratedAssignments.map { ($0.appBundleId, $0) }
+                    )
+                    
+                    // Save migrated data in new format
+                    saveToUserDefaults()
+                    print("✅ Migrated \(migratedAssignments.count) assignments to new format")
+                }
+            }
         }
     }
     

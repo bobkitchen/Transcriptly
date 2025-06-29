@@ -243,6 +243,7 @@ struct ModeCard: View {
     }
     
     private func assignApp(_ app: AppInfo) async {
+        print("📱 ModeCard: Assigning app '\(app.displayName)' to mode '\(mode.displayName)'")
         let assignment = AppAssignment(
             appInfo: app,
             mode: mode,
@@ -251,20 +252,28 @@ struct ModeCard: View {
         
         do {
             try await assignmentManager.saveAssignment(assignment)
+            print("✅ ModeCard: Assignment saved successfully")
             
             // Immediate UI update on main thread
             await MainActor.run {
+                print("🔄 ModeCard: Reloading assigned apps for mode '\(mode.displayName)'")
                 loadAssignedApps()
+                print("📊 ModeCard: Assigned apps count after reload: \(assignedApps.count)")
                 // Force SwiftUI view update
                 assignmentManager.objectWillChange.send()
             }
         } catch {
-            print("Failed to assign app: \(error)")
+            print("❌ ModeCard: Failed to assign app: \(error)")
         }
     }
     
     private func loadAssignedApps() {
+        let previousCount = assignedApps.count
         assignedApps = assignmentManager.getAssignedApps(for: mode)
+        print("🔍 ModeCard: Loading apps for '\(mode.displayName)' - Previous: \(previousCount), Current: \(assignedApps.count)")
+        if !assignedApps.isEmpty {
+            print("   Apps: \(assignedApps.map { $0.appName }.joined(separator: ", "))")
+        }
     }
 }
 

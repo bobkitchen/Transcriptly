@@ -8,10 +8,10 @@
 import Foundation
 
 enum RefinementMode: String, CaseIterable, Codable {
-    case raw = "Raw Transcription"
-    case cleanup = "Clean-up Mode"
-    case email = "Email Mode"
-    case messaging = "Messaging Mode"
+    case raw = "raw"
+    case cleanup = "cleanup"
+    case email = "email"
+    case messaging = "messaging"
     
     var icon: String {
         switch self {
