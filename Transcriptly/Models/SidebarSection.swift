@@ -35,10 +35,8 @@ enum SidebarSection: String, CaseIterable, Codable {
     
     var isEnabled: Bool {
         switch self {
-        case .home, .transcription, .settings, .learning:
+        case .home, .transcription, .settings, .learning, .aiProviders:
             return true
-        case .aiProviders:
-            return false
         }
     }
 }
