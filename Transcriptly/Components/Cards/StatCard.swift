@@ -55,7 +55,11 @@ struct StatCard: View {
         }
         .padding(DesignSystem.spacingLarge)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .elevatedCard(enableHover: true)
+        .enhancedCard()
+        .hoverScale(isHovered: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 

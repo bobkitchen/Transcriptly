@@ -3,6 +3,7 @@
 //  Transcriptly
 //
 //  Created by Claude Code on 6/25/25.
+//  Updated by Claude Code on 6/29/25 for Phase 6 UI Polish - Inset Sidebar
 //
 
 import SwiftUI
@@ -13,7 +14,7 @@ struct MainWindowView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Subtle Top Bar
+            // Enhanced Top Bar
             TopBar(
                 viewModel: viewModel,
                 showCapsuleMode: {
@@ -22,20 +23,23 @@ struct MainWindowView: View {
                 }
             )
             
-            // Main Content with sidebar getting visual priority
-            HStack(spacing: 0) {
-                // Prominent sidebar
-                SidebarView(selectedSection: $selectedSection)
-                
-                // Main content area
+            // NEW LAYOUT: Full-width content with floating inset sidebar
+            ZStack(alignment: .leading) {
+                // Full-width content area (extends behind sidebar)
                 MainContentView(
                     selectedSection: $selectedSection,
                     viewModel: viewModel
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.primaryBackground)
+                
+                // Floating inset sidebar (Apple 2024 standard)
+                InsetSidebarView(selectedSection: $selectedSection)
+                    .padding(.leading, UIPolishDesignSystem.sidebarInset)
+                    .padding(.vertical, UIPolishDesignSystem.sidebarInset)
             }
         }
-        .frame(minWidth: 920, minHeight: 640) // Adjusted for new layout
+        .frame(minWidth: 920, minHeight: 640)
         .background(Color.primaryBackground)
     }
 }

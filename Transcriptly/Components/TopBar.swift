@@ -18,9 +18,9 @@ struct TopBar: View {
     
     var body: some View {
         HStack(spacing: DesignSystem.spacingMedium) {
-            // App Title - smaller and more subtle
+            // App Title - refined typography
             Text("Transcriptly")
-                .font(.system(size: 13, weight: .medium))
+                .font(UIPolishDesignSystem.Typography.topBarTitle)
                 .foregroundColor(.tertiaryText)
             
             Spacer()
@@ -33,24 +33,16 @@ struct TopBar: View {
                     .transition(.scale.combined(with: .opacity))
             }
             
-            // Mode dropdown
-            Picker("Mode", selection: $viewModel.refinementService.currentMode) {
-                ForEach(RefinementMode.allCases, id: \.self) { mode in
-                    Text(mode.displayName).tag(mode)
+            // Custom mode indicator (replaces generic dropdown)
+            ModeIndicator(currentMode: $viewModel.refinementService.currentMode)
+                .onChange(of: viewModel.refinementService.currentMode) { _, newMode in
+                    // User override - hide auto-detection indicator if it was shown
+                    if newMode != viewModel.autoSelectedMode {
+                        viewModel.showModeDetectionIndicator = false
+                    }
                 }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 140)
-            .font(.system(size: 12))
-            .foregroundColor(.secondaryText)
-            .onChange(of: viewModel.refinementService.currentMode) { _, newMode in
-                // User override - hide auto-detection indicator if it was shown
-                if newMode != viewModel.autoSelectedMode {
-                    viewModel.showModeDetectionIndicator = false
-                }
-            }
             
-            // Compact Record button
+            // Enhanced compact record button
             CompactRecordButton(
                 isRecording: viewModel.isRecording,
                 recordingTime: recordingTime,
@@ -61,14 +53,8 @@ struct TopBar: View {
                 }
             )
             
-            // Capsule mode button
-            Button(action: showCapsuleMode) {
-                Image(systemName: "capsule")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondaryText)
-            }
-            .buttonStyle(.plain)
-            .help("Enter Floating Capsule Mode")
+            // Clear floating mode button (replaces confusing capsule icon)
+            FloatingModeButton(action: showCapsuleMode)
         }
         .padding(.horizontal, DesignSystem.marginStandard)
         .padding(.vertical, 8) // Reduced from 12

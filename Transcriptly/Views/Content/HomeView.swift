@@ -21,7 +21,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 // Welcome Header
                 Text("Welcome back")
-                    .font(DesignSystem.Typography.titleLarge)
+                    .font(UIPolishDesignSystem.Typography.title)
                     .foregroundColor(.primaryText)
                     .padding(.top, DesignSystem.marginStandard)
                 
@@ -110,9 +110,9 @@ struct HomeView: View {
                             viewModel.capsuleController.toggleCapsuleMode()
                         }) {
                             HStack(spacing: DesignSystem.spacingSmall) {
-                                Image(systemName: "capsule")
+                                Image(systemName: "pip.enter")
                                     .font(.system(size: 16))
-                                Text(viewModel.capsuleController.isCapsuleModeActive ? "Exit Capsule Mode" : "Enter Capsule Mode")
+                                Text(viewModel.capsuleController.isCapsuleModeActive ? "Exit Float Mode" : "Enter Float Mode")
                                     .font(DesignSystem.Typography.body)
                             }
                         }
@@ -130,6 +130,7 @@ struct HomeView: View {
                     }
                 }
             }
+            .adjustForInsetSidebar()
             .padding(DesignSystem.marginStandard)
         }
         .background(Color.primaryBackground)
