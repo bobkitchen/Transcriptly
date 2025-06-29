@@ -29,7 +29,6 @@ class AppAssignmentManager: ObservableObject {
     // MARK: - Assignment Management
     
     func saveAssignment(_ assignment: AppAssignment) async throws {
-        print("💾 AppAssignmentManager: Saving assignment for '\(assignment.appName)' -> '\(assignment.assignedMode.displayName)'")
         isLoading = true
         defer { isLoading = false }
         
@@ -39,25 +38,20 @@ class AppAssignmentManager: ObservableObject {
         // Save locally regardless of authentication status
         // Update local cache
         cachedAssignments[assignment.appBundleId] = assignmentData
-        print("   ✅ Updated cache")
         
         // Update published array
         if let index = userAssignments.firstIndex(where: { $0.appBundleId == assignment.appBundleId }) {
             userAssignments[index] = assignmentData
-            print("   ✅ Updated existing assignment at index \(index)")
         } else {
             userAssignments.append(assignmentData)
-            print("   ✅ Added new assignment (total: \(userAssignments.count))")
         }
         
         // Save to UserDefaults for persistence
         saveToUserDefaults()
-        print("   ✅ Saved to UserDefaults")
         
         // Also try to save to Supabase if authenticated
         if supabase.isAuthenticated {
             try await supabase.saveAppAssignment(assignmentData)
-            print("   ✅ Saved to Supabase")
         }
     }
     
@@ -97,9 +91,7 @@ class AppAssignmentManager: ObservableObject {
     }
     
     func getAssignedApps(for mode: RefinementMode) -> [AppAssignment] {
-        let filtered = userAssignments.filter { $0.assignedMode == mode }
-        print("🔎 AppAssignmentManager: Getting apps for '\(mode.displayName)' - Found \(filtered.count) from \(userAssignments.count) total")
-        return filtered
+        return userAssignments.filter { $0.assignedMode == mode }
     }
     
     // MARK: - Bulk Operations
@@ -178,7 +170,6 @@ class AppAssignmentManager: ObservableObject {
             cachedAssignments = Dictionary(uniqueKeysWithValues: 
                 assignments.map { ($0.appBundleId, $0) }
             )
-            print("✅ Loaded \(assignments.count) assignments from UserDefaults")
         } catch {
             print("Failed to decode with new format, trying migration: \(error)")
             
@@ -228,7 +219,6 @@ class AppAssignmentManager: ObservableObject {
                     
                     // Save migrated data in new format
                     saveToUserDefaults()
-                    print("✅ Migrated \(migratedAssignments.count) assignments to new format")
                 }
             }
         }
