@@ -105,28 +105,25 @@ struct HomeView: View {
                         .font(DesignSystem.Typography.titleMedium)
                         .foregroundColor(.primaryText)
                     
-                    HStack(spacing: DesignSystem.spacingMedium) {
-                        Button(action: {
-                            viewModel.capsuleController.toggleCapsuleMode()
-                        }) {
-                            HStack(spacing: DesignSystem.spacingSmall) {
-                                Image(systemName: "pip.enter")
-                                    .font(.system(size: 16))
-                                Text(viewModel.capsuleController.isCapsuleModeActive ? "Exit Float Mode" : "Enter Float Mode")
-                                    .font(DesignSystem.Typography.body)
-                            }
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
+                    HStack(spacing: 12) {
+                        QuickActionButton(
+                            title: viewModel.capsuleController.isCapsuleModeActive ? "Exit Float Mode" : "Enter Float Mode",
+                            icon: "pip.enter",
+                            action: { viewModel.capsuleController.toggleCapsuleMode() },
+                            isProminent: true
+                        )
                         
-                        Button("View All History") {
-                            showingHistory = true
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
+                        QuickActionButton(
+                            title: "View All History",
+                            icon: "clock.arrow.circlepath",
+                            action: { showingHistory = true }
+                        )
                         
-                        Button("Export Today's Work") {
-                            showExportDialog = true
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
+                        QuickActionButton(
+                            title: "Export Today's Work",
+                            icon: "square.and.arrow.up",
+                            action: { showExportDialog = true }
+                        )
                     }
                 }
             }
@@ -211,6 +208,35 @@ struct HomeView: View {
         if !success {
             // Recording failed - error will be shown in status
         }
+    }
+}
+
+struct QuickActionButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    let isProminent: Bool
+    
+    init(title: String, icon: String, action: @escaping () -> Void, isProminent: Bool = false) {
+        self.title = title
+        self.icon = icon
+        self.action = action
+        self.isProminent = isProminent
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(isProminent ? .borderedProminent : .bordered)
+        .controlSize(.regular)
     }
 }
 

@@ -100,11 +100,13 @@ struct InsetSidebarItemView: View {
             if !isEnabled {
                 Text("Soon")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.tertiaryText)
+                    .foregroundColor(.secondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(4)
+                    .background(
+                        Capsule()
+                            .fill(.tertiary)
+                    )
             }
         }
         .padding(.vertical, 6)
@@ -120,7 +122,7 @@ struct InsetSidebarItemView: View {
         if isSelected {
             // Native macOS selection style - exact match to Apple's apps
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.accentColor.opacity(0.15))
+                .fill(Color.accentColor.opacity(0.20))
         } else if isHovered && isEnabled {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.white.opacity(0.05))

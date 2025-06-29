@@ -20,8 +20,7 @@ struct TranscriptionCard: View {
                 // Title and metadata
                 HStack {
                     Text(transcription.title)
-                        .font(DesignSystem.Typography.body)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.primaryText)
                         .lineLimit(1)
                     
@@ -45,24 +44,24 @@ struct TranscriptionCard: View {
                 }
                 
                 // Metadata row
-                HStack(spacing: DesignSystem.spacingSmall) {
+                HStack(spacing: 12) {
                     Text(transcription.timeAgo)
-                        .font(DesignSystem.Typography.bodySmall)
+                        .font(.system(size: 13))
                         .foregroundColor(.secondaryText)
                     
                     Text("•")
-                        .foregroundColor(.tertiaryText)
+                        .foregroundColor(.quaternaryText)
                     
                     Text("\(transcription.wordCount) words")
-                        .font(DesignSystem.Typography.bodySmall)
+                        .font(.system(size: 13))
                         .foregroundColor(.secondaryText)
                     
                     if let duration = transcription.durationDisplay {
                         Text("•")
-                            .foregroundColor(.tertiaryText)
+                            .foregroundColor(.quaternaryText)
                         
                         Text(duration)
-                            .font(DesignSystem.Typography.bodySmall)
+                            .font(.system(size: 13))
                             .foregroundColor(.secondaryText)
                     }
                     
@@ -81,36 +80,31 @@ struct TranscriptionCard: View {
             
             // Action buttons (shown on hover)
             if isHovered {
-                HStack(spacing: DesignSystem.spacingSmall) {
-                    Button(action: {
-                        // Copy to clipboard
-                        copyToClipboard()
-                    }) {
-                        Image(systemName: "doc.on.clipboard")
-                            .font(.system(size: 16))
+                HStack(spacing: 8) {
+                    Button("Copy") {
+                        NSPasteboard.general.setString(transcription.content, forType: .string)
                     }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondaryText)
-                    .help("Copy to clipboard")
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     
-                    Button(action: {
-                        // View full transcription
+                    Button("View") {
                         viewTranscription()
-                    }) {
-                        Text("View")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .fontWeight(.medium)
                     }
-                    .buttonStyle(SecondaryButtonStyle())
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
-        .padding(DesignSystem.spacingMedium)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+        )
         .enhancedCard()
         .hoverScale(isHovered: isHovered)
         .onHover { hovering in
-            withAnimation(UIPolishDesignSystem.Animation.standard) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 isHovered = hovering
             }
         }

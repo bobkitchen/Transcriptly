@@ -10,7 +10,7 @@ import SwiftUI
 
 struct UIPolishDesignSystem {
     // MARK: - Sidebar Specifications (Apple 2024 Standard)
-    static let sidebarWidth: CGFloat = 200
+    static let sidebarWidth: CGFloat = 240
     static let sidebarInset: CGFloat = 16
     static let sidebarCornerRadius: CGFloat = 12
     
@@ -45,6 +45,11 @@ struct UIPolishDesignSystem {
         static let standard = SwiftUI.Animation.spring(response: 0.3, dampingFraction: 0.7)
         static let smooth = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.8)
         static let selection = SwiftUI.Animation.easeInOut(duration: 0.15)
+        
+        // Consistent animation timing throughout app
+        static let transcriptlySpring = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.8)
+        static let transcriptlyEase = SwiftUI.Animation.easeInOut(duration: 0.2)
+        static let transcriptlyQuick = SwiftUI.Animation.easeInOut(duration: 0.1)
     }
     
     // MARK: - Hover Effects
@@ -107,7 +112,7 @@ extension View {
     
     /// Apply content adjustment for inset sidebar
     func adjustForInsetSidebar() -> some View {
-        self.padding(.leading, UIPolishDesignSystem.sidebarWidth + (UIPolishDesignSystem.sidebarInset * 2))
+        self.padding(.leading, 280)
     }
 }
 

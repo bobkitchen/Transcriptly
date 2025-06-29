@@ -53,10 +53,24 @@ struct StatCard: View {
                     .padding(.top, DesignSystem.spacingTiny)
             }
         }
-        .padding(DesignSystem.spacingLarge)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .enhancedCard()
-        .hoverScale(isHovered: isHovered)
+        .background(.regularMaterial)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(
+                    isHovered ? Color.accentColor.opacity(0.3) : Color.white.opacity(0.15), 
+                    lineWidth: isHovered ? 1 : 0.5
+                )
+        )
+        .shadow(
+            color: .black.opacity(isHovered ? 0.15 : 0.1),
+            radius: isHovered ? 12 : 8,
+            y: isHovered ? 6 : 4
+        )
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
