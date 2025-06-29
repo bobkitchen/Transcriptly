@@ -50,8 +50,8 @@ class RefinementService: ObservableObject {
     private let languageRecognizer = NLLanguageRecognizer()
     private let sentimentAnalyzer = NLTagger(tagSchemes: [.sentimentScore])
     #if canImport(FoundationModels)
-    private var languageModelSession: LanguageModelSession?
-    private var systemModel: SystemLanguageModel?
+    private var languageModelSession: Any?
+    private var systemModel: Any?
     #endif
     
     init() {
@@ -70,43 +70,47 @@ class RefinementService: ObservableObject {
     
     private func initializeLanguageModel() async {
         #if canImport(FoundationModels)
-        do {
-            // Initialize system model and check availability
-            systemModel = SystemLanguageModel.default
-            
-            guard let model = systemModel, model.isAvailable else {
-                if let model = systemModel {
-                    switch model.availability {
-                    case .unavailable(.appleIntelligenceNotEnabled):
-                        print("Foundation Models: Apple Intelligence is not enabled")
-                    case .unavailable(.deviceNotEligible):
-                        print("Foundation Models: Device not eligible")
-                    case .unavailable(.modelNotReady):
-                        print("Foundation Models: Model not ready (downloading)")
-                    default:
-                        print("Foundation Models: Unavailable")
+        if #available(macOS 26.0, *) {
+            do {
+                // Initialize system model and check availability
+                systemModel = SystemLanguageModel.default as Any
+                
+                guard let model = systemModel as? SystemLanguageModel, model.isAvailable else {
+                    if let model = systemModel as? SystemLanguageModel {
+                        switch model.availability {
+                        case .unavailable(.appleIntelligenceNotEnabled):
+                            print("Foundation Models: Apple Intelligence is not enabled")
+                        case .unavailable(.deviceNotEligible):
+                            print("Foundation Models: Device not eligible")
+                        case .unavailable(.modelNotReady):
+                            print("Foundation Models: Model not ready (downloading)")
+                        default:
+                            print("Foundation Models: Unavailable")
+                        }
                     }
+                    languageModelSession = nil
+                    return
                 }
+                
+                // Create system instructions for refinement tasks
+                let instructions = Instructions("""
+                    You are a text refinement assistant. Your task is to improve transcribed text according to specific modes:
+                    - Clean-up Mode: Remove filler words, fix grammar, maintain original meaning
+                    - Email Mode: Format as professional email with greeting and closing
+                    - Messaging Mode: Make conversational and concise for quick messaging
+                    Always return only the refined text without explanations.
+                    """)
+                
+                // Create language model session with instructions
+                languageModelSession = LanguageModelSession(instructions: instructions) as Any
+                print("Foundation Models initialized successfully")
+                
+            } catch {
+                print("Failed to initialize Foundation Models: \(error)")
                 languageModelSession = nil
-                return
             }
-            
-            // Create system instructions for refinement tasks
-            let instructions = Instructions("""
-                You are a text refinement assistant. Your task is to improve transcribed text according to specific modes:
-                - Clean-up Mode: Remove filler words, fix grammar, maintain original meaning
-                - Email Mode: Format as professional email with greeting and closing
-                - Messaging Mode: Make conversational and concise for quick messaging
-                Always return only the refined text without explanations.
-                """)
-            
-            // Create language model session with instructions
-            languageModelSession = LanguageModelSession(instructions: instructions)
-            print("Foundation Models initialized successfully")
-            
-        } catch {
-            print("Failed to initialize Foundation Models: \(error)")
-            languageModelSession = nil
+        } else {
+            print("Foundation Models require macOS 26.0 or later")
         }
         #else
         print("Foundation Models not available in this environment")
@@ -131,7 +135,7 @@ class RefinementService: ObservableObject {
         
         // Try Foundation Models first, fallback to placeholder if unavailable
         #if canImport(FoundationModels)
-        if let session = languageModelSession {
+        if #available(macOS 26.0, *), let session = languageModelSession as? LanguageModelSession {
             refinedText = try await refineWithFoundationModels(text: text, prompt: prompt, session: session)
         } else {
             refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
@@ -147,6 +151,7 @@ class RefinementService: ObservableObject {
     }
     
     #if canImport(FoundationModels)
+    @available(macOS 26.0, *)
     private func refineWithFoundationModels(text: String, prompt: RefinementPrompt, session: LanguageModelSession) async throws -> String {
         do {
             // Build the prompt with mode-specific context

@@ -25,8 +25,29 @@ class AppleProvider: ObservableObject {
     }
     
     private func checkAvailability() {
-        let status = SFSpeechRecognizer.authorizationStatus()
-        healthStatus = status == .authorized ? .healthy : .unavailable
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        let speechAvailable = speechStatus == .authorized && speechRecognizer?.isAvailable == true
+        
+        // Check for Foundation Models availability (macOS 26+)
+        var foundationModelsAvailable = false
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            foundationModelsAvailable = true
+        }
+        #endif
+        
+        // Apple provider is healthy if either Speech Recognition is available
+        // Foundation Models availability is a bonus but not required
+        if speechAvailable {
+            healthStatus = .healthy
+        } else {
+            healthStatus = .unavailable
+        }
+        
+        print("📱 Apple Provider Status:")
+        print("  - Speech Recognition: \(speechAvailable ? "✅ Available" : "❌ Unavailable")")
+        print("  - Foundation Models: \(foundationModelsAvailable ? "✅ Available" : "❌ Unavailable (requires macOS 26+)")")
+        print("  - Overall Status: \(healthStatus == .healthy ? "✅ Healthy" : "❌ Unavailable")")
     }
 }
 
@@ -90,18 +111,31 @@ extension AppleProvider: TranscriptionProvider {
 
 extension AppleProvider: RefinementProvider {
     func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
-        do {
-            // Use the existing refinement service for actual processing
-            let refinementService = RefinementService()
-            await MainActor.run {
-                refinementService.currentMode = mode
+        // Check for Foundation Models availability first
+        var hasFoundationModels = false
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            hasFoundationModels = true
+        }
+        #endif
+        
+        if hasFoundationModels {
+            // Use Foundation Models on macOS 26+
+            do {
+                let refinementService = RefinementService()
+                await MainActor.run {
+                    refinementService.currentMode = mode
+                }
+                
+                let refinedText = try await refinementService.refine(text)
+                return .success(refinedText)
+                
+            } catch {
+                return .failure(ProviderError.custom("Foundation Models refinement failed: \(error.localizedDescription)"))
             }
-            
-            let refinedText = try await refinementService.refine(text)
-            return .success(refinedText)
-            
-        } catch {
-            return .failure(ProviderError.custom("Refinement failed: \(error.localizedDescription)"))
+        } else {
+            // Fallback for older macOS versions - suggest using cloud providers
+            return .failure(ProviderError.custom("Foundation Models not available on this macOS version. Please configure OpenAI or OpenRouter for refinement."))
         }
     }
 }
