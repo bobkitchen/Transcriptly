@@ -113,9 +113,10 @@ extension OpenAIProvider: TranscriptionProvider {
         var body = Data()
         
         // Add model parameter
+        let selectedModel = AIProviderManager.shared.preferences.openaiTranscriptionModel
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        body.append("whisper-1\r\n".data(using: .utf8)!)
+        body.append("\(selectedModel)\r\n".data(using: .utf8)!)
         
         // Add language parameter (English)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
@@ -185,8 +186,9 @@ extension OpenAIProvider: RefinementProvider {
         let userPrompt = "Please refine the following transcribed text:\n\n\(text)"
         
         // Create request body
+        let selectedModel = AIProviderManager.shared.preferences.openaiRefinementModel
         let requestBody: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": selectedModel,
             "messages": [
                 [
                     "role": "system",

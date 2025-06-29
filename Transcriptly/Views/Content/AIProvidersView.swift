@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct AIProvidersView: View {
     @StateObject private var providerManager = AIProviderManager.shared
@@ -272,58 +273,66 @@ struct ProviderStatusCard: View {
     }
     
     var body: some View {
-        HStack(spacing: DesignSystem.spacingMedium) {
-            // Provider Icon and Info
+        VStack(spacing: DesignSystem.spacingMedium) {
+            // Provider Header
             HStack(spacing: DesignSystem.spacingMedium) {
-                Image(systemName: providerType.icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(.accentColor)
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 32)
-                
-                VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
-                    Text(providerType.displayName)
-                        .font(DesignSystem.Typography.bodyLarge)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primaryText)
+                // Provider Icon and Info
+                HStack(spacing: DesignSystem.spacingMedium) {
+                    Image(systemName: providerType.icon)
+                        .font(.system(size: 24))
+                        .foregroundColor(.accentColor)
+                        .symbolRenderingMode(.hierarchical)
+                        .frame(width: 32)
                     
-                    Text(providerType.isLocal ? "Local" : "Cloud Service")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.secondaryText)
+                    VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
+                        Text(providerType.displayName)
+                            .font(DesignSystem.Typography.bodyLarge)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primaryText)
+                        
+                        Text(providerType.isLocal ? "Local" : "Cloud Service")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(.secondaryText)
+                    }
+                }
+                
+                Spacer()
+                
+                // Status and Actions
+                HStack(spacing: DesignSystem.spacingMedium) {
+                    // Health Status
+                    HStack(spacing: DesignSystem.spacingSmall) {
+                        Image(systemName: healthStatus.icon)
+                            .font(.system(size: 14))
+                            .foregroundColor(healthStatus.color)
+                            .symbolRenderingMode(.hierarchical)
+                        
+                        Text(healthStatus.displayName)
+                            .font(DesignSystem.Typography.bodySmall)
+                            .fontWeight(.medium)
+                            .foregroundColor(healthStatus.color)
+                    }
+                    .padding(.horizontal, DesignSystem.spacingSmall)
+                    .padding(.vertical, 4)
+                    .background(healthStatus.color.opacity(0.1))
+                    .cornerRadius(DesignSystem.cornerRadiusTiny)
+                    
+                    // Configure Button (only for providers that need API keys)
+                    if providerType.requiresAPIKey {
+                        Button(action: onConfigure) {
+                            Text(provider?.isConfigured == true ? "Reconfigure" : "Configure")
+                                .font(DesignSystem.Typography.bodySmall)
+                                .fontWeight(.medium)
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
             
-            Spacer()
-            
-            // Status and Actions
-            HStack(spacing: DesignSystem.spacingMedium) {
-                // Health Status
-                HStack(spacing: DesignSystem.spacingSmall) {
-                    Image(systemName: healthStatus.icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(healthStatus.color)
-                        .symbolRenderingMode(.hierarchical)
-                    
-                    Text(healthStatus.displayName)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .fontWeight(.medium)
-                        .foregroundColor(healthStatus.color)
-                }
-                .padding(.horizontal, DesignSystem.spacingSmall)
-                .padding(.vertical, 4)
-                .background(healthStatus.color.opacity(0.1))
-                .cornerRadius(DesignSystem.cornerRadiusTiny)
-                
-                // Configure Button (only for providers that need API keys)
-                if providerType.requiresAPIKey {
-                    Button(action: onConfigure) {
-                        Text(provider?.isConfigured == true ? "Reconfigure" : "Configure")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .fontWeight(.medium)
-                            .foregroundColor(.accentColor)
-                    }
-                    .buttonStyle(.plain)
-                }
+            // Model Selection (only for configured cloud providers)
+            if (providerType == .openai || providerType == .openrouter) && provider?.isConfigured == true {
+                ModelSelectionSection(providerType: providerType)
             }
         }
         .padding(DesignSystem.spacingMedium)
@@ -464,6 +473,103 @@ struct ProviderConfigurationSheet: View {
                 }
             }
         }
+    }
+}
+
+struct ModelSelectionSection: View {
+    let providerType: ProviderType
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            if providerType == .openai {
+                // OpenAI Model Selection
+                HStack {
+                    Text("Transcription Model")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primaryText)
+                        .frame(width: 130, alignment: .leading)
+                    
+                    Picker("", selection: .init(
+                        get: { providerManager.preferences.openaiTranscriptionModel },
+                        set: { newModel in
+                            var newPrefs = providerManager.preferences
+                            newPrefs.openaiTranscriptionModel = newModel
+                            providerManager.updatePreferences(newPrefs)
+                        }
+                    )) {
+                        ForEach(Array(OpenAIModels.transcriptionModels.keys), id: \.self) { modelKey in
+                            Text(OpenAIModels.transcriptionModels[modelKey] ?? modelKey)
+                                .tag(modelKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.accentColor)
+                }
+                
+                HStack {
+                    Text("Refinement Model")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primaryText)
+                        .frame(width: 130, alignment: .leading)
+                    
+                    Picker("", selection: .init(
+                        get: { providerManager.preferences.openaiRefinementModel },
+                        set: { newModel in
+                            var newPrefs = providerManager.preferences
+                            newPrefs.openaiRefinementModel = newModel
+                            providerManager.updatePreferences(newPrefs)
+                        }
+                    )) {
+                        ForEach(Array(OpenAIModels.refinementModels.keys), id: \.self) { modelKey in
+                            Text(OpenAIModels.refinementModels[modelKey] ?? modelKey)
+                                .tag(modelKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.accentColor)
+                }
+                
+            } else if providerType == .openrouter {
+                // OpenRouter Model Selection
+                HStack {
+                    Text("Refinement Model")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primaryText)
+                        .frame(width: 130, alignment: .leading)
+                    
+                    Picker("", selection: .init(
+                        get: { providerManager.preferences.openrouterRefinementModel },
+                        set: { newModel in
+                            var newPrefs = providerManager.preferences
+                            newPrefs.openrouterRefinementModel = newModel
+                            providerManager.updatePreferences(newPrefs)
+                        }
+                    )) {
+                        ForEach(Array(OpenRouterModels.freeRefinementModels.keys), id: \.self) { modelKey in
+                            Text(OpenRouterModels.freeRefinementModels[modelKey] ?? modelKey)
+                                .tag(modelKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.accentColor)
+                }
+                
+                // Browse Free Models button
+                HStack {
+                    Spacer()
+                    Button("Browse Free Models") {
+                        if let url = URL(string: "https://openrouter.ai/models?type=free") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.accentColor)
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.top, DesignSystem.spacingSmall)
     }
 }
 

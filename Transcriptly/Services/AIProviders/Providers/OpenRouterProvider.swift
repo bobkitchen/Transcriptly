@@ -109,8 +109,8 @@ extension OpenRouterProvider: RefinementProvider {
             return .failure(ProviderError.apiKeyMissing)
         }
         
-        // Use free models from OpenRouter
-        let model = getFreeModel()
+        // Use selected model from preferences
+        let model = AIProviderManager.shared.preferences.openrouterRefinementModel
         
         // Build prompt based on refinement mode
         let systemPrompt = buildSystemPrompt(for: mode)
@@ -177,12 +177,6 @@ extension OpenRouterProvider: RefinementProvider {
         } catch {
             return .failure(ProviderError.networkError(error))
         }
-    }
-    
-    private func getFreeModel() -> String {
-        // Use free models available on OpenRouter
-        // These are subject to change, but as of Phase 7 these are free options
-        return "mistralai/mistral-7b-instruct:free"
     }
     
     private func buildSystemPrompt(for mode: RefinementMode) -> String {
