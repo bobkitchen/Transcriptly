@@ -70,20 +70,7 @@ final class TranscriptionService: ObservableObject {
             }
         }
         
-        // Try AI Providers first
-        if let audioData = try? Data(contentsOf: url) {
-            let result = await AIProviderManager.shared.transcribe(audio: audioData)
-            
-            switch result {
-            case .success(let transcription):
-                return transcription
-            case .failure(let error):
-                print("AI Provider transcription failed: \(error)")
-                // Fall through to Apple Speech recognition
-            }
-        }
-        
-        // Fallback to Apple Speech Recognition
+        // Use direct Apple Speech Recognition to avoid circular dependencies
         guard speechRecognizer?.isAvailable == true else {
             await MainActor.run {
                 transcriptionError = "Speech recognition not available"

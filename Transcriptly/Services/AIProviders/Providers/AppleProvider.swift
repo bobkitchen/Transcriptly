@@ -80,22 +80,46 @@ extension AppleProvider: TranscriptionProvider {
         do {
             try audio.write(to: tempURL)
             
-            // Use the transcription service for actual transcription
-            let transcriptionService = TranscriptionService()
-            
-            // Check permissions
-            guard transcriptionService.hasSpeechPermission else {
+            // Check permissions directly
+            guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+                try? FileManager.default.removeItem(at: tempURL)
                 return .failure(ProviderError.serviceUnavailable)
             }
             
-            // Perform transcription
-            if let text = await transcriptionService.transcribeAudioFile(at: tempURL) {
-                // Clean up temporary file
+            guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
                 try? FileManager.default.removeItem(at: tempURL)
+                return .failure(ProviderError.serviceUnavailable)
+            }
+            
+            // Perform transcription directly using Speech Recognition API
+            let request = SFSpeechURLRecognitionRequest(url: tempURL)
+            request.shouldReportPartialResults = false
+            request.requiresOnDeviceRecognition = true // For privacy
+            
+            let result: String? = await withCheckedContinuation { continuation in
+                speechRecognizer.recognitionTask(with: request) { result, error in
+                    if let error = error {
+                        print("Apple transcription error: \(error.localizedDescription)")
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    
+                    if let result = result, result.isFinal {
+                        let transcribedText = result.bestTranscription.formattedString
+                        continuation.resume(returning: transcribedText)
+                    } else if result == nil {
+                        print("Apple transcription: No result")
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
+            
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempURL)
+            
+            if let text = result {
                 return .success(text)
             } else {
-                // Clean up temporary file
-                try? FileManager.default.removeItem(at: tempURL)
                 return .failure(ProviderError.serviceUnavailable)
             }
             
