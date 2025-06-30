@@ -23,138 +23,107 @@ struct ModeCard: View {
     }
     
     var body: some View {
-        Text("Mode Card - \(mode.displayName)")
-        /*
+        modeCardContent
+    }
+    
+    private var modeCardContent: some View {
         VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-            // Main content
-            HStack(spacing: DesignSystem.spacingMedium) {
-                // Radio button
-                Button(action: {
-                    print("DEBUG ModeCard: Radio button clicked for \(mode)")
-                    withAnimation(DesignSystem.springAnimation) {
-                        selectedMode = mode
-                    }
-                }) {
-                    Image(systemName: isSelected ? "circle.inset.filled" : "circle")
-                        .font(.system(size: 20))
-                        .foregroundColor(isSelected ? .accentColor : .secondaryText)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.plain)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-                
-                // Content
-                VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
-                    // Title and description
-                    HStack {
-                        Text(mode.displayName)
-                            .font(DesignSystem.Typography.bodyLarge)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primaryText)
-                            .onTapGesture {
-                                print("DEBUG ModeCard: Title tapped for \(mode)")
-                                withAnimation(DesignSystem.springAnimation) {
-                                    selectedMode = mode
-                                }
-                            }
-                        
-                        Spacer()
-                        
-                        // Action buttons (show on hover or selection)
-                        if isHovered || isSelected {
-                            HStack(spacing: DesignSystem.spacingSmall) {
-                                if mode != .raw {
-                                    Button(action: onEdit) {
-                                        HStack(spacing: DesignSystem.spacingTiny) {
-                                            Text("Edit")
-                                            Image(systemName: "pencil")
-                                                .font(.system(size: 10))
-                                        }
-                                    }
-                                    .buttonStyle(CompactButtonStyle())
-                                }
-                                
-                                if let appsConfig = onAppsConfig {
-                                    Button(action: appsConfig) {
-                                        HStack(spacing: DesignSystem.spacingTiny) {
-                                            Text("Apps")
-                                            Image(systemName: "chevron.down")
-                                                .font(.system(size: 10))
-                                        }
-                                    }
-                                    .buttonStyle(CompactButtonStyle())
-                                }
-                            }
-                        }
-                    }
-                    
-                    Text(mode.description)
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                Spacer(minLength: 0)
-            }
+            modeCardHeader
             
-            // Stats line (if available and selected)
             if isSelected, let stats = stats {
-                HStack(spacing: DesignSystem.spacingSmall) {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 12))
-                        .foregroundColor(.tertiaryText)
-                    
-                    Text("Used \(stats.usageCount) times")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.tertiaryText)
-                    
-                    if let lastEdited = stats.lastEditedDisplay {
-                        Text("•")
-                            .foregroundColor(.tertiaryText)
-                        Text("Edited \(lastEdited)")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(.tertiaryText)
-                    }
-                    
-                    if !stats.assignedApps.isEmpty {
-                        Text("•")
-                            .foregroundColor(.tertiaryText)
-                        
-                        HStack(spacing: DesignSystem.spacingTiny) {
-                            ForEach(stats.assignedApps.prefix(3), id: \.name) { app in
-                                Circle()
-                                    .fill(Color.accentColor.opacity(0.3))
-                                    .frame(width: 16, height: 16)
-                                    .overlay(
-                                        Text(String(app.name.prefix(1)))
-                                            .font(.system(size: 8, weight: .medium))
-                                            .foregroundColor(.accentColor)
-                                    )
-                            }
-                            if stats.assignedApps.count > 3 {
-                                Text("+\(stats.assignedApps.count - 3)")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.tertiaryText)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                modeCardStats(stats)
             }
         }
         .padding(DesignSystem.spacingLarge)
-        .frame(minHeight: DesignSystem.Layout.cardHeight)
-        .padding(8)
-        .background(isSelected ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-        .cornerRadius(8)
-        .border(isSelected ? Color.blue : Color.clear, width: 2)
+        .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
         .onHover { hovering in
-            print("DEBUG ModeCard: Hover state changed for \(mode): \(hovering)")
             withAnimation(DesignSystem.fadeAnimation) {
                 isHovered = hovering
             }
+        }
+    }
+    
+    private var modeCardHeader: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            // Radio button
+            Button(action: {
+                withAnimation(DesignSystem.springAnimation) {
+                    selectedMode = mode
+                }
+            }) {
+                Image(systemName: isSelected ? "circle.inset.filled" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .accentColor : .secondaryText)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .buttonStyle(.plain)
+            
+            // Content
+            VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                HStack {
+                    Text(mode.displayName)
+                        .font(DesignSystem.Typography.bodyLarge)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primaryText)
+                        .onTapGesture {
+                            withAnimation(DesignSystem.springAnimation) {
+                                selectedMode = mode
+                            }
+                        }
+                    
+                    Spacer()
+                    
+                    if isHovered || isSelected {
+                        modeCardActions
+                    }
+                }
+                
+                Text(mode.description)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(.secondaryText)
+            }
+        }
+    }
+    
+    private var modeCardActions: some View {
+        HStack(spacing: DesignSystem.spacingSmall) {
+            if mode != .raw {
+                Button("Edit", action: onEdit)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.accentColor)
+                    .buttonStyle(.plain)
+            }
+            
+            if let appsConfig = onAppsConfig {
+                Button("Apps", action: appsConfig)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.accentColor)
+                    .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    private func modeCardStats(_ stats: ModeStatistics) -> some View {
+        HStack(spacing: DesignSystem.spacingSmall) {
+            Image(systemName: "chart.bar.xaxis")
+                .font(.system(size: 12))
+                .foregroundColor(.tertiaryText)
+            
+            Text("Used \(stats.usageCount) times")
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(.tertiaryText)
+            
+            if let lastEdited = stats.lastEditedDisplay {
+                Text("• Edited \(lastEdited)")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.tertiaryText)
+            }
+            
+            Spacer()
         }
     }
 }
@@ -190,7 +159,6 @@ struct CompactButtonStyle: ButtonStyle {
                     )
                 }
             }
-        */
     }
 }
 
