@@ -50,7 +50,7 @@ struct SidebarItemView: View {
 #Preview {
     VStack {
         SidebarItemView(section: .home, isSelected: true, isCollapsed: false)
-        SidebarItemView(section: .transcription, isSelected: false, isCollapsed: false)
+        SidebarItemView(section: .dictation, isSelected: false, isCollapsed: false)
         SidebarItemView(section: .settings, isSelected: false, isCollapsed: false)
     }
     .padding()

@@ -10,6 +10,7 @@ import SwiftUI
 
 struct TranscriptionView: View {
     @ObservedObject var viewModel: AppViewModel
+    let onFloat: () -> Void
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showEditPrompt = false
     @State private var editingMode: RefinementMode?
@@ -17,20 +18,26 @@ struct TranscriptionView: View {
     @State private var appConfigMode: RefinementMode?
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Section Header
-                Text("AI Refinement Modes")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+        VStack(spacing: 0) {
+            // Integrated header
+            ContentHeader(
+                viewModel: viewModel,
+                title: "AI Refinement Modes",
+                showModeControls: true,
+                showFloatButton: true,
+                onFloat: onFloat
+            )
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 
                 // Mode Cards
                 VStack(spacing: DesignSystem.spacingMedium) {
                     ForEach(RefinementMode.allCases, id: \.self) { mode in
                         ModeCard(
                             mode: mode,
-                            selectedMode: $viewModel.refinementService.currentMode,
+                            selectedMode: $viewModel.currentRefinementMode,
                             stats: modeStatistics[mode],
                             onEdit: {
                                 print("DEBUG: Edit button clicked for mode: \(mode)")
@@ -48,7 +55,7 @@ struct TranscriptionView: View {
                 }
                 
                 // Current Status Section
-                if viewModel.isRecording || viewModel.isTranscribing || viewModel.refinementService.isProcessing {
+                if viewModel.isRecording || viewModel.isTranscribing || viewModel.isRefinementProcessing {
                     VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
                         Text("Current Activity")
                             .font(DesignSystem.Typography.titleMedium)
@@ -67,10 +74,10 @@ struct TranscriptionView: View {
                         
                         TranscriptionResultCard(
                             text: viewModel.transcribedText,
-                            mode: viewModel.refinementService.currentMode
+                            mode: viewModel.currentRefinementMode
                         )
                     }
-                } else if !viewModel.isRecording && !viewModel.isTranscribing && !viewModel.refinementService.isProcessing {
+                } else if !viewModel.isRecording && !viewModel.isTranscribing && !viewModel.isRefinementProcessing {
                     // Permission denied state or ready state
                     if !viewModel.canRecord && viewModel.statusText.contains("Microphone access required") {
                         VStack(spacing: DesignSystem.spacingMedium) {
@@ -190,7 +197,7 @@ struct TranscriptionView: View {
                             Button("Dismiss") {
                                 viewModel.errorMessage = nil
                             }
-                            .buttonStyle(CompactButtonStyle())
+                            .buttonStyle(SecondaryButtonStyle())
                         }
                         .padding(DesignSystem.spacingLarge)
                         .background(Color.orange.opacity(0.1))
@@ -201,9 +208,12 @@ struct TranscriptionView: View {
                         .cornerRadius(DesignSystem.cornerRadiusMedium)
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .sheet(item: Binding<EditingModeWrapper?>(
             get: { showEditPrompt && editingMode != nil ? EditingModeWrapper(mode: editingMode!) : nil },
@@ -282,7 +292,7 @@ struct StatusCard: View {
                 } else if viewModel.isTranscribing {
                     Image(systemName: "waveform")
                         .foregroundColor(.orange)
-                } else if viewModel.refinementService.isProcessing {
+                } else if viewModel.isRefinementProcessing {
                     Image(systemName: "cpu")
                         .foregroundColor(.blue)
                 } else {
@@ -308,7 +318,7 @@ struct StatusCard: View {
             Spacer()
             
             // Progress indicator
-            if viewModel.isRecording || viewModel.isTranscribing || viewModel.refinementService.isProcessing {
+            if viewModel.isRecording || viewModel.isTranscribing || viewModel.isRefinementProcessing {
                 ProgressView()
                     .scaleEffect(0.8)
             }
@@ -322,7 +332,7 @@ struct StatusCard: View {
             return "Recording..."
         } else if viewModel.isTranscribing {
             return "Transcribing..."
-        } else if viewModel.refinementService.isProcessing {
+        } else if viewModel.isRefinementProcessing {
             return "Refining..."
         } else {
             return "Ready"
@@ -334,7 +344,7 @@ struct StatusCard: View {
             return "Listening to your voice"
         } else if viewModel.isTranscribing {
             return "Converting speech to text"
-        } else if viewModel.refinementService.isProcessing {
+        } else if viewModel.isRefinementProcessing {
             return "Applying AI refinement"
         } else {
             return "Ready to record"
@@ -410,9 +420,9 @@ struct EditPromptSheet: View {
     init(mode: RefinementMode, viewModel: AppViewModel) {
         self.mode = mode
         self.viewModel = viewModel
-        let initialPrompt = viewModel.refinementService.prompts[mode]?.userPrompt ?? ""
+        let initialPrompt = viewModel.refinementPrompts[mode]?.userPrompt ?? ""
         print("DEBUG EditPromptSheet init: mode=\(mode), initialPrompt='\(initialPrompt)'")
-        print("DEBUG EditPromptSheet init: Available prompts keys: \(viewModel.refinementService.prompts.keys)")
+        print("DEBUG EditPromptSheet init: Available prompts keys: \(viewModel.refinementPrompts.keys)")
         self._prompt = State(initialValue: initialPrompt)
     }
     
@@ -456,7 +466,7 @@ struct EditPromptSheet: View {
                     Spacer()
                     
                     Button("Reset to Default") {
-                        prompt = viewModel.refinementService.prompts[mode]?.defaultPrompt ?? ""
+                        prompt = viewModel.refinementPrompts[mode]?.defaultPrompt ?? ""
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.accentColor)
@@ -477,7 +487,7 @@ struct EditPromptSheet: View {
                 .buttonStyle(SecondaryButtonStyle())
                 
                 Button("Save") {
-                    viewModel.refinementService.updatePrompt(for: mode, prompt: prompt)
+                    viewModel.updateRefinementPrompt(for: mode, prompt: prompt)
                     dismiss()
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -498,6 +508,6 @@ struct EditingModeWrapper: Identifiable {
 }
 
 #Preview {
-    TranscriptionView(viewModel: AppViewModel())
+    TranscriptionView(viewModel: AppViewModel(), onFloat: {})
         .padding()
 }

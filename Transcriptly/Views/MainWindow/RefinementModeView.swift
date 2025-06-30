@@ -14,7 +14,7 @@ struct RefinementModeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Refinement mode selection using Picker
-            Picker("Refinement Mode", selection: $viewModel.refinementService.currentMode) {
+            Picker("Refinement Mode", selection: $viewModel.currentRefinementMode) {
                 ForEach(RefinementMode.allCases, id: \.self) { mode in
                     Label(mode.rawValue, systemImage: mode.icon)
                         .tag(mode)
@@ -23,7 +23,7 @@ struct RefinementModeView: View {
             .pickerStyle(RadioGroupPickerStyle())
             
             // Processing indicator
-            if viewModel.refinementService.isProcessing {
+            if viewModel.isRefinementProcessing {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)

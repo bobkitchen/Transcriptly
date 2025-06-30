@@ -76,13 +76,22 @@ class MenuBarWaveformView: NSView {
     }
     
     private func updateBarHeights() {
-        // Generate random heights for each bar to simulate waveform
-        for index in 0..<barHeights.count {
-            barHeights[index] = CGFloat.random(in: 0.3...1.0)
-        }
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.needsDisplay = true
+        // Ensure we're updating the UI on the main thread
+        if Thread.isMainThread {
+            // Generate random heights for each bar to simulate waveform
+            for index in 0..<barHeights.count {
+                barHeights[index] = CGFloat.random(in: 0.3...1.0)
+            }
+            needsDisplay = true
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                // Generate random heights for each bar to simulate waveform
+                for index in 0..<self.barHeights.count {
+                    self.barHeights[index] = CGFloat.random(in: 0.3...1.0)
+                }
+                self.needsDisplay = true
+            }
         }
     }
     

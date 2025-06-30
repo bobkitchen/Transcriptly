@@ -11,19 +11,25 @@ import UniformTypeIdentifiers
 
 struct HomeView: View {
     @ObservedObject var viewModel: AppViewModel
+    let onFloat: () -> Void
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
-    @State private var showCapsuleMode = false
     @State private var showingHistory = false
     @State private var showExportDialog = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Welcome Header
-                Text("Welcome back")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+        VStack(spacing: 0) {
+            // Integrated header (replaces top bar)
+            ContentHeader(
+                viewModel: viewModel,
+                title: "Welcome back",
+                showModeControls: true,
+                showFloatButton: true,
+                onFloat: onFloat
+            )
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 
                 // Stats Cards
                 let stats = historyService.statistics
@@ -129,9 +135,12 @@ struct HomeView: View {
                         .buttonStyle(SecondaryButtonStyle())
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
@@ -230,6 +239,6 @@ struct StatisticView: View {
 }
 
 #Preview {
-    HomeView(viewModel: AppViewModel())
+    HomeView(viewModel: AppViewModel(), onFloat: {})
         .padding()
 }

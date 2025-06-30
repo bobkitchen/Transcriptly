@@ -623,8 +623,9 @@ final class AppViewModel: ObservableObject {
         return await pasteService.pasteAtCursorLocation()
     }
     
+    @MainActor
     private func handleModeChange(_ mode: RefinementMode) {
-        refinementService.currentMode = mode
+        currentRefinementMode = mode
         showModeChangeNotification(mode)
     }
     
@@ -676,6 +677,35 @@ final class AppViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    // MARK: - MainActor Properties Bridge
+    
+    /// Bridge MainActor properties from RefinementService for SwiftUI access
+    @MainActor
+    var isRefinementProcessing: Bool {
+        refinementService.isProcessing
+    }
+    
+    @MainActor
+    var currentRefinementMode: RefinementMode {
+        get { refinementService.currentMode }
+        set { refinementService.currentMode = newValue }
+    }
+    
+    @MainActor
+    var refinementPrompts: [RefinementMode: RefinementPrompt] {
+        refinementService.prompts
+    }
+    
+    @MainActor
+    func updateRefinementPrompt(for mode: RefinementMode, prompt: String) {
+        refinementService.updatePrompt(for: mode, prompt: prompt)
+    }
+    
+    @MainActor
+    func resetRefinementPrompt(for mode: RefinementMode) {
+        refinementService.resetPrompt(for: mode)
     }
 }
 

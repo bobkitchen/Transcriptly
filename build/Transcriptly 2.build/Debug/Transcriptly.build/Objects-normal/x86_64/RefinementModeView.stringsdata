@@ -1,0 +1,16 @@
+{
+  "source": "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Views/MainWindow/RefinementModeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Refinement Mode",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 16
+        }
+      }
+    ]
+  },
+  "version": 1
+}

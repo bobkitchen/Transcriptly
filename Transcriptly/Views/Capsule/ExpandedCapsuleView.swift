@@ -50,7 +50,7 @@ struct ExpandedCapsuleView: View {
                 }
                 
                 // Current mode name
-                Text(viewModel.refinementService.currentMode.displayName)
+                Text(viewModel.currentRefinementMode.displayName)
                     .font(.system(size: 8, weight: .medium)) // Smaller font
                     .foregroundColor(.white.opacity(CapsuleDesignSystem.textOpacity))
                     .lineLimit(1)

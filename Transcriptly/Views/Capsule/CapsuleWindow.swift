@@ -88,7 +88,7 @@ struct CapsuleView: View {
                         .foregroundColor(.white)
                 }
                 
-                Text(viewModel.refinementService.currentMode.rawValue)
+                Text(viewModel.currentRefinementMode.rawValue)
                     .font(.caption2)
                     .foregroundColor(.white.opacity(0.8))
             }

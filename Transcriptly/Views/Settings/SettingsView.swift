@@ -10,6 +10,8 @@ import SwiftUI
 import AppKit
 
 struct SettingsView: View {
+    @ObservedObject var viewModel: AppViewModel
+    let onFloat: () -> Void
     @AppStorage("playCompletionSound") private var playCompletionSound = true
     @AppStorage("showNotifications") private var showNotifications = true
     @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⇧V"
@@ -20,13 +22,19 @@ struct SettingsView: View {
     @State private var showingHistory = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Header
-                Text("Settings")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .foregroundColor(.primaryText)
-                    .padding(.top, DesignSystem.marginStandard)
+        VStack(spacing: 0) {
+            // Integrated header
+            ContentHeader(
+                viewModel: viewModel,
+                title: "Settings",
+                showModeControls: false,
+                showFloatButton: true,
+                onFloat: onFloat
+            )
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                 
                 // Account Section
                 SettingsCard(
@@ -174,9 +182,11 @@ struct SettingsView: View {
             }
             .padding(DesignSystem.marginStandard)
         }
+        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
+        }
         }
     }
 }
@@ -277,7 +287,7 @@ struct ShortcutRow: View {
                         isWaitingForKeypress = true
                     }
                 }
-                .buttonStyle(CompactButtonStyle())
+                .buttonStyle(.plain)
             }
         }
     }
@@ -306,5 +316,5 @@ struct ShortcutRow: View {
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(viewModel: AppViewModel(), onFloat: {})
 }

@@ -19,19 +19,28 @@ struct LearningView: View {
     @State private var selectedPattern: LearnedPattern?
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                // Header section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
-                    Text("Learning")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(.primaryText)
-                        .padding(.top, DesignSystem.marginStandard)
-                    
-                    Text("Transcriptly learns from your corrections to improve accuracy over time")
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(.secondaryText)
-                }
+        VStack(spacing: 0) {
+            // Simple header (no controls)
+            HStack {
+                Text("Learning")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.regularMaterial.opacity(0.3))
+            
+            // Main content
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+                    // Description section
+                    VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                        Text("Transcriptly learns from your corrections to improve accuracy over time")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.secondaryText)
+                    }
                 
                 // Authentication Status Card
                 AuthStatusCard()
@@ -54,7 +63,7 @@ struct LearningView: View {
                         Button("Refresh") {
                             loadPatterns()
                         }
-                        .buttonStyle(CompactButtonStyle())
+                        .buttonStyle(SecondaryButtonStyle())
                     }
                     
                     if isLoading {
@@ -78,9 +87,12 @@ struct LearningView: View {
                         self.error = nil
                     }
                 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .padding(DesignSystem.marginStandard)
         }
+        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .onAppear {
             loadPatterns()
@@ -287,7 +299,7 @@ struct LearningStatusCard: View {
                     Button("Reset All Data") {
                         onResetTapped()
                     }
-                    .buttonStyle(CompactButtonStyle())
+                    .buttonStyle(SecondaryButtonStyle())
                     .foregroundColor(.red)
                     .disabled(learningService.sessionCount == 0)
                 }
@@ -446,7 +458,7 @@ struct ErrorCard: View {
             Button("Dismiss") {
                 onDismiss()
             }
-            .buttonStyle(CompactButtonStyle())
+            .buttonStyle(SecondaryButtonStyle())
         }
         .padding(DesignSystem.spacingLarge)
         .background(Color.orange.opacity(0.1))

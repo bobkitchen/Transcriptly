@@ -299,22 +299,40 @@ final class KeyboardShortcutService: ObservableObject {
         
         guard status == noErr else { return OSStatus(eventNotHandledErr) }
         
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
+        // Safely dispatch to main queue only if not already on main thread
+        if Thread.isMainThread {
             switch HotKeyID(rawValue: hotKeyID.id) {
             case .recording:
-                self.onShortcutPressed?()
+                onShortcutPressed?()
             case .rawMode:
-                self.onModeChangePressed?(.raw)
+                onModeChangePressed?(.raw)
             case .cleanupMode:
-                self.onModeChangePressed?(.cleanup)
+                onModeChangePressed?(.cleanup)
             case .emailMode:
-                self.onModeChangePressed?(.email)
+                onModeChangePressed?(.email)
             case .messagingMode:
-                self.onModeChangePressed?(.messaging)
+                onModeChangePressed?(.messaging)
             case .none:
                 break
+            }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                
+                switch HotKeyID(rawValue: hotKeyID.id) {
+                case .recording:
+                    self.onShortcutPressed?()
+                case .rawMode:
+                    self.onModeChangePressed?(.raw)
+                case .cleanupMode:
+                    self.onModeChangePressed?(.cleanup)
+                case .emailMode:
+                    self.onModeChangePressed?(.email)
+                case .messagingMode:
+                    self.onModeChangePressed?(.messaging)
+                case .none:
+                    break
+                }
             }
         }
         

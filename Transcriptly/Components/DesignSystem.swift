@@ -64,6 +64,10 @@ struct DesignSystem {
         
         static let monospacedBody = Font.system(size: 14, weight: .regular, design: .monospaced)
         static let monospacedCaption = Font.system(size: 12, weight: .regular, design: .monospaced)
+        
+        // Specialized component typography
+        static let floatingButton = Font.system(size: 12, weight: .medium, design: .default)
+        static let modeIndicator = Font.system(size: 14, weight: .medium, design: .default)
     }
     
     // MARK: - Colors

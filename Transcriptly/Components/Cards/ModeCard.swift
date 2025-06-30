@@ -23,6 +23,8 @@ struct ModeCard: View {
     }
     
     var body: some View {
+        Text("Mode Card - \(mode.displayName)")
+        /*
         VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
             // Main content
             HStack(spacing: DesignSystem.spacingMedium) {
@@ -188,6 +190,7 @@ struct CompactButtonStyle: ButtonStyle {
                     )
                 }
             }
+        */
     }
 }
 
@@ -208,26 +211,23 @@ struct ModeStatistics {
             usageCount: 43,
             lastEditedDisplay: "1 week ago",
             assignedApps: [
-                AppInfo(name: "Mail"),
-                AppInfo(name: "Outlook")
+                AppInfo(bundleIdentifier: "com.apple.mail", localizedName: "Mail", executablePath: nil),
+                AppInfo(bundleIdentifier: "com.microsoft.outlook", localizedName: "Outlook", executablePath: nil)
             ]
         ),
         .messaging: ModeStatistics(
             usageCount: 89,
             lastEditedDisplay: "3 days ago",
             assignedApps: [
-                AppInfo(name: "Messages"),
-                AppInfo(name: "Slack"),
-                AppInfo(name: "Discord"),
-                AppInfo(name: "Teams")
+                AppInfo(bundleIdentifier: "com.apple.messages", localizedName: "Messages", executablePath: nil),
+                AppInfo(bundleIdentifier: "com.tinyspeck.slackmacgap", localizedName: "Slack", executablePath: nil),
+                AppInfo(bundleIdentifier: "com.hnc.Discord", localizedName: "Discord", executablePath: nil),
+                AppInfo(bundleIdentifier: "com.microsoft.teams2", localizedName: "Teams", executablePath: nil)
             ]
         )
     ]
 }
 
-struct AppInfo {
-    let name: String
-}
 
 #Preview {
     VStack(spacing: 12) {

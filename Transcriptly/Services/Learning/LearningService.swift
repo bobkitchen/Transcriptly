@@ -2,15 +2,14 @@ import Foundation
 import Combine
 import Auth
 
-@MainActor
 class LearningService: ObservableObject {
-    static let shared = LearningService()
+    @MainActor static let shared = LearningService()
     
-    @Published var isLearningEnabled = true
-    @Published var sessionCount = 0
+    @MainActor @Published var isLearningEnabled = true
+    @MainActor @Published var sessionCount = 0
     // Note: Removed @Published flags to prevent race conditions
     // Now using direct decision method instead
-    @Published var learningQuality: LearningQuality = .minimal
+    @MainActor @Published var learningQuality: LearningQuality = .minimal
     
     private let supabase = SupabaseManager.shared
     private let patternMatcher = PatternMatcher()

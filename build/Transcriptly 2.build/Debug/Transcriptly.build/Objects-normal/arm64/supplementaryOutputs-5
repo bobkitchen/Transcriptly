@@ -1,0 +1,23 @@
+{
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Services/TranscriptionService.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptionService.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptionService.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptionService.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptionService.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/TranscriptionService.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Views/MainWindow/MainWindowView.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/MainWindowView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/MainWindowView.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/MainWindowView.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/MainWindowView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/MainWindowView.swiftdeps"
+  },
+  "/Users/bobkitchen/Documents/GitHub/Transcriptly/Transcriptly/Views/MainWindow/OptionsView.swift" : {
+    "const-values" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/OptionsView.swiftconstvalues",
+    "dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/OptionsView.d",
+    "diagnostics" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/OptionsView.dia",
+    "object" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/OptionsView.o",
+    "swift-dependencies" : "/Users/bobkitchen/Documents/GitHub/Transcriptly/build/Transcriptly.build/Debug/Transcriptly.build/Objects-normal/arm64/OptionsView.swiftdeps"
+  }
+}

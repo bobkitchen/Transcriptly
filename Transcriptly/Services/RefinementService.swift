@@ -41,11 +41,10 @@ struct TextAnalysis {
     let isUppercase: Bool
 }
 
-@MainActor
 class RefinementService: ObservableObject {
-    @Published var isProcessing = false
-    @Published var currentMode: RefinementMode = .cleanup
-    @Published var prompts: [RefinementMode: RefinementPrompt]
+    @MainActor @Published var isProcessing = false
+    @MainActor @Published var currentMode: RefinementMode = .cleanup
+    @MainActor @Published var prompts: [RefinementMode: RefinementPrompt]
     
     private let languageRecognizer = NLLanguageRecognizer()
     private let sentimentAnalyzer = NLTagger(tagSchemes: [.sentimentScore])
@@ -114,31 +113,48 @@ class RefinementService: ObservableObject {
     }
     
     func refine(_ text: String) async throws -> String {
-        isProcessing = true
-        defer { isProcessing = false }
+        await MainActor.run { isProcessing = true }
+        defer { Task { @MainActor in isProcessing = false } }
+        
+        // Get current mode and prompt on main actor
+        let (mode, prompt) = await MainActor.run {
+            let mode = currentMode
+            let prompt = prompts[mode]
+            return (mode, prompt)
+        }
         
         // Return raw text immediately for raw mode
-        guard currentMode != .raw else {
+        guard mode != .raw else {
             return text
         }
         
         // Check that prompt exists for the mode
-        guard let prompt = prompts[currentMode] else {
+        guard let prompt = prompt else {
             throw RefinementError.promptNotFound
         }
         
         var refinedText: String
         
-        // Try Foundation Models first, fallback to placeholder if unavailable
-        #if canImport(FoundationModels)
-        if let session = languageModelSession {
-            refinedText = try await refineWithFoundationModels(text: text, prompt: prompt, session: session)
-        } else {
+        // Try AI Providers first
+        let result = await AIProviderManager.shared.refine(text: text, mode: currentMode)
+        
+        switch result {
+        case .success(let refined):
+            refinedText = refined
+        case .failure(let error):
+            print("AI Provider refinement failed: \(error)")
+            
+            // Fallback to Foundation Models if available
+            #if canImport(FoundationModels)
+            if let session = languageModelSession {
+                refinedText = try await refineWithFoundationModels(text: text, prompt: prompt, session: session)
+            } else {
+                refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
+            }
+            #else
             refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
+            #endif
         }
-        #else
-        refinedText = try await refineWithPlaceholderProcessing(text: text, mode: currentMode)
-        #endif
         
         // Apply learned patterns as final step
         refinedText = await LearningService.shared.applyLearnedPatterns(to: refinedText, mode: currentMode)

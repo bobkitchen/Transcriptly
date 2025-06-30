@@ -59,6 +59,31 @@ final class TranscriptionService: ObservableObject {
     }
     
     func transcribeAudioFile(at url: URL) async -> String? {
+        await MainActor.run {
+            isTranscribing = true
+            transcriptionError = nil
+        }
+        
+        defer {
+            Task { @MainActor in
+                isTranscribing = false
+            }
+        }
+        
+        // Try AI Providers first
+        if let audioData = try? Data(contentsOf: url) {
+            let result = await AIProviderManager.shared.transcribe(audio: audioData)
+            
+            switch result {
+            case .success(let transcription):
+                return transcription
+            case .failure(let error):
+                print("AI Provider transcription failed: \(error)")
+                // Fall through to Apple Speech recognition
+            }
+        }
+        
+        // Fallback to Apple Speech Recognition
         guard speechRecognizer?.isAvailable == true else {
             await MainActor.run {
                 transcriptionError = "Speech recognition not available"
@@ -73,11 +98,6 @@ final class TranscriptionService: ObservableObject {
             return nil
         }
         
-        await MainActor.run {
-            isTranscribing = true
-            transcriptionError = nil
-        }
-        
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
         request.requiresOnDeviceRecognition = true // For privacy
@@ -85,8 +105,6 @@ final class TranscriptionService: ObservableObject {
         return await withCheckedContinuation { continuation in
             speechRecognizer?.recognitionTask(with: request) { result, error in
                 DispatchQueue.main.async {
-                    self.isTranscribing = false
-                    
                     if let error = error {
                         self.transcriptionError = "Transcription failed: \(error.localizedDescription)"
                         continuation.resume(returning: nil)

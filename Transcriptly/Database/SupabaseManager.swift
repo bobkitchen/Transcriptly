@@ -5,7 +5,7 @@ import Supabase
 class SupabaseManager: ObservableObject {
     static let shared = SupabaseManager()
     
-    private let client: SupabaseClient
+    let client: SupabaseClient
     @Published var currentUser: User?
     @Published var isAuthenticated = false
     @Published var isSyncing = false
@@ -14,6 +14,10 @@ class SupabaseManager: ObservableObject {
     private var offlineQueue: [PendingOperation] = []
     private var cachedPatterns: [LearnedPattern] = []
     private var cancellables = Set<AnyCancellable>()
+    
+    var currentUserId: String? {
+        return currentUser?.id.uuidString
+    }
     
     private init() {
         // Initialize Supabase client

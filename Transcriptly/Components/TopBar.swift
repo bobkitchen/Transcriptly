@@ -26,7 +26,7 @@ struct TopBar: View {
             Spacer()
             
             // Mode dropdown
-            Picker("Mode", selection: $viewModel.refinementService.currentMode) {
+            Picker("Mode", selection: $viewModel.currentRefinementMode) {
                 ForEach(RefinementMode.allCases, id: \.self) { mode in
                     Text(mode.displayName).tag(mode)
                 }

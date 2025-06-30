@@ -19,25 +19,20 @@ struct MainWindowView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Subtle Top Bar
-            TopBar(
+        ZStack(alignment: .topLeading) {
+            // Full-width content (no top bar)
+            FullWidthContentView(
+                selectedSection: $selectedSection,
                 viewModel: viewModel,
-                showCapsuleMode: capsuleManager.showCapsule
+                onFloat: capsuleManager.showCapsule
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            // Main Content with sidebar getting visual priority
-            HStack(spacing: 0) {
-                // Prominent sidebar
-                SidebarView(selectedSection: $selectedSection)
-                
-                // Main content area
-                MainContentView(
-                    selectedSection: $selectedSection,
-                    viewModel: viewModel
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            // Floating sidebar overlay
+            FloatingSidebar(selectedSection: $selectedSection)
+                .padding(.leading, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 16)
         }
         .frame(minWidth: 920, minHeight: 640) // Adjusted for new layout
         .background(Color.primaryBackground)

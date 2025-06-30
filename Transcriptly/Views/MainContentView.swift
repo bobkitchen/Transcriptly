@@ -10,20 +10,24 @@ import SwiftUI
 struct MainContentView: View {
     @Binding var selectedSection: SidebarSection
     @ObservedObject var viewModel: AppViewModel
+    let onFloat: () -> Void
     
     var body: some View {
         Group {
             switch selectedSection {
             case .home:
-                HomeView(viewModel: viewModel)
-            case .transcription:
-                TranscriptionView(viewModel: viewModel)
+                HomeView(viewModel: viewModel, onFloat: onFloat)
+            case .dictation:
+                TranscriptionView(viewModel: viewModel, onFloat: onFloat)
+            case .readAloud:
+                // TODO: Read Aloud View - placeholder
+                TranscriptionView(viewModel: viewModel, onFloat: onFloat)
             case .aiProviders:
                 AIProvidersView()
             case .learning:
                 LearningView()
             case .settings:
-                SettingsView()
+                SettingsView(viewModel: viewModel, onFloat: onFloat)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
