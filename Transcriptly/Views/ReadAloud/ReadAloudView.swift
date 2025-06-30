@@ -19,10 +19,10 @@ struct ReadAloudView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar with controls
+            // Integrated header with controls
             HStack {
                 Text("Read Aloud")
-                    .font(DesignSystem.Typography.titleLarge)
+                    .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.primaryText)
                 
                 Spacer()
@@ -64,8 +64,9 @@ struct ReadAloudView: View {
                     }
                 }
             }
-            .padding(DesignSystem.spacingLarge)
-            .liquidGlassCard()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.regularMaterial.opacity(0.3))
             
             // Main content
             ScrollView {
@@ -78,10 +79,12 @@ struct ReadAloudView: View {
                         emptyStateContent
                     }
                 }
-                .padding(DesignSystem.spacingLarge)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
         }
-        .background(.regularMaterial)
+        .adjustForFloatingSidebar()
+        .background(Color.primaryBackground)
         .fileImporter(
             isPresented: $showingDocumentPicker,
             allowedContentTypes: [
