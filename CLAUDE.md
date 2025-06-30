@@ -2,7 +2,7 @@
 
 ## Project Overview
 - **App Name**: Transcriptly
-- **Platform**: macOS 26.0+ (native)
+- **Platform**: macOS 15.5+ (optimized for macOS 26.0)
 - **Framework**: SwiftUI with AppKit integration
 - **Architecture**: Service-isolated, Liquid Glass UI
 - **Current Phase**: Phase 3 Complete - Learning System with Supabase Integration

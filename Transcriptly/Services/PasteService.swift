@@ -53,6 +53,20 @@ final class PasteService: ObservableObject {
     }
     
     private func simulateKeyboardPaste() async -> Bool {
+        // Check if we have accessibility permissions
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        let accessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        if !accessibilityEnabled {
+            await MainActor.run {
+                self.clipboardError = "Accessibility permissions required for auto-paste. Please grant permission in System Settings."
+            }
+            print("❌ Accessibility permissions not granted")
+            return false
+        }
+        
+        print("✅ Accessibility permissions granted, attempting paste...")
+        
         // This approach simulates Cmd+V to paste at the current cursor location
         // It works with most applications that support standard paste operations
         
@@ -61,12 +75,15 @@ final class PasteService: ObservableObject {
             await MainActor.run {
                 self.clipboardError = "Failed to create paste keyboard events"
             }
+            print("❌ Failed to create CGEvent objects")
             return false
         }
         
         // Add Cmd modifier
         keyDown.flags = .maskCommand
         keyUp.flags = .maskCommand
+        
+        print("🎹 Posting keyboard events...")
         
         // Post the key events with a small delay between them
         keyDown.post(tap: .cghidEventTap)
@@ -75,6 +92,8 @@ final class PasteService: ObservableObject {
         try? await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
         
         keyUp.post(tap: .cghidEventTap)
+        
+        print("✅ Keyboard events posted successfully")
         
         await MainActor.run {
             clipboardError = nil

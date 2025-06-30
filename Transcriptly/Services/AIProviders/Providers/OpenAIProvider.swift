@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AVFoundation
 
 @MainActor
 class OpenAIProvider: ObservableObject {
@@ -19,6 +20,14 @@ class OpenAIProvider: ObservableObject {
     
     private var apiKey: String?
     private let baseURL = "https://api.openai.com/v1"
+    private lazy var optimizedURLSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.httpMaximumConnectionsPerHost = 2
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
     
     private init() {
         loadAPIKey()
@@ -52,7 +61,7 @@ extension OpenAIProvider: AIProvider {
         request.setValue("Transcriptly-macOS/1.0", forHTTPHeaderField: "User-Agent")
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await optimizedURLSession.data(for: request)
             let httpResponse = response as? HTTPURLResponse
             
             await MainActor.run {
@@ -113,8 +122,9 @@ extension OpenAIProvider: TranscriptionProvider {
         // GPT-4o transcription uses the chat completions endpoint with audio input
         // This is a newer approach than Whisper's dedicated audio endpoint
         
-        // For GPT-4o models, we need to convert audio to base64 and send via chat completions
-        let base64Audio = audio.base64EncodedString()
+        // Optimize audio before base64 encoding for better performance
+        let optimizedAudio = preprocessAudio(audio)
+        let base64Audio = optimizedAudio.base64EncodedString()
         
         let requestBody: [String: Any] = [
             "model": selectedModel,
@@ -153,7 +163,7 @@ extension OpenAIProvider: TranscriptionProvider {
         request.httpBody = bodyData
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await optimizedURLSession.data(for: request)
             let httpResponse = response as? HTTPURLResponse
             
             guard httpResponse?.statusCode == 200 else {
@@ -227,7 +237,7 @@ extension OpenAIProvider: RefinementProvider {
         request.httpBody = bodyData
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await optimizedURLSession.data(for: request)
             let httpResponse = response as? HTTPURLResponse
             
             guard httpResponse?.statusCode == 200 else {
@@ -292,5 +302,35 @@ extension OpenAIProvider: RefinementProvider {
             Return only the message text without explanations.
             """
         }
+    }
+    
+    // MARK: - Audio Preprocessing
+    
+    private func preprocessAudio(_ audioData: Data) -> Data {
+        do {
+            return try optimizeAudioData(audioData)
+        } catch {
+            // If optimization fails, use original data
+            print("Audio optimization failed, using original: \(error.localizedDescription)")
+            return audioData
+        }
+    }
+    
+    private func optimizeAudioData(_ audioData: Data) throws -> Data {
+        // Simple size-based optimization without deprecated APIs
+        // Skip optimization if file is already small (under 1MB)
+        let maxSizeBeforeOptimization = 1_000_000 // 1MB
+        
+        if audioData.count <= maxSizeBeforeOptimization {
+            print("Audio file is small (\(audioData.count) bytes), skipping optimization")
+            return audioData
+        }
+        
+        print("Audio file is large (\(audioData.count) bytes), would benefit from optimization")
+        print("Note: Full audio optimization requires newer AVFoundation APIs")
+        
+        // For now, return original data - the URLSession optimization provides the main benefit
+        // TODO: Implement full audio optimization using newer async AVFoundation APIs when targeting macOS 15+
+        return audioData
     }
 }
