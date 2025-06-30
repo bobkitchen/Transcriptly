@@ -36,8 +36,17 @@ final class ReadAloudService: ObservableObject {
         voiceProviderService.$lastError
             .compactMap { $0 }
             .sink { [weak self] error in
-                self?.lastError = error
-                self?.sessionState = .error
+                guard let self = self else { return }
+                print("🔄 VoiceProvider error received: \(error), currentState=\(self.sessionState)")
+                self.lastError = error
+                // Only set error state if we're actively trying to play
+                // Don't override intentional stops/pauses with error state
+                if self.sessionState == .playing {
+                    print("🔄 Setting error state from VoiceProvider binding")
+                    self.sessionState = .error
+                } else {
+                    print("🔄 Not setting error state - not currently playing")
+                }
             }
             .store(in: &cancellables)
         
@@ -160,8 +169,19 @@ final class ReadAloudService: ObservableObject {
     // MARK: - Reading Control
     
     func startReading() async {
-        guard let document = currentDocument,
-              sessionState.canPlay else { return }
+        print("🔄 StartReading: Called with state=\(sessionState)")
+        
+        guard let document = currentDocument else {
+            print("🔄 StartReading: No document available")
+            return
+        }
+        
+        guard sessionState.canPlay else {
+            print("🔄 StartReading: Cannot play in state=\(sessionState)")
+            return
+        }
+        
+        print("🔄 StartReading: Proceeding with start")
         
         // Create or resume session
         if currentSession == nil {
@@ -220,39 +240,62 @@ final class ReadAloudService: ObservableObject {
     
     func seekToSentence(_ index: Int) async {
         guard let document = currentDocument,
-              index >= 0 && index < document.sentences.count else { return }
+              index >= 0 && index < document.sentences.count else { 
+            print("🔄 SeekToSentence: Invalid document or index")
+            return 
+        }
         
         let wasPlaying = sessionState == .playing
+        print("🔄 SeekToSentence: index=\(index), wasPlaying=\(wasPlaying), currentState=\(sessionState)")
         
-        // Stop any current reading and wait for it to fully stop
+        // Stop any current speech - the new operation system handles this cleanly
+        voiceProviderService.stopSpeaking()
+        
+        // Set state appropriately
         if wasPlaying {
-            stopReading()
-            // Give the voice service time to fully stop
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            sessionState = .stopped
+            print("🔄 SeekToSentence: Set state to .stopped")
+        } else {
+            print("🔄 SeekToSentence: Keeping state as \(sessionState) (wasn't playing)")
         }
+        
+        stopReadingTimer()
+        
+        // Brief pause to ensure cleanup
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
         
         currentSentenceIndex = index
         updateProgress()
+        print("🔄 SeekToSentence: Updated to sentence \(index)")
         
-        // Only restart if we were playing before
+        // Restart if we were playing before
         if wasPlaying {
+            print("🔄 SeekToSentence: About to restart reading")
             await startReading()
+        } else {
+            print("🔄 SeekToSentence: Not restarting (wasn't playing)")
         }
     }
     
     // MARK: - Private Reading Methods
     
     private func readCurrentSentence() async {
+        print("🔄 ReadCurrentSentence: Called for sentence \(currentSentenceIndex), state=\(sessionState)")
+        
         guard let document = currentDocument,
               currentSentenceIndex < document.sentences.count else {
+            print("🔄 ReadCurrentSentence: No document or invalid index, completing")
             completeReading()
             return
         }
         
         // Don't start reading if we're not in playing state
         guard sessionState == .playing else {
+            print("🔄 ReadCurrentSentence: Not in playing state (state=\(sessionState)), returning")
             return
         }
+        
+        print("🔄 ReadCurrentSentence: Proceeding to speak sentence \(currentSentenceIndex)")
         
         let sentence = document.sentences[currentSentenceIndex]
         
@@ -273,12 +316,19 @@ final class ReadAloudService: ObservableObject {
             Task { @MainActor in
                 guard let self = self else { return }
                 
+                print("🔄 Speech completion: success=\(success), currentState=\(self.sessionState)")
+                
                 if success && self.sessionState == .playing {
                     await self.advanceToNextSentence()
-                } else if !success {
+                } else if !success && self.sessionState == .playing {
+                    // Only set error if we're actively playing - if stopped/paused, the failure is intentional
+                    print("🔄 Setting error state due to speech failure during playing")
                     self.sessionState = .error
                     self.lastError = "Speech synthesis failed"
+                } else if !success {
+                    print("🔄 Speech failed but state is \(self.sessionState) - treating as intentional cancellation")
                 }
+                // If !success but not .playing, it's intentional cancellation - do nothing
             }
         }
     }
@@ -401,7 +451,6 @@ final class ReadAloudService: ObservableObject {
         guard let document = currentDocument,
               currentSentenceIndex < document.sentences.count else { return 0 }
         
-        let remainingSentences = document.sentences.count - currentSentenceIndex
         let remainingText = document.sentences[currentSentenceIndex...].map { $0.text }.joined(separator: " ")
         
         // Estimate based on speech rate and word count

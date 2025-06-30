@@ -9,6 +9,15 @@ import Foundation
 import AVFoundation
 import Combine
 
+private struct SpeechOperation {
+    let id = UUID()
+    let text: String
+    let sentenceIndex: Int
+    let characterOffset: Int
+    let completion: (Bool) -> Void
+    let createdAt = Date()
+}
+
 @MainActor
 final class VoiceProviderService: NSObject, ObservableObject {
     @Published var availableVoices: [VoiceProvider] = []
@@ -17,10 +26,17 @@ final class VoiceProviderService: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var lastError: String?
     
-    // Speech synthesis
+    // Speech synthesis - Single instance best practice
     private let speechSynthesizer = AVSpeechSynthesizer()
     private var currentUtterance: AVSpeechUtterance?
-    private var speechCompletionHandler: ((Bool) -> Void)?
+    
+    // Operation management
+    private var currentOperation: SpeechOperation?
+    private var operationQueue: [SpeechOperation] = []
+    
+    // Audio playback for cloud TTS
+    private var currentAudioPlayer: AVAudioPlayer?
+    private var audioPlaybackTask: Task<Void, Never>?
     
     // Enhanced speech tracking
     private var currentSentenceIndex: Int = 0
@@ -154,76 +170,122 @@ final class VoiceProviderService: NSObject, ObservableObject {
     
     // MARK: - Speech Synthesis
     
-    func speak(text: String, completion: @escaping (Bool) -> Void) async {
-        speechCompletionHandler = completion
+    /// Speaks a specific sentence with tracking information
+    func speakSentence(text: String, sentenceIndex: Int, characterOffset: Int, completion: @escaping (Bool) -> Void) async {
+        // Create new operation
+        let operation = SpeechOperation(
+            text: text,
+            sentenceIndex: sentenceIndex,
+            characterOffset: characterOffset,
+            completion: completion
+        )
+        
+        // Cancel any existing operation
+        if let current = currentOperation {
+            print("🔄 Canceling previous speech operation: \(current.id)")
+            speechSynthesizer.stopSpeaking(at: .immediate)
+            currentAudioPlayer?.stop()
+            audioPlaybackTask?.cancel()
+            
+            // Complete the cancelled operation without setting error
+            current.completion(false)
+        }
+        
+        // Set as current operation
+        currentOperation = operation
+        currentSentenceIndex = sentenceIndex
+        currentCharacterOffset = characterOffset
+        speakingProgress = 0.0
+        
+        print("🔄 Starting speech operation: \(operation.id) for sentence \(sentenceIndex)")
+        print("🔄 Current operation set to: \(operation.id)")
+        
+        // Execute the operation
+        await executeSpeechOperation(operation)
+    }
+    
+    private func executeSpeechOperation(_ operation: SpeechOperation) async {
+        // Ensure this is still the current operation
+        guard currentOperation?.id == operation.id else {
+            print("🔄 Operation \(operation.id) no longer current, skipping")
+            return
+        }
         
         // Use the selected TTS provider from AI Providers
         let selectedProvider = aiProviderManager.preferences.textToSpeechProvider
         
         switch selectedProvider {
         case .apple:
-            // Use Apple voices (find a suitable voice)
             let appleVoice = availableVoices.first { $0.type == .apple } ?? availableVoices.first
             if let voice = appleVoice {
-                await speakWithApple(text: text, voice: voice)
+                await speakWithApple(text: operation.text, voice: voice, operation: operation)
             } else {
                 lastError = "No Apple voice available"
-                completion(false)
+                completeOperation(operation, success: false)
             }
         case .googleCloud:
-            // Use the selected Google Cloud voice
             let voiceId = aiProviderManager.preferences.googleCloudTTSVoice
             let googleVoice = availableVoices.first { $0.type == .googleCloud && $0.providerVoiceId == voiceId }
                 ?? availableVoices.first { $0.type == .googleCloud }
             if let voice = googleVoice {
-                await speakWithGoogleCloud(text: text, voice: voice)
+                await speakWithGoogleCloud(text: operation.text, voice: voice)
             } else {
                 lastError = "No Google Cloud voice available"
-                completion(false)
+                completeOperation(operation, success: false)
             }
         case .elevenLabs:
-            // Use the selected ElevenLabs voice
             let voiceId = aiProviderManager.preferences.elevenLabsTTSVoice
             let elevenlabsVoice = availableVoices.first { $0.type == .elevenLabs && $0.name.lowercased() == voiceId }
                 ?? availableVoices.first { $0.type == .elevenLabs }
             if let voice = elevenlabsVoice {
-                await speakWithElevenLabs(text: text, voice: voice)
+                await speakWithElevenLabs(text: operation.text, voice: voice)
             } else {
                 lastError = "No ElevenLabs voice available"
-                completion(false)
+                completeOperation(operation, success: false)
             }
         case .openai, .openrouter:
-            // These providers don't support TTS, fall back to Apple
             let appleVoice = availableVoices.first { $0.type == .apple } ?? availableVoices.first
             if let voice = appleVoice {
-                await speakWithApple(text: text, voice: voice)
+                await speakWithApple(text: operation.text, voice: voice, operation: operation)
             } else {
                 lastError = "No voice available"
-                completion(false)
+                completeOperation(operation, success: false)
             }
         }
     }
     
-    /// Speaks a specific sentence with tracking information
-    func speakSentence(text: String, sentenceIndex: Int, characterOffset: Int, completion: @escaping (Bool) -> Void) async {
-        currentSentenceIndex = sentenceIndex
-        currentCharacterOffset = characterOffset
-        speakingProgress = 0.0
+    private func completeOperation(_ operation: SpeechOperation, success: Bool) {
+        guard currentOperation?.id == operation.id else {
+            print("🔄 Operation \(operation.id) already replaced, not completing")
+            return
+        }
         
-        await speak(text: text, completion: completion)
+        print("🔄 Completing operation \(operation.id) with success: \(success)")
+        currentOperation = nil
+        operation.completion(success)
     }
     
-    private func speakWithApple(text: String, voice: VoiceProvider) async {
+    func speak(text: String, completion: @escaping (Bool) -> Void) async {
+        await speakSentence(text: text, sentenceIndex: 0, characterOffset: 0, completion: completion)
+    }
+    
+    private func speakWithApple(text: String, voice: VoiceProvider, operation: SpeechOperation) async {
         guard let avVoiceId = voice.avVoice,
               let avVoice = AVSpeechSynthesisVoice(identifier: avVoiceId) else {
             lastError = "Apple voice not available"
-            speechCompletionHandler?(false)
+            completeOperation(operation, success: false)
+            return
+        }
+        
+        // Ensure this is still the current operation
+        guard currentOperation?.id == operation.id else {
+            print("🔄 Operation \(operation.id) no longer current during Apple speech setup")
             return
         }
         
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = avVoice
-        utterance.rate = voicePreferences.speechRate * 0.5 // AVSpeechUtteranceDefaultSpeechRate is slower
+        utterance.rate = voicePreferences.speechRate * 0.5
         utterance.pitchMultiplier = voicePreferences.pitch
         utterance.volume = voicePreferences.volume
         
@@ -233,9 +295,12 @@ final class VoiceProviderService: NSObject, ObservableObject {
     
     private func speakWithGoogleCloud(text: String, voice: VoiceProvider) async {
         guard let provider = aiProviderManager.providers[.googleCloud] as? GoogleCloudProvider,
-              provider.isConfigured else {
+              provider.isConfigured,
+              let operation = currentOperation else {
             lastError = "Google Cloud TTS not configured"
-            speechCompletionHandler?(false)
+            if let operation = currentOperation {
+                completeOperation(operation, success: false)
+            }
             return
         }
         
@@ -245,18 +310,21 @@ final class VoiceProviderService: NSObject, ObservableObject {
         switch result {
         case .success(let audioData):
             // Play the audio data
-            await playAudioData(audioData)
+            await playAudioData(audioData, operation: operation)
         case .failure(let error):
             lastError = "Google Cloud TTS failed: \(error.localizedDescription)"
-            speechCompletionHandler?(false)
+            completeOperation(operation, success: false)
         }
     }
     
     private func speakWithElevenLabs(text: String, voice: VoiceProvider) async {
         guard let provider = aiProviderManager.providers[.elevenLabs] as? ElevenLabsProvider,
-              provider.isConfigured else {
+              provider.isConfigured,
+              let operation = currentOperation else {
             lastError = "ElevenLabs TTS not configured"
-            speechCompletionHandler?(false)
+            if let operation = currentOperation {
+                completeOperation(operation, success: false)
+            }
             return
         }
         
@@ -266,33 +334,51 @@ final class VoiceProviderService: NSObject, ObservableObject {
         switch result {
         case .success(let audioData):
             // Play the audio data
-            await playAudioData(audioData)
+            await playAudioData(audioData, operation: operation)
         case .failure(let error):
             lastError = "ElevenLabs TTS failed: \(error.localizedDescription)"
-            speechCompletionHandler?(false)
+            completeOperation(operation, success: false)
         }
     }
     
     func stopSpeaking() {
+        print("🔄 Stopping all speech operations")
+        
+        // Clear current operation but don't call completion - let the delegate handle it
+        if let operation = currentOperation {
+            print("🔄 Clearing current operation: \(operation.id)")
+            currentOperation = nil
+        }
+        
+        // Stop Apple speech synthesizer (for built-in voices)
         speechSynthesizer.stopSpeaking(at: .immediate)
         currentUtterance = nil
-        speechCompletionHandler = nil
+        
+        // Stop audio player for cloud TTS (Google Cloud, ElevenLabs)
+        currentAudioPlayer?.stop()
+        currentAudioPlayer = nil
+        
+        // Cancel any ongoing audio playback task to prevent orphaned players
+        audioPlaybackTask?.cancel()
+        audioPlaybackTask = nil
     }
     
     func pauseSpeaking() {
         speechSynthesizer.pauseSpeaking(at: .word)
+        currentAudioPlayer?.pause()
     }
     
     func resumeSpeaking() {
         speechSynthesizer.continueSpeaking()
+        currentAudioPlayer?.play()
     }
     
     var isSpeaking: Bool {
-        return speechSynthesizer.isSpeaking
+        return speechSynthesizer.isSpeaking || currentAudioPlayer?.isPlaying == true
     }
     
     var isPaused: Bool {
-        return speechSynthesizer.isPaused
+        return speechSynthesizer.isPaused || (currentAudioPlayer != nil && currentAudioPlayer?.isPlaying == false)
     }
     
     // MARK: - Voice Preferences
@@ -327,36 +413,59 @@ final class VoiceProviderService: NSObject, ObservableObject {
     
     // MARK: - Audio Playback
     
-    private func playAudioData(_ audioData: Data) async {
-        do {
-            // Create a temporary file for the audio data
-            let tempURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension("mp3")
-            
-            try audioData.write(to: tempURL)
-            
-            // Use AVAudioPlayer to play the audio
-            let audioPlayer = try AVAudioPlayer(contentsOf: tempURL)
-            audioPlayer.play()
-            
-            // Wait for playback to complete
-            while audioPlayer.isPlaying {
-                try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    private func playAudioData(_ audioData: Data, operation: SpeechOperation) async {
+        // Stop any existing audio playback first
+        currentAudioPlayer?.stop()
+        audioPlaybackTask?.cancel()
+        
+        audioPlaybackTask = Task {
+            do {
+                // Ensure this is still the current operation
+                guard currentOperation?.id == operation.id else {
+                    print("🔄 Audio playback cancelled - operation no longer current")
+                    return
+                }
+                
+                // Create a temporary file for the audio data
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension("mp3")
+                
+                try audioData.write(to: tempURL)
+                
+                // Use AVAudioPlayer to play the audio
+                let audioPlayer = try AVAudioPlayer(contentsOf: tempURL)
+                currentAudioPlayer = audioPlayer
+                audioPlayer.play()
+                
+                // Wait for playback to complete
+                while audioPlayer.isPlaying && !Task.isCancelled {
+                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                }
+                
+                // Clean up temporary file
+                try? FileManager.default.removeItem(at: tempURL)
+                
+                // Complete the operation if task wasn't cancelled and operation is still current
+                if !Task.isCancelled && currentOperation?.id == operation.id {
+                    await MainActor.run {
+                        self.completeOperation(operation, success: true)
+                        currentAudioPlayer = nil
+                    }
+                }
+                
+            } catch {
+                await MainActor.run {
+                    lastError = "Audio playback failed: \(error.localizedDescription)"
+                    if currentOperation?.id == operation.id {
+                        self.completeOperation(operation, success: false)
+                    }
+                    currentAudioPlayer = nil
+                }
             }
-            
-            // Clean up temporary file
-            try? FileManager.default.removeItem(at: tempURL)
-            
-            // Call completion handler
-            speechCompletionHandler?(true)
-            speechCompletionHandler = nil
-            
-        } catch {
-            lastError = "Audio playback failed: \(error.localizedDescription)"
-            speechCompletionHandler?(false)
-            speechCompletionHandler = nil
         }
+        
+        await audioPlaybackTask?.value
     }
     
     // MARK: - Voice Filtering
@@ -392,18 +501,24 @@ final class VoiceProviderService: NSObject, ObservableObject {
 
 // MARK: - AVSpeechSynthesizerDelegate
 
-@MainActor
-extension VoiceProviderService: AVSpeechSynthesizerDelegate {
+extension VoiceProviderService: @preconcurrency AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        guard let operation = currentOperation else {
+            print("🔄 Speech finished but no current operation")
+            return
+        }
+        
         currentUtterance = nil
-        speechCompletionHandler?(true)
-        speechCompletionHandler = nil
+        print("🔄 Speech finished successfully for operation: \(operation.id)")
+        completeOperation(operation, success: true)
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         currentUtterance = nil
-        speechCompletionHandler?(false)
-        speechCompletionHandler = nil
+        print("🔄 Speech cancelled (intentional stop)")
+        
+        // Don't call any completion handlers for cancellations
+        // Cancellations are intentional and should not trigger error states
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
