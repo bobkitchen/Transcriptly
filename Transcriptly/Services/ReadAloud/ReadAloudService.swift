@@ -201,7 +201,10 @@ final class ReadAloudService: ObservableObject {
     func stopReading() {
         guard sessionState.canStop else { return }
         
+        // Immediately stop the voice provider
         voiceProviderService.stopSpeaking()
+        
+        // Set state to stopped to prevent any pending operations
         sessionState = .stopped
         stopReadingTimer()
         
@@ -221,13 +224,17 @@ final class ReadAloudService: ObservableObject {
         
         let wasPlaying = sessionState == .playing
         
+        // Stop any current reading and wait for it to fully stop
         if wasPlaying {
             stopReading()
+            // Give the voice service time to fully stop
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         }
         
         currentSentenceIndex = index
         updateProgress()
         
+        // Only restart if we were playing before
         if wasPlaying {
             await startReading()
         }
@@ -239,6 +246,11 @@ final class ReadAloudService: ObservableObject {
         guard let document = currentDocument,
               currentSentenceIndex < document.sentences.count else {
             completeReading()
+            return
+        }
+        
+        // Don't start reading if we're not in playing state
+        guard sessionState == .playing else {
             return
         }
         
