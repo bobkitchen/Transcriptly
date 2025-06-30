@@ -218,8 +218,18 @@ final class TranscriptionHistoryService: ObservableObject {
             print("Loaded \(transcriptions.count) transcriptions from history")
         } catch {
             print("Failed to load transcription history: \(error)")
-            self.error = "Failed to load history: \(error.localizedDescription)"
+            print("Attempting to clear corrupted history data...")
+            
+            // Clear the corrupted data to prevent future crashes
+            userDefaults.removeObject(forKey: historyKey)
+            
+            self.error = "Transcription history was corrupted and has been reset. This is a one-time recovery action."
             transcriptions = []
+            
+            // Log the specific error for debugging
+            if error.localizedDescription.contains("Cannot initialize RefinementMode") {
+                print("Corruption was due to invalid RefinementMode enum value - likely from app update")
+            }
         }
         
         isLoading = false

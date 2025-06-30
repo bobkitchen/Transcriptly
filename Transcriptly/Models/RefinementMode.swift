@@ -13,6 +13,35 @@ enum RefinementMode: String, CaseIterable, Codable {
     case email = "Email Mode"
     case messaging = "Messaging Mode"
     
+    // MARK: - Custom Decoding for Backward Compatibility
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        
+        // Try exact match first
+        if let mode = RefinementMode(rawValue: rawValue) {
+            self = mode
+            return
+        }
+        
+        // Handle legacy values for backward compatibility
+        switch rawValue.lowercased() {
+        case "raw", "raw transcription":
+            self = .raw
+        case "cleanup", "clean-up", "clean-up mode":
+            self = .cleanup
+        case "email", "email mode":
+            self = .email
+        case "messaging", "messaging mode", "message":
+            self = .messaging
+        default:
+            // If we can't decode, default to raw mode to prevent crashes
+            print("Warning: Unknown RefinementMode '\(rawValue)', defaulting to .raw")
+            self = .raw
+        }
+    }
+    
     var icon: String {
         switch self {
         case .raw: return "doc.plaintext"
