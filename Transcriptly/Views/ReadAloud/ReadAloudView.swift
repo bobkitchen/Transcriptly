@@ -533,7 +533,7 @@ struct PlaybackControlsCard: View {
                 
                 Spacer()
                 
-                Text("1.0x")
+                Text("\(String(format: "%.1fx", service.playbackSpeed))")
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(.primaryText)
                     .fontWeight(.medium)
@@ -542,17 +542,26 @@ struct PlaybackControlsCard: View {
             HStack(spacing: DesignSystem.spacingMedium) {
                 ForEach([0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
                     Button("\(speed == 1.0 ? "1" : String(format: "%.2g", speed))x") {
-                        // Placeholder action
+                        Task {
+                            await service.setPlaybackSpeed(Float(speed))
+                        }
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     .controlSize(.mini)
-                    .foregroundColor(abs(1.0 - speed) < 0.01 ? .accentColor : .secondaryText)
+                    .foregroundColor(abs(service.playbackSpeed - Float(speed)) < 0.01 ? .accentColor : .secondaryText)
                 }
                 
                 Spacer()
                 
                 VStack(spacing: 4) {
-                    Slider(value: .constant(1.0), in: 0.5...2.5, step: 0.1)
+                    Slider(value: Binding(
+                        get: { Double(service.playbackSpeed) },
+                        set: { newValue in
+                            Task {
+                                await service.setPlaybackSpeed(Float(newValue))
+                            }
+                        }
+                    ), in: 0.5...2.5, step: 0.1)
                     .frame(width: 100)
                     
                     HStack {
@@ -800,7 +809,7 @@ struct MiniPlayerView: View {
                     
                     Spacer()
                     
-                    Text("1.0x")
+                    Text("\(String(format: "%.1fx", service.playbackSpeed))")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(.accentColor)
                         .fontWeight(.medium)

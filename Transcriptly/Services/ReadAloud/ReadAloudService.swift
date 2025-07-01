@@ -16,6 +16,7 @@ final class ReadAloudService: ObservableObject {
     @Published var currentSentenceIndex: Int = 0
     @Published var progress: Double = 0.0
     @Published var lastError: String?
+    @Published var playbackSpeed: Float = 1.0
     
     // Services
     private let documentProcessingService = DocumentProcessingService()
@@ -275,6 +276,25 @@ final class ReadAloudService: ObservableObject {
         } else {
             print("🔄 SeekToSentence: Not restarting (wasn't playing)")
         }
+    }
+    
+    func setPlaybackSpeed(_ speed: Float) async {
+        print("🎚️ SetPlaybackSpeed: Setting speed to \(speed)x")
+        
+        // Clamp speed to reasonable bounds
+        let clampedSpeed = max(0.5, min(2.5, speed))
+        playbackSpeed = clampedSpeed
+        
+        // Apply speed to voice provider if currently speaking
+        voiceProviderService.setPlaybackRate(clampedSpeed)
+        
+        // Update current session settings
+        if var session = currentSession {
+            session.playbackSettings.speechRate = clampedSpeed
+            currentSession = session
+        }
+        
+        print("🎚️ SetPlaybackSpeed: Speed set to \(clampedSpeed)x")
     }
     
     // MARK: - Private Reading Methods

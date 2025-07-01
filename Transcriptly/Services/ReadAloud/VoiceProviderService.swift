@@ -401,6 +401,26 @@ final class VoiceProviderService: NSObject, ObservableObject {
         saveVoicePreferences()
     }
     
+    func setPlaybackRate(_ rate: Float) {
+        let clampedRate = max(0.5, min(2.5, rate))
+        
+        // Update preferences
+        voicePreferences.speechRate = clampedRate
+        saveVoicePreferences()
+        
+        // Apply to current utterance if speaking
+        if let utterance = currentUtterance {
+            utterance.rate = clampedRate
+        }
+        
+        // Apply to current audio player if using cloud TTS
+        if let audioPlayer = currentAudioPlayer {
+            audioPlayer.rate = clampedRate
+        }
+        
+        print("🎚️ VoiceProviderService: Set playback rate to \(clampedRate)x")
+    }
+    
     func updatePitch(_ pitch: Float) {
         voicePreferences.pitch = max(0.8, min(1.2, pitch))
         saveVoicePreferences()
