@@ -10,6 +10,9 @@ import Foundation
 import Speech
 import SwiftUI
 import Combine
+#if canImport(FoundationModels)
+import FoundationModels
+#endif
 
 @MainActor
 class AppleProvider: ObservableObject {
@@ -145,13 +148,9 @@ extension AppleProvider: RefinementProvider {
         #endif
         
         if hasFoundationModels {
-            // Use Foundation Models on macOS 26+
+            // Use Foundation Models directly to avoid circular dependency
             do {
-                await MainActor.run {
-                    refinementService.currentMode = mode
-                }
-                
-                let refinedText = try await refinementService.refine(text)
+                let refinedText = try await refineWithFoundationModelsDirect(text: text, mode: mode)
                 return .success(refinedText)
                 
             } catch {
@@ -162,4 +161,80 @@ extension AppleProvider: RefinementProvider {
             return .failure(ProviderError.custom("Foundation Models not available on this macOS version. Please configure OpenAI or OpenRouter for refinement."))
         }
     }
+    
+    #if canImport(FoundationModels)
+    private func refineWithFoundationModelsDirect(text: String, mode: RefinementMode) async throws -> String {
+        // Get the system model directly
+        let systemModel = SystemLanguageModel.default
+        guard systemModel.isAvailable else {
+            throw ProviderError.serviceUnavailable
+        }
+        
+        // Create system instructions for refinement tasks
+        let instructions = Instructions("""
+            You are a text refinement assistant. Your task is to improve transcribed text according to specific modes:
+            - Clean-up Mode: Remove filler words, fix grammar, maintain original meaning
+            - Email Mode: Format as professional email with greeting and closing
+            - Messaging Mode: Make conversational and concise for quick messaging
+            Always return only the refined text without explanations.
+            """)
+        
+        // Create language model session with instructions
+        let session = LanguageModelSession(instructions: instructions)
+        
+        // Build the prompt with mode-specific context
+        let userPrompt = buildPromptForMode(text: text, mode: mode)
+        
+        // Check context limits (approximate token count)
+        let estimatedTokens = userPrompt.count / 4 // Rough estimate: 4 chars per token
+        if estimatedTokens > 4000 { // Conservative limit
+            throw ProviderError.custom("Text is too long for processing")
+        }
+        
+        // Create prompt object and get response
+        let promptObject = Prompt(userPrompt)
+        let response = try await session.respond(to: promptObject)
+        
+        // Extract and clean the response
+        let refinedText = cleanResponseText(response.content, originalText: text)
+        
+        return refinedText
+    }
+    
+    private func buildPromptForMode(text: String, mode: RefinementMode) -> String {
+        let modePrompt: String
+        switch mode {
+        case .raw:
+            return text // No refinement needed
+        case .cleanup:
+            modePrompt = "Clean up this transcribed text by removing filler words, fixing grammar, and improving clarity while maintaining the original meaning."
+        case .email:
+            modePrompt = "Format this transcribed text as a professional email with appropriate greeting and closing."
+        case .messaging:
+            modePrompt = "Make this transcribed text conversational and concise for quick messaging."
+        }
+        
+        return """
+            Mode: \(mode.rawValue)
+            Task: \(modePrompt)
+            
+            Please refine the following transcribed text according to the mode and task above.
+            Return only the refined text without any explanations or metadata.
+            
+            Text to refine:
+            \(text)
+            """
+    }
+    
+    private func cleanResponseText(_ response: String, originalText: String) -> String {
+        let cleaned = response.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If response is empty or suspiciously short, return original
+        if cleaned.isEmpty || cleaned.count < originalText.count / 3 {
+            return originalText
+        }
+        
+        return cleaned
+    }
+    #endif
 }
