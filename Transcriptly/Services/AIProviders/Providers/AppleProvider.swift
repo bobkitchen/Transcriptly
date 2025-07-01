@@ -19,6 +19,7 @@ class AppleProvider: ObservableObject {
     @Published var healthStatus: ProviderHealthStatus = .healthy
     
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private let refinementService = RefinementService() // Shared instance
     
     private init() {
         checkAvailability()
@@ -146,7 +147,6 @@ extension AppleProvider: RefinementProvider {
         if hasFoundationModels {
             // Use Foundation Models on macOS 26+
             do {
-                let refinementService = RefinementService()
                 await MainActor.run {
                     refinementService.currentMode = mode
                 }

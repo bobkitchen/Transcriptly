@@ -184,8 +184,7 @@ class RefinementService: ObservableObject {
             return refinedText
             
         } catch {
-            // Re-initialize session and try once more
-            await initializeLanguageModel()
+            // Don't re-initialize to avoid infinite loops
             throw RefinementError.processingFailed("Processing failed: \(error.localizedDescription)")
         }
     }
