@@ -285,7 +285,7 @@ final class VoiceProviderService: NSObject, ObservableObject {
         
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = avVoice
-        utterance.rate = voicePreferences.speechRate * 0.5
+        utterance.rate = voicePreferences.speechRate
         utterance.pitchMultiplier = voicePreferences.pitch
         utterance.volume = voicePreferences.volume
         
@@ -408,14 +408,16 @@ final class VoiceProviderService: NSObject, ObservableObject {
         voicePreferences.speechRate = clampedRate
         saveVoicePreferences()
         
-        // Apply to current utterance if speaking
-        if let utterance = currentUtterance {
-            utterance.rate = clampedRate
+        // For cloud TTS (Google Cloud, ElevenLabs), we need to modify the audio player rate
+        if let audioPlayer = currentAudioPlayer {
+            print("🎚️ VoiceProviderService: Applying rate \(clampedRate)x to audio player (cloud TTS)")
+            audioPlayer.rate = clampedRate
+            audioPlayer.enableRate = true // Enable rate changes for audio player
         }
         
-        // Apply to current audio player if using cloud TTS
-        if let audioPlayer = currentAudioPlayer {
-            audioPlayer.rate = clampedRate
+        // For Apple voices, the rate will be applied to new utterances via voicePreferences.speechRate
+        if currentUtterance != nil {
+            print("🎚️ VoiceProviderService: Rate change will apply to next utterance (Apple TTS)")
         }
         
         print("🎚️ VoiceProviderService: Set playback rate to \(clampedRate)x")
@@ -456,6 +458,12 @@ final class VoiceProviderService: NSObject, ObservableObject {
                 // Use AVAudioPlayer to play the audio
                 let audioPlayer = try AVAudioPlayer(contentsOf: tempURL)
                 currentAudioPlayer = audioPlayer
+                
+                // Enable rate changes and apply current speech rate
+                audioPlayer.enableRate = true
+                audioPlayer.rate = voicePreferences.speechRate
+                print("🎚️ VoiceProviderService: Created audio player with rate \(voicePreferences.speechRate)x")
+                
                 audioPlayer.play()
                 
                 // Wait for playback to complete
