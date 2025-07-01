@@ -32,9 +32,6 @@ struct HomeView: View {
                     
                     // Recent activity section
                     recentActivitySection
-                    
-                    // Universal dropzone section
-                    dropzoneSection
                 }
                 .padding(.horizontal, DesignSystem.marginStandard)
                 .padding(.bottom, DesignSystem.spacingLarge)
@@ -112,29 +109,50 @@ struct HomeView: View {
                 }
             )
             
-            // Card 2: Read Documents  
+            // Card 2: Read Documents (Dropzone)
             ProductivityCard(
                 icon: "doc.text.fill",
                 title: "Read Documents",
                 subtitle: "Text to speech for any document",
                 action: "Choose Document",
                 color: .green,
+                supportedTypes: [
+                    .pdf,
+                    .plainText,
+                    .rtf,
+                    .html,
+                    UTType(filenameExtension: "docx") ?? .data,
+                    UTType(filenameExtension: "doc") ?? .data
+                ],
                 onTap: {
                     selectedSection = .readAloud
+                },
+                onDrop: { url in
+                    handleFileImport(url)
                 }
             )
             
-            // Card 3: Transcribe Media
+            // Card 3: Transcribe Media (Dropzone) 
             ProductivityCard(
                 icon: "waveform",
                 title: "Transcribe Media",
                 subtitle: "Convert audio files to text",
                 action: "Select Audio",
                 color: .purple,
+                supportedTypes: [
+                    .audio,
+                    .mp3,
+                    .wav,
+                    UTType(filenameExtension: "m4a") ?? .data,
+                    UTType(filenameExtension: "aac") ?? .data
+                ],
                 onTap: {
                     // Future feature - for now show a helpful message
                     // Could implement a coming soon alert or redirect to dictation
                     selectedSection = .dictation
+                },
+                onDrop: { url in
+                    handleFileImport(url)
                 }
             )
         }
@@ -189,23 +207,6 @@ struct HomeView: View {
         }
     }
     
-    @ViewBuilder
-    private var dropzoneSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-            Text("Quick Import")
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(.primaryText)
-                .fontWeight(.medium)
-            
-            UniversalDropzone.forAnyFile(
-                title: "Drop Files Here",
-                subtitle: "Import documents for reading or audio for transcription"
-            ) { url in
-                handleFileImport(url)
-            }
-        }
-    }
-    
     // MARK: - Computed Properties
     
     private var recentTranscriptions: [TranscriptionRecord] {
@@ -244,6 +245,8 @@ struct HomeView: View {
     
     private func handleFileImport(_ url: URL) {
         print("📁 HomeView: File import requested for: \(url.lastPathComponent)")
+        print("📁 HomeView: Full file path: \(url.path)")
+        print("📁 HomeView: File extension: \(url.pathExtension.lowercased())")
         
         // Determine file type and navigate to appropriate section
         let fileExtension = url.pathExtension.lowercased()
@@ -251,30 +254,37 @@ struct HomeView: View {
         let audioExtensions = ["mp3", "wav", "m4a", "aac", "audio"]
         
         if documentExtensions.contains(fileExtension) {
+            print("📁 HomeView: Document detected, navigating to Read Aloud")
             // Navigate to Read Aloud and trigger import
             selectedSection = .readAloud
             
             // Post notification to trigger file import in ReadAloudView
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("📁 HomeView: Posting readAloudImportFile notification")
                 NotificationCenter.default.post(
-                    name: NSNotification.Name("ImportDocumentFile"),
-                    object: url
+                    name: .readAloudImportFile,
+                    object: nil,
+                    userInfo: ["fileURL": url]
                 )
             }
         } else if audioExtensions.contains(fileExtension) {
+            print("📁 HomeView: Audio file detected, redirecting to dictation")
             // For now, redirect to dictation (future: media transcription)
             selectedSection = .dictation
             
             // Could post notification for future audio import feature
             print("📁 Audio import not yet implemented, redirected to dictation")
         } else {
+            print("📁 HomeView: Unknown file type, trying as document")
             // Unknown file type - try documents first
             selectedSection = .readAloud
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("📁 HomeView: Posting readAloudImportFile notification for unknown type")
                 NotificationCenter.default.post(
-                    name: NSNotification.Name("ImportDocumentFile"),
-                    object: url
+                    name: .readAloudImportFile,
+                    object: nil,
+                    userInfo: ["fileURL": url]
                 )
             }
         }
