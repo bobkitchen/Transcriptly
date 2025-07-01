@@ -263,15 +263,111 @@ final class DocumentProcessingService: ObservableObject {
     }
     
     private func processDOCX(at url: URL) async throws -> (String, DocumentMetadata) {
-        // For DOCX files, we would need a proper library like DocX or use system tools
-        // For now, this is a placeholder implementation
-        throw DocumentProcessingError.unsupportedFileType
+        await updateProcessingState(status: "Processing Word document...")
+        
+        // Get file metadata first while we have access
+        let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        
+        // Copy file to temporary location to avoid security scoped resource issues
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempFile = tempDir.appendingPathComponent("temp_\(UUID().uuidString).docx")
+        
+        do {
+            try FileManager.default.copyItem(at: url, to: tempFile)
+        } catch {
+            throw DocumentProcessingError.processingFailed("Failed to copy DOCX file: \(error.localizedDescription)")
+        }
+        
+        defer {
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempFile)
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            // Use textutil command line tool to convert DOCX to plain text
+            let process = Process()
+            let pipe = Pipe()
+            
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+            process.arguments = ["-convert", "txt", "-stdout", tempFile.path]
+            process.standardOutput = pipe
+            process.standardError = pipe
+            
+            do {
+                try process.run()
+                
+                process.terminationHandler = { _ in
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    
+                    if let content = String(data: data, encoding: .utf8), !content.isEmpty {
+                        let metadata = DocumentMetadata(
+                            fileSize: fileSize,
+                            wordCount: content.wordCount(),
+                            characterCount: content.count
+                        )
+                        continuation.resume(returning: (content, metadata))
+                    } else {
+                        continuation.resume(throwing: DocumentProcessingError.processingFailed("No content extracted from DOCX file"))
+                    }
+                }
+            } catch {
+                continuation.resume(throwing: DocumentProcessingError.processingFailed("Failed to process DOCX file: \(error.localizedDescription)"))
+            }
+        }
     }
     
     private func processDOC(at url: URL) async throws -> (String, DocumentMetadata) {
-        // For DOC files, we would need system tools or third-party libraries
-        // For now, this is a placeholder implementation
-        throw DocumentProcessingError.unsupportedFileType
+        await updateProcessingState(status: "Processing Word document...")
+        
+        // Get file metadata first while we have access
+        let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        
+        // Copy file to temporary location to avoid security scoped resource issues
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempFile = tempDir.appendingPathComponent("temp_\(UUID().uuidString).doc")
+        
+        do {
+            try FileManager.default.copyItem(at: url, to: tempFile)
+        } catch {
+            throw DocumentProcessingError.processingFailed("Failed to copy DOC file: \(error.localizedDescription)")
+        }
+        
+        defer {
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempFile)
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            // Use textutil command line tool to convert DOC to plain text
+            let process = Process()
+            let pipe = Pipe()
+            
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+            process.arguments = ["-convert", "txt", "-stdout", tempFile.path]
+            process.standardOutput = pipe
+            process.standardError = pipe
+            
+            do {
+                try process.run()
+                
+                process.terminationHandler = { _ in
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    
+                    if let content = String(data: data, encoding: .utf8), !content.isEmpty {
+                        let metadata = DocumentMetadata(
+                            fileSize: fileSize,
+                            wordCount: content.wordCount(),
+                            characterCount: content.count
+                        )
+                        continuation.resume(returning: (content, metadata))
+                    } else {
+                        continuation.resume(throwing: DocumentProcessingError.processingFailed("No content extracted from DOC file"))
+                    }
+                }
+            } catch {
+                continuation.resume(throwing: DocumentProcessingError.processingFailed("Failed to process DOC file: \(error.localizedDescription)"))
+            }
+        }
     }
     
     private func processTextFile(at url: URL) async throws -> (String, DocumentMetadata) {

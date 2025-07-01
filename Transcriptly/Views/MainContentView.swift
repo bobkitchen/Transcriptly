@@ -20,8 +20,7 @@ struct MainContentView: View {
             case .dictation:
                 TranscriptionView(viewModel: viewModel, onFloat: onFloat)
             case .readAloud:
-                // TODO: Read Aloud View - placeholder
-                TranscriptionView(viewModel: viewModel, onFloat: onFloat)
+                ReadAloudView()
             case .aiProviders:
                 AIProvidersView()
             case .learning:
