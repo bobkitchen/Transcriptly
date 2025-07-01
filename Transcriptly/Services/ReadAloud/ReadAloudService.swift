@@ -491,6 +491,30 @@ final class ReadAloudService: ObservableObject {
     var documentHistory: DocumentHistoryService {
         return documentHistoryService
     }
+    
+    // MARK: - External Import Support
+    
+    /// Triggers an external file import request via notification
+    /// This allows other parts of the app to request file imports in the Read Aloud view
+    static func requestFileImport(fileURL: URL) {
+        print("📄 ReadAloudService: Posting file import notification for: \(fileURL.path)")
+        NotificationCenter.default.post(
+            name: .readAloudImportFile,
+            object: nil,
+            userInfo: ["fileURL": fileURL]
+        )
+    }
+    
+    /// Triggers an external file import request via notification using file path
+    /// This allows other parts of the app to request file imports in the Read Aloud view
+    static func requestFileImport(filePath: String) {
+        print("📄 ReadAloudService: Posting file import notification for path: \(filePath)")
+        NotificationCenter.default.post(
+            name: .readAloudImportFile,
+            object: nil,
+            userInfo: ["filePath": filePath]
+        )
+    }
 }
 
 // MARK: - Notifications
@@ -498,4 +522,5 @@ final class ReadAloudService: ObservableObject {
 extension Notification.Name {
     static let readAloudHighlightUpdate = Notification.Name("readAloudHighlightUpdate")
     static let readAloudSessionResumable = Notification.Name("readAloudSessionResumable")
+    static let readAloudImportFile = Notification.Name("readAloudImportFile")
 }

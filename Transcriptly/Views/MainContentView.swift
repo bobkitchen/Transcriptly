@@ -16,7 +16,7 @@ struct MainContentView: View {
         Group {
             switch selectedSection {
             case .home:
-                HomeView(viewModel: viewModel, onFloat: onFloat)
+                HomeView(viewModel: viewModel, selectedSection: $selectedSection, onFloat: onFloat)
             case .dictation:
                 TranscriptionView(viewModel: viewModel, onFloat: onFloat)
             case .readAloud:

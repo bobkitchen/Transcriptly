@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
 struct ReadAloudView: View {
     @StateObject private var readAloudService = ReadAloudService()
@@ -19,6 +20,7 @@ struct ReadAloudView: View {
     @State private var errorMessage = ""
     @State private var isDragOver = false
     @State private var showingMiniPlayer = false
+    @State private var cancellables = Set<AnyCancellable>()
     
     var body: some View {
         VStack(spacing: 0) {
@@ -88,6 +90,9 @@ struct ReadAloudView: View {
         }
         .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
+        .onAppear {
+            setupNotificationListeners()
+        }
         .fileImporter(
             isPresented: $showingDocumentPicker,
             allowedContentTypes: [
@@ -382,6 +387,27 @@ struct ReadAloudView: View {
     private func showError(_ message: String) {
         errorMessage = message
         showingError = true
+    }
+    
+    private func setupNotificationListeners() {
+        // Listen for external file import requests
+        NotificationCenter.default.publisher(for: .readAloudImportFile)
+            .compactMap { $0.userInfo }
+            .sink { userInfo in
+                // Extract file URL from notification
+                if let fileURL = userInfo["fileURL"] as? URL {
+                    print("📄 ReadAloudView: Received notification to import file: \(fileURL.path)")
+                    self.processDocumentURL(fileURL)
+                } else if let filePath = userInfo["filePath"] as? String {
+                    print("📄 ReadAloudView: Received notification to import file path: \(filePath)")
+                    let fileURL = URL(fileURLWithPath: filePath)
+                    self.processDocumentURL(fileURL)
+                } else {
+                    print("❌ ReadAloudView: Received import notification but no valid file URL/path found")
+                    self.showError("Invalid file import request - no file URL provided")
+                }
+            }
+            .store(in: &cancellables)
     }
 }
 

@@ -11,133 +11,33 @@ import UniformTypeIdentifiers
 
 struct HomeView: View {
     @ObservedObject var viewModel: AppViewModel
+    @Binding var selectedSection: SidebarSection
     let onFloat: () -> Void
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
     @State private var showingHistory = false
-    @State private var showExportDialog = false
     
     var body: some View {
         VStack(spacing: 0) {
-            // Integrated header (replaces top bar)
-            ContentHeader(
-                viewModel: viewModel,
-                title: "Welcome back",
-                showModeControls: true,
-                showFloatButton: true,
-                onFloat: onFloat
-            )
+            // Header
+            homeHeader
             
-            // Main content
+            // Main three-card layout
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                
-                // Stats Cards
-                let stats = historyService.statistics
-                HStack(spacing: DesignSystem.spacingLarge) {
-                    StatCard(
-                        icon: "chart.bar.fill",
-                        title: "Today",
-                        value: "\(stats.todayCount)",
-                        subtitle: stats.todayCount == 1 ? "session" : "sessions",
-                        secondaryValue: todayWordCount
-                    )
+                VStack(spacing: DesignSystem.spacingLarge) {
+                    // Welcome message
+                    welcomeSection
                     
-                    StatCard(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "This Week", 
-                        value: "\(stats.weekCount)",
-                        subtitle: stats.weekCount == 1 ? "session" : "sessions",
-                        secondaryValue: weekTimeSaved
-                    )
+                    // Three main action cards
+                    threeCardLayout
                     
-                    StatCard(
-                        icon: "target",
-                        title: "Most Used",
-                        value: stats.mostUsedMode?.displayName ?? "None",
-                        subtitle: "mode",
-                        secondaryValue: "\(stats.totalCount) total"
-                    )
-                }
-                
-                // Recent Transcriptions Section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                    HStack {
-                        Text("Recent Transcriptions")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(.primaryText)
-                        
-                        Spacer()
-                        
-                        Button("View All") {
-                            showingHistory = true
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.accentColor)
-                        .font(DesignSystem.Typography.body)
-                    }
+                    // Recent activity section
+                    recentActivitySection
                     
-                    if recentTranscriptions.isEmpty {
-                        VStack(spacing: DesignSystem.spacingMedium) {
-                            Image(systemName: "mic.circle")
-                                .font(.system(size: 48))
-                                .foregroundColor(.tertiaryText)
-                                .symbolRenderingMode(.hierarchical)
-                            
-                            Text("No transcriptions yet")
-                                .font(DesignSystem.Typography.bodyLarge)
-                                .foregroundColor(.secondaryText)
-                            
-                            Text("Start recording to see your transcription history here")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(.tertiaryText)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.spacingLarge * 2)
-                        .background(Color.secondaryBackground.opacity(0.3))
-                        .cornerRadius(DesignSystem.cornerRadiusMedium)
-                    } else {
-                        VStack(spacing: DesignSystem.spacingSmall) {
-                            ForEach(recentTranscriptions) { transcription in
-                                TranscriptionCard(transcription: transcription)
-                            }
-                        }
-                    }
+                    // Universal dropzone section
+                    dropzoneSection
                 }
-                
-                // Quick Actions Section
-                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                    Text("Quick Actions")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(.primaryText)
-                    
-                    HStack(spacing: DesignSystem.spacingMedium) {
-                        Button(action: {
-                            viewModel.capsuleController.toggleCapsuleMode()
-                        }) {
-                            HStack(spacing: DesignSystem.spacingSmall) {
-                                Image(systemName: "capsule")
-                                    .font(.system(size: 16))
-                                Text(viewModel.capsuleController.isCapsuleModeActive ? "Exit Capsule Mode" : "Enter Capsule Mode")
-                                    .font(DesignSystem.Typography.body)
-                            }
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                        
-                        Button("View All History") {
-                            showingHistory = true
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                        
-                        Button("Export Today's Work") {
-                            showExportDialog = true
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                    }
-                }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, DesignSystem.marginStandard)
+                .padding(.bottom, DesignSystem.spacingLarge)
             }
         }
         .adjustForFloatingSidebar()
@@ -145,17 +45,163 @@ struct HomeView: View {
         .sheet(isPresented: $showingHistory) {
             HistoryView()
         }
-        .fileExporter(
-            isPresented: $showExportDialog,
-            document: TranscriptionExportDocument(transcriptions: todayTranscriptions),
-            contentType: .json,
-            defaultFilename: "today-transcriptions"
-        ) { result in
-            switch result {
-            case .success(let url):
-                print("Exported today's transcriptions to: \(url)")
-            case .failure(let error):
-                print("Export failed: \(error)")
+    }
+    
+    @ViewBuilder
+    private var homeHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Transcriptly")
+                    .font(DesignSystem.Typography.titleLarge)
+                    .foregroundColor(.primaryText)
+                    .fontWeight(.semibold)
+                
+                Text("Your voice productivity suite")
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(.secondaryText)
+            }
+            
+            Spacer()
+            
+            Button(action: onFloat) {
+                Image(systemName: "pip.enter")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+            }
+            .buttonStyle(.plain)
+            .help("Float Window")
+        }
+        .padding(.horizontal, DesignSystem.marginStandard)
+        .padding(.vertical, 16)
+        .background(.regularMaterial.opacity(0.3))
+    }
+    
+    @ViewBuilder
+    private var welcomeSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            Text("Welcome back")
+                .font(DesignSystem.Typography.titleMedium)
+                .foregroundColor(.primaryText)
+                .fontWeight(.medium)
+            
+            Text("Choose how you'd like to be productive with your voice today")
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, DesignSystem.spacingMedium)
+    }
+    
+    @ViewBuilder
+    private var threeCardLayout: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: DesignSystem.spacingMedium),
+            GridItem(.flexible(), spacing: DesignSystem.spacingMedium),
+            GridItem(.flexible(), spacing: DesignSystem.spacingMedium)
+        ], spacing: DesignSystem.spacingMedium) {
+            
+            // Card 1: Record Dictation
+            ProductivityCard(
+                icon: "mic.fill",
+                title: "Record Dictation",
+                subtitle: "Voice to text with AI refinement",
+                action: "Start Recording",
+                color: .blue,
+                onTap: {
+                    selectedSection = .dictation
+                }
+            )
+            
+            // Card 2: Read Documents  
+            ProductivityCard(
+                icon: "doc.text.fill",
+                title: "Read Documents",
+                subtitle: "Text to speech for any document",
+                action: "Choose Document",
+                color: .green,
+                onTap: {
+                    selectedSection = .readAloud
+                }
+            )
+            
+            // Card 3: Transcribe Media
+            ProductivityCard(
+                icon: "waveform",
+                title: "Transcribe Media",
+                subtitle: "Convert audio files to text",
+                action: "Select Audio",
+                color: .purple,
+                onTap: {
+                    // Future feature - for now show a helpful message
+                    // Could implement a coming soon alert or redirect to dictation
+                    selectedSection = .dictation
+                }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var recentActivitySection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            HStack {
+                Text("Recent Activity")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .foregroundColor(.primaryText)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Button("View All") {
+                    showingHistory = true
+                }
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(.accentColor)
+            }
+            
+            if recentTranscriptions.isEmpty {
+                // Empty state
+                VStack(spacing: DesignSystem.spacingSmall) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 24))
+                        .foregroundColor(.tertiaryText)
+                    
+                    Text("No recent activity")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.secondaryText)
+                    
+                    Text("Your recent dictations and documents will appear here")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.tertiaryText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignSystem.spacingLarge)
+                .background(
+                    LiquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusSmall)
+                )
+            } else {
+                LazyVStack(spacing: DesignSystem.spacingSmall) {
+                    ForEach(recentTranscriptions) { transcription in
+                        TranscriptionCard(transcription: transcription)
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var dropzoneSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            Text("Quick Import")
+                .font(DesignSystem.Typography.titleMedium)
+                .foregroundColor(.primaryText)
+                .fontWeight(.medium)
+            
+            UniversalDropzone.forAnyFile(
+                title: "Drop Files Here",
+                subtitle: "Import documents for reading or audio for transcription"
+            ) { url in
+                handleFileImport(url)
             }
         }
     }
@@ -169,31 +215,6 @@ struct HomeView: View {
     private var todayTranscriptions: [TranscriptionRecord] {
         return historyService.transcriptions.filter { 
             Calendar.current.isDateInToday($0.timestamp) 
-        }
-    }
-    
-    private var todayWordCount: String {
-        let todayTranscriptions = historyService.transcriptions.filter { 
-            Calendar.current.isDateInToday($0.timestamp) 
-        }
-        let totalWords = todayTranscriptions.map { $0.wordCount }.reduce(0, +)
-        return "\(totalWords) words"
-    }
-    
-    private var weekTimeSaved: String {
-        let weekAgo = Date().addingTimeInterval(-7 * 24 * 3600)
-        let weekTranscriptions = historyService.transcriptions.filter { 
-            $0.timestamp > weekAgo 
-        }
-        let totalDuration = weekTranscriptions.compactMap { $0.duration }.reduce(0, +)
-        
-        let minutes = Int(totalDuration) / 60
-        if minutes < 60 {
-            return "\(minutes) min total"
-        } else {
-            let hours = minutes / 60
-            let remainingMinutes = minutes % 60
-            return "\(hours)h \(remainingMinutes)m total"
         }
     }
     
@@ -220,6 +241,44 @@ struct HomeView: View {
             // Recording failed - error will be shown in status
         }
     }
+    
+    private func handleFileImport(_ url: URL) {
+        print("📁 HomeView: File import requested for: \(url.lastPathComponent)")
+        
+        // Determine file type and navigate to appropriate section
+        let fileExtension = url.pathExtension.lowercased()
+        let documentExtensions = ["pdf", "docx", "doc", "txt", "rtf", "html", "htm"]
+        let audioExtensions = ["mp3", "wav", "m4a", "aac", "audio"]
+        
+        if documentExtensions.contains(fileExtension) {
+            // Navigate to Read Aloud and trigger import
+            selectedSection = .readAloud
+            
+            // Post notification to trigger file import in ReadAloudView
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ImportDocumentFile"),
+                    object: url
+                )
+            }
+        } else if audioExtensions.contains(fileExtension) {
+            // For now, redirect to dictation (future: media transcription)
+            selectedSection = .dictation
+            
+            // Could post notification for future audio import feature
+            print("📁 Audio import not yet implemented, redirected to dictation")
+        } else {
+            // Unknown file type - try documents first
+            selectedSection = .readAloud
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ImportDocumentFile"),
+                    object: url
+                )
+            }
+        }
+    }
 }
 
 struct StatisticView: View {
@@ -239,6 +298,6 @@ struct StatisticView: View {
 }
 
 #Preview {
-    HomeView(viewModel: AppViewModel(), onFloat: {})
+    HomeView(viewModel: AppViewModel(), selectedSection: .constant(.home), onFloat: {})
         .padding()
 }
