@@ -308,24 +308,42 @@ struct ReadAloudView: View {
     }
     
     private func processDocumentURL(_ url: URL) {
+        print("📄 ReadAloudView: Processing document URL: \(url.path)")
+        print("📄 ReadAloudView: File extension: \(url.pathExtension)")
+        print("📄 ReadAloudView: Is file URL: \(url.isFileURL)")
+        print("📄 ReadAloudView: URL scheme: \(url.scheme ?? "none")")
+        
         // Check if the document processor can handle this file type
         guard documentProcessor.canProcess(url: url) else {
+            print("❌ ReadAloudView: Document processor cannot handle this file type")
             showError("Unsupported file type. Please select a PDF, TXT, RTF, HTML, DOCX, or DOC file.")
             return
         }
         
+        print("✅ ReadAloudView: Document processor can handle this file type")
+        
         Task {
             do {
+                print("📄 ReadAloudView: Starting document processing task")
+                
                 // Process the document first
                 let processedDocument = try await documentProcessor.processDocument(from: url)
+                print("✅ ReadAloudView: Document processing completed successfully")
                 
                 // Save to history
                 await documentHistory.saveDocument(processedDocument)
+                print("✅ ReadAloudView: Document saved to history")
                 
                 // Then load it into the read aloud service
                 await readAloudService.loadProcessedDocument(processedDocument)
+                print("✅ ReadAloudView: Document loaded into read aloud service")
                 
             } catch {
+                print("❌ ReadAloudView: Document import failed with error: \(error)")
+                print("❌ ReadAloudView: Error type: \(type(of: error))")
+                if let docError = error as? DocumentProcessingError {
+                    print("❌ ReadAloudView: DocumentProcessingError: \(docError)")
+                }
                 await MainActor.run {
                     showError("Failed to import document: \(error.localizedDescription)")
                 }

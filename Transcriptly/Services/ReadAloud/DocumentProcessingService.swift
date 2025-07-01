@@ -37,21 +37,51 @@ final class DocumentProcessingService: ObservableObject {
     /// - Parameter url: URL of the document to process
     /// - Returns: ProcessedDocument if successful
     func processDocument(from url: URL) async throws -> ProcessedDocument {
-        guard url.startAccessingSecurityScopedResource() else {
-            throw DocumentProcessingError.accessDenied
+        print("🔍 DocumentProcessingService: Starting to process document at: \(url.path)")
+        print("🔍 File extension: \(url.pathExtension.lowercased())")
+        
+        // Check if this is a cloud storage file (iCloud, Dropbox, Box, OneDrive, etc.)
+        let isCloudStorageFile = url.path.contains("/Library/CloudStorage/") || 
+                                url.path.contains("/Library/Mobile Documents/") ||
+                                !url.path.hasPrefix("/Users/\(NSUserName())/")
+        
+        print("🔍 Is cloud storage file: \(isCloudStorageFile)")
+        
+        var needsSecurityScope = false
+        
+        if !isCloudStorageFile {
+            // Only try security scoped resource for non-cloud files
+            if url.startAccessingSecurityScopedResource() {
+                print("✅ Successfully started accessing security scoped resource")
+                needsSecurityScope = true
+            } else {
+                print("⚠️ Failed to start accessing security scoped resource, but continuing anyway")
+            }
+        } else {
+            print("📁 Cloud storage file detected, skipping security scoped resource access")
         }
         
         defer {
-            url.stopAccessingSecurityScopedResource()
+            if needsSecurityScope {
+                print("🔄 Stopping security scoped resource access")
+                url.stopAccessingSecurityScopedResource()
+            }
         }
         
         await updateProcessingState(isProcessing: true, status: "Reading file...")
         
         // Validate file
-        try validateFile(at: url)
+        do {
+            try validateFile(at: url)
+            print("✅ File validation passed")
+        } catch {
+            print("❌ File validation failed: \(error)")
+            throw error
+        }
         
         // Determine file type and process accordingly
         let fileExtension = url.pathExtension.lowercased()
+        print("🔍 Processing file with extension: \(fileExtension)")
         let content: String
         let metadata: DocumentMetadata
         
@@ -59,16 +89,22 @@ final class DocumentProcessingService: ObservableObject {
         
         switch fileExtension {
         case "pdf":
+            print("📄 Processing as PDF")
             (content, metadata) = try await processPDF(at: url)
         case "docx":
+            print("📝 Processing as DOCX")
             (content, metadata) = try await processDOCX(at: url)
         case "doc":
+            print("📝 Processing as DOC")
             (content, metadata) = try await processDOC(at: url)
         case "txt", "rtf":
+            print("📝 Processing as text file")
             (content, metadata) = try await processTextFile(at: url)
         case "html", "htm":
+            print("🌐 Processing as HTML")
             (content, metadata) = try await processHTML(at: url)
         default:
+            print("❌ Unsupported file type: \(fileExtension)")
             throw DocumentProcessingError.unsupportedFileType
         }
         
@@ -263,54 +299,109 @@ final class DocumentProcessingService: ObservableObject {
     }
     
     private func processDOCX(at url: URL) async throws -> (String, DocumentMetadata) {
+        print("📝 processDOCX: Starting DOCX processing")
         await updateProcessingState(status: "Processing Word document...")
         
         // Get file metadata first while we have access
-        let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        
-        // Copy file to temporary location to avoid security scoped resource issues
-        let tempDir = FileManager.default.temporaryDirectory
-        let tempFile = tempDir.appendingPathComponent("temp_\(UUID().uuidString).docx")
-        
+        print("📝 processDOCX: Getting file metadata")
+        let fileSize: Int
         do {
-            try FileManager.default.copyItem(at: url, to: tempFile)
+            fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            print("📝 processDOCX: File size: \(fileSize) bytes")
         } catch {
-            throw DocumentProcessingError.processingFailed("Failed to copy DOCX file: \(error.localizedDescription)")
+            print("❌ processDOCX: Failed to get file size: \(error)")
+            throw DocumentProcessingError.processingFailed("Failed to get file metadata: \(error.localizedDescription)")
+        }
+        
+        // Determine if we need to copy the file to a temporary location
+        let isCloudStorageFile = url.path.contains("/Library/CloudStorage/") || 
+                                url.path.contains("/Library/Mobile Documents/")
+        
+        let fileToProcess: URL
+        var tempFile: URL? = nil
+        
+        if isCloudStorageFile {
+            print("📁 processDOCX: Cloud storage file detected, processing directly")
+            fileToProcess = url
+        } else {
+            print("📝 processDOCX: Local file, copying to temp location for safety")
+            let tempDir = FileManager.default.temporaryDirectory
+            tempFile = tempDir.appendingPathComponent("temp_\(UUID().uuidString).docx")
+            
+            do {
+                try FileManager.default.copyItem(at: url, to: tempFile!)
+                print("✅ processDOCX: Successfully copied file to temp location")
+                fileToProcess = tempFile!
+            } catch {
+                print("❌ processDOCX: Failed to copy file: \(error)")
+                throw DocumentProcessingError.processingFailed("Failed to copy DOCX file: \(error.localizedDescription)")
+            }
         }
         
         defer {
-            // Clean up temporary file
-            try? FileManager.default.removeItem(at: tempFile)
+            if let tempFile = tempFile {
+                print("🧹 processDOCX: Cleaning up temporary file")
+                do {
+                    try FileManager.default.removeItem(at: tempFile)
+                    print("✅ processDOCX: Successfully cleaned up temp file")
+                } catch {
+                    print("⚠️ processDOCX: Failed to clean up temp file: \(error)")
+                }
+            }
         }
         
         return try await withCheckedThrowingContinuation { continuation in
+            print("📝 processDOCX: Setting up textutil process")
+            
             // Use textutil command line tool to convert DOCX to plain text
             let process = Process()
-            let pipe = Pipe()
+            let outputPipe = Pipe()
+            let errorPipe = Pipe()
             
             process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
-            process.arguments = ["-convert", "txt", "-stdout", tempFile.path]
-            process.standardOutput = pipe
-            process.standardError = pipe
+            process.arguments = ["-convert", "txt", "-stdout", fileToProcess.path]
+            process.standardOutput = outputPipe
+            process.standardError = errorPipe
+            
+            print("📝 processDOCX: Command: textutil -convert txt -stdout \(fileToProcess.path)")
             
             do {
                 try process.run()
+                print("✅ processDOCX: textutil process started successfully")
                 
-                process.terminationHandler = { _ in
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                process.terminationHandler = { process in
+                    print("📝 processDOCX: textutil process terminated with status: \(process.terminationStatus)")
                     
-                    if let content = String(data: data, encoding: .utf8), !content.isEmpty {
-                        let metadata = DocumentMetadata(
-                            fileSize: fileSize,
-                            wordCount: content.wordCount(),
-                            characterCount: content.count
-                        )
-                        continuation.resume(returning: (content, metadata))
+                    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                    
+                    if let errorOutput = String(data: errorData, encoding: .utf8), !errorOutput.isEmpty {
+                        print("⚠️ processDOCX: textutil stderr output: \(errorOutput)")
+                    }
+                    
+                    if let content = String(data: outputData, encoding: .utf8) {
+                        print("📝 processDOCX: textutil output length: \(content.count) characters")
+                        print("📝 processDOCX: First 100 chars: \(String(content.prefix(100)))")
+                        
+                        if !content.isEmpty {
+                            let metadata = DocumentMetadata(
+                                fileSize: fileSize,
+                                wordCount: content.wordCount(),
+                                characterCount: content.count
+                            )
+                            print("✅ processDOCX: Successfully processed DOCX with \(content.wordCount()) words")
+                            continuation.resume(returning: (content, metadata))
+                        } else {
+                            print("❌ processDOCX: textutil returned empty content")
+                            continuation.resume(throwing: DocumentProcessingError.processingFailed("No content extracted from DOCX file"))
+                        }
                     } else {
-                        continuation.resume(throwing: DocumentProcessingError.processingFailed("No content extracted from DOCX file"))
+                        print("❌ processDOCX: Failed to decode textutil output as UTF-8")
+                        continuation.resume(throwing: DocumentProcessingError.processingFailed("Failed to decode textutil output"))
                     }
                 }
             } catch {
+                print("❌ processDOCX: Failed to start textutil process: \(error)")
                 continuation.resume(throwing: DocumentProcessingError.processingFailed("Failed to process DOCX file: \(error.localizedDescription)"))
             }
         }
