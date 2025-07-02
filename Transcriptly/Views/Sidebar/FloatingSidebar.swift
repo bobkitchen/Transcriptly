@@ -64,17 +64,15 @@ struct FloatingSidebar: View {
             Spacer()
         }
         .frame(width: isCollapsed ? 60 : 220)
-        .background(.regularMaterial)
-        .cornerRadius(12)
-        .shadow(
-            color: .black.opacity(0.15),
-            radius: 12,
-            x: 0,
-            y: 4
+        .performantGlass(
+            material: .regularMaterial,
+            cornerRadius: 12,
+            strokeOpacity: 0.15
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+        .adaptiveShadow(
+            isHovered: false,
+            baseRadius: 12,
+            baseOpacity: 0.15
         )
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCollapsed)
     }
@@ -115,6 +113,11 @@ struct FloatingSidebarItem: View {
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
         .background(selectionBackground)
+        .hoverOverlay(
+            isHovered: isHovered && isEnabled,
+            cornerRadius: 6,
+            intensity: 0.05
+        )
         .cornerRadius(6)
         .contentShape(Rectangle())
     }

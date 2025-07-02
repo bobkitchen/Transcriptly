@@ -23,6 +23,15 @@ final class KeyboardShortcutService: ObservableObject {
     private var hotKeyRefs: [EventHotKeyRef] = []
     private var hotKeyEventHandler: EventHandlerRef?
     
+    // Track which shortcuts have shown conflict notifications
+    private var notifiedShortcuts = Set<String>()
+    
+    // Track if we're currently registering to prevent re-entrancy
+    private var isRegistering = false
+    
+    // Track if we've shown the conflict dialog this session
+    private var hasShownConflictDialog = false
+    
     // Hotkey IDs for different shortcuts
     private enum HotKeyID: UInt32 {
         case recording = 1
@@ -32,35 +41,98 @@ final class KeyboardShortcutService: ObservableObject {
         case messagingMode = 5
     }
     
-    // Dynamic shortcuts from UserDefaults
+    // Dynamic shortcuts from UserDefaults - Changed to ⌘⌥ to avoid conflicts
     private var recordingShortcut: String {
-        UserDefaults.standard.string(forKey: "recordingShortcut") ?? "⌘⇧V"
+        let saved = UserDefaults.standard.string(forKey: "recordingShortcut") ?? "⌘⌥V"
+        // Filter out invalid shortcuts
+        if saved == "⌘→" || saved.contains("→") {
+            // Reset to default if invalid
+            UserDefaults.standard.set("⌘⌥V", forKey: "recordingShortcut")
+            return "⌘⌥V"
+        }
+        return saved
     }
     private var rawModeShortcut: String {
-        UserDefaults.standard.string(forKey: "rawModeShortcut") ?? "⌘1"
+        let saved = UserDefaults.standard.string(forKey: "rawModeShortcut") ?? "⌘⌥1"
+        if saved.contains("→") || saved.contains("←") {
+            UserDefaults.standard.set("⌘⌥1", forKey: "rawModeShortcut")
+            return "⌘⌥1"
+        }
+        return saved
     }
     private var cleanupModeShortcut: String {
-        UserDefaults.standard.string(forKey: "cleanupModeShortcut") ?? "⌘2"
+        let saved = UserDefaults.standard.string(forKey: "cleanupModeShortcut") ?? "⌘⌥2"
+        if saved.contains("→") || saved.contains("←") {
+            UserDefaults.standard.set("⌘⌥2", forKey: "cleanupModeShortcut")
+            return "⌘⌥2"
+        }
+        return saved
     }
     private var emailModeShortcut: String {
-        UserDefaults.standard.string(forKey: "emailModeShortcut") ?? "⌘3"
+        let saved = UserDefaults.standard.string(forKey: "emailModeShortcut") ?? "⌘⌥3"
+        if saved.contains("→") || saved.contains("←") {
+            UserDefaults.standard.set("⌘⌥3", forKey: "emailModeShortcut")
+            return "⌘⌥3"
+        }
+        return saved
     }
     private var messagingModeShortcut: String {
-        UserDefaults.standard.string(forKey: "messagingModeShortcut") ?? "⌘4"
+        let saved = UserDefaults.standard.string(forKey: "messagingModeShortcut") ?? "⌘⌥4"
+        if saved.contains("→") || saved.contains("←") {
+            UserDefaults.standard.set("⌘⌥4", forKey: "messagingModeShortcut")
+            return "⌘⌥4"
+        }
+        return saved
     }
     
     init() {
+        // One-time migration to new shortcuts if still using old ones
+        migrateOldShortcutsIfNeeded()
+        
         setupKeyboardShortcuts()
+        
+        // Track if we're currently updating to prevent loops
+        var isUpdating = false
         
         // Listen for shortcut changes and reload
         NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
+            guard let self = self, !isUpdating else { return }
+            
+            // Check if any keyboard shortcut keys changed
+            guard let userInfo = notification.userInfo,
+                  let changedKeys = userInfo["NSUserDefaultsChangedKeys"] as? [String],
+                  changedKeys.contains(where: { $0.contains("Shortcut") }) else {
+                return
+            }
+            
+            // Prevent re-entrancy
+            isUpdating = true
+            
             // Restart keyboard monitoring with new shortcuts
-            self?.cleanup()
-            self?.setupKeyboardShortcuts()
+            self.cleanup()
+            self.setupKeyboardShortcuts()
+            
+            isUpdating = false
+        }
+    }
+    
+    private func migrateOldShortcutsIfNeeded() {
+        // Check if we need to migrate from old ⌘⇧ shortcuts to new ⌘⌥ shortcuts
+        let needsMigration = UserDefaults.standard.string(forKey: "recordingShortcut") == "⌘⇧V" ||
+                           UserDefaults.standard.string(forKey: "recordingShortcut") == nil
+        
+        if needsMigration {
+            print("Migrating to new keyboard shortcuts to avoid conflicts...")
+            UserDefaults.standard.set("⌘⌥V", forKey: "recordingShortcut")
+            UserDefaults.standard.set("⌘⌥1", forKey: "rawModeShortcut")
+            UserDefaults.standard.set("⌘⌥2", forKey: "cleanupModeShortcut")
+            UserDefaults.standard.set("⌘⌥3", forKey: "emailModeShortcut")
+            UserDefaults.standard.set("⌘⌥4", forKey: "messagingModeShortcut")
+            UserDefaults.standard.synchronize()
         }
     }
     
@@ -241,25 +313,54 @@ final class KeyboardShortcutService: ObservableObject {
     // MARK: - Carbon Hotkey Management
     
     private func setupCarbonHotkeys() {
+        // Prevent re-entrancy
+        guard !isRegistering else { 
+            print("Already registering hotkeys, skipping...")
+            return 
+        }
+        
+        isRegistering = true
+        defer { isRegistering = false }
+        
         // Clean up any existing hotkeys first
         cleanupCarbonHotkeys()
         
-        // Install event handler
-        let eventSpec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: OSType(kEventHotKeyPressed))
-        var eventSpecArray = [eventSpec]
+        // Clear the notified shortcuts for fresh registration attempt
+        notifiedShortcuts.removeAll()
         
-        InstallEventHandler(GetApplicationEventTarget(), { (handlerCallRef, event, userData) -> OSStatus in
-            guard let userData = userData, let event = event else { return OSStatus(eventNotHandledErr) }
-            let service = Unmanaged<KeyboardShortcutService>.fromOpaque(userData).takeUnretainedValue()
-            return service.handleCarbonHotKeyEvent(event)
-        }, 1, &eventSpecArray, Unmanaged.passUnretained(self).toOpaque(), &hotKeyEventHandler)
+        // Install event handler only if not already installed
+        if hotKeyEventHandler == nil {
+            let eventSpec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: OSType(kEventHotKeyPressed))
+            var eventSpecArray = [eventSpec]
+            
+            InstallEventHandler(GetApplicationEventTarget(), { (handlerCallRef, event, userData) -> OSStatus in
+                guard let userData = userData, let event = event else { return OSStatus(eventNotHandledErr) }
+                let service = Unmanaged<KeyboardShortcutService>.fromOpaque(userData).takeUnretainedValue()
+                return service.handleCarbonHotKeyEvent(event)
+            }, 1, &eventSpecArray, Unmanaged.passUnretained(self).toOpaque(), &hotKeyEventHandler)
+        }
         
         // Register individual hotkeys
+        print("Registering hotkeys:")
+        print("  Recording: \(recordingShortcut)")
+        print("  Raw mode: \(rawModeShortcut)")
+        print("  Cleanup mode: \(cleanupModeShortcut)")
+        print("  Email mode: \(emailModeShortcut)")
+        print("  Messaging mode: \(messagingModeShortcut)")
+        
         registerHotkey(recordingShortcut, id: .recording)
         registerHotkey(rawModeShortcut, id: .rawMode)
         registerHotkey(cleanupModeShortcut, id: .cleanupMode)
         registerHotkey(emailModeShortcut, id: .emailMode)
         registerHotkey(messagingModeShortcut, id: .messagingMode)
+        
+        // Show a single notification if any shortcuts failed (only once per app launch)
+        if !notifiedShortcuts.isEmpty && !hasShownConflictDialog {
+            hasShownConflictDialog = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.showKeyboardShortcutConflictNotification(shortcut: self.notifiedShortcuts.first ?? "")
+            }
+        }
     }
     
     private func cleanupCarbonHotkeys() {
@@ -278,6 +379,13 @@ final class KeyboardShortcutService: ObservableObject {
     
     private func registerHotkey(_ shortcutString: String, id: HotKeyID) {
         let parsed = parseShortcutString(shortcutString)
+        
+        // Skip registration if key code is 0 (unknown key)
+        if parsed.keyCode == 0 {
+            print("Skipping registration of unknown hotkey: \(shortcutString)")
+            return
+        }
+        
         let carbonModifiers = nsFlagsToCarbonModifiers(parsed.modifiers)
         let carbonKeyCode = UInt32(parsed.keyCode)
         
@@ -288,8 +396,33 @@ final class KeyboardShortcutService: ObservableObject {
         
         if status == noErr, let hotKey = hotKeyRef {
             hotKeyRefs.append(hotKey)
+            print("Successfully registered hotkey: \(shortcutString)")
         } else {
-            print("Failed to register hotkey: \(shortcutString), status: \(status)")
+            let errorMessage = getHotkeyErrorMessage(status)
+            print("Failed to register hotkey: \(shortcutString), status: \(status) - \(errorMessage)")
+            
+            // If it's a duplicate error, track it for later notification
+            if status == -9878 {
+                print("  ⚠️  This keyboard shortcut is already in use by macOS or another app.")
+                print("  ⚠️  Please check System Settings → Keyboard → Keyboard Shortcuts")
+                print("  ⚠️  Or try using a different combination like ⌘⌥ instead of ⌘⇧")
+                
+                // Track this shortcut as failed
+                notifiedShortcuts.insert(shortcutString)
+            }
+        }
+    }
+    
+    private func getHotkeyErrorMessage(_ status: OSStatus) -> String {
+        switch status {
+        case -9878:
+            return "Hotkey already registered (duplicate)"
+        case -9860:
+            return "Invalid hotkey combination"
+        case -9870:
+            return "Hotkey disabled by user"
+        default:
+            return "Unknown error"
         }
     }
     
@@ -297,22 +430,33 @@ final class KeyboardShortcutService: ObservableObject {
         var hotKeyID = EventHotKeyID()
         let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
         
-        guard status == noErr else { return OSStatus(eventNotHandledErr) }
+        guard status == noErr else { 
+            print("Failed to get hotkey parameter from event")
+            return OSStatus(eventNotHandledErr) 
+        }
+        
+        print("Received hotkey event with ID: \(hotKeyID.id)")
         
         // Safely dispatch to main queue only if not already on main thread
         if Thread.isMainThread {
             switch HotKeyID(rawValue: hotKeyID.id) {
             case .recording:
+                print("Recording hotkey triggered")
                 onShortcutPressed?()
             case .rawMode:
+                print("Raw mode hotkey triggered")
                 onModeChangePressed?(.raw)
             case .cleanupMode:
+                print("Cleanup mode hotkey triggered")
                 onModeChangePressed?(.cleanup)
             case .emailMode:
+                print("Email mode hotkey triggered")
                 onModeChangePressed?(.email)
             case .messagingMode:
+                print("Messaging mode hotkey triggered")
                 onModeChangePressed?(.messaging)
             case .none:
+                print("Unknown hotkey ID: \(hotKeyID.id)")
                 break
             }
         } else {
@@ -321,16 +465,22 @@ final class KeyboardShortcutService: ObservableObject {
                 
                 switch HotKeyID(rawValue: hotKeyID.id) {
                 case .recording:
+                    print("Recording hotkey triggered (async)")
                     self.onShortcutPressed?()
                 case .rawMode:
+                    print("Raw mode hotkey triggered (async)")
                     self.onModeChangePressed?(.raw)
                 case .cleanupMode:
+                    print("Cleanup mode hotkey triggered (async)")
                     self.onModeChangePressed?(.cleanup)
                 case .emailMode:
+                    print("Email mode hotkey triggered (async)")
                     self.onModeChangePressed?(.email)
                 case .messagingMode:
+                    print("Messaging mode hotkey triggered (async)")
                     self.onModeChangePressed?(.messaging)
                 case .none:
+                    print("Unknown hotkey ID: \(hotKeyID.id)")
                     break
                 }
             }
@@ -367,4 +517,19 @@ final class KeyboardShortcutService: ObservableObject {
         }
         return code
     }
+    
+    private func showKeyboardShortcutConflictNotification(shortcut: String) {
+        let alert = NSAlert()
+        alert.messageText = "Keyboard Shortcuts Need Configuration"
+        alert.informativeText = "Some keyboard shortcuts couldn't be registered. This usually happens when:\n\n• Another app is using the same shortcuts\n• macOS system shortcuts are conflicting\n• The app was previously opened\n\nThe app will still work with the available shortcuts. You can change them in Settings if needed."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Open Settings")
+        
+        if alert.runModal() == .alertSecondButtonReturn {
+            // Open settings
+            NotificationCenter.default.post(name: Notification.Name("OpenSettings"), object: nil)
+        }
+    }
+    
 }

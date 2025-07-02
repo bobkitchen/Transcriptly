@@ -17,25 +17,19 @@ struct HomeView: View {
     @State private var showingHistory = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            homeHeader
-            
-            // Main three-card layout
-            ScrollView {
-                VStack(spacing: DesignSystem.spacingLarge) {
-                    // Welcome message
-                    welcomeSection
-                    
-                    // Three main action cards
-                    threeCardLayout
-                    
-                    // Recent activity section
-                    recentActivitySection
-                }
-                .padding(.horizontal, DesignSystem.marginStandard)
-                .padding(.bottom, DesignSystem.spacingLarge)
+        ScrollView {
+            VStack(spacing: DesignSystem.spacingLarge) {
+                // Welcome message
+                welcomeSection
+                
+                // Three main action cards
+                threeCardLayout
+                
+                // Recent activity section
+                recentActivitySection
             }
+            .padding(.horizontal, DesignSystem.marginStandard)
+            .padding(.vertical, DesignSystem.spacingLarge)
         }
         .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
@@ -44,34 +38,6 @@ struct HomeView: View {
         }
     }
     
-    @ViewBuilder
-    private var homeHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Transcriptly")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .foregroundColor(.primaryText)
-                    .fontWeight(.semibold)
-                
-                Text("Your voice productivity suite")
-                    .font(DesignSystem.Typography.body)
-                    .foregroundColor(.secondaryText)
-            }
-            
-            Spacer()
-            
-            Button(action: onFloat) {
-                Image(systemName: "pip.enter")
-                    .font(.title2)
-                    .foregroundColor(.accentColor)
-            }
-            .buttonStyle(.plain)
-            .help("Float Window")
-        }
-        .padding(.horizontal, DesignSystem.marginStandard)
-        .padding(.vertical, 16)
-        .background(.regularMaterial.opacity(0.3))
-    }
     
     @ViewBuilder
     private var welcomeSection: some View {
@@ -91,11 +57,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var threeCardLayout: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: DesignSystem.spacingMedium),
-            GridItem(.flexible(), spacing: DesignSystem.spacingMedium),
-            GridItem(.flexible(), spacing: DesignSystem.spacingMedium)
-        ], spacing: DesignSystem.spacingMedium) {
+        HStack(spacing: DesignSystem.spacingMedium) {
             
             // Card 1: Record Dictation
             ProductivityCard(

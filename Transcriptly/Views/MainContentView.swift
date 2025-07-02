@@ -21,8 +21,6 @@ struct MainContentView: View {
                 TranscriptionView(viewModel: viewModel, onFloat: onFloat)
             case .readAloud:
                 ReadAloudView()
-            case .aiProviders:
-                AIProvidersView()
             case .learning:
                 LearningView()
             case .settings:

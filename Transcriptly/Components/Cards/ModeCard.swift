@@ -130,35 +130,43 @@ struct ModeCard: View {
 
 // MARK: - Compact Button Style
 
-struct CompactButtonStyle: ButtonStyle {
-    @State private var isPressed = false
+struct CompactButtonStyle: SwiftUI.ButtonStyle {
     
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(DesignSystem.Typography.bodySmall)
-            .fontWeight(.medium)
-            .foregroundColor(.secondaryText)
-            .padding(.horizontal, DesignSystem.spacingSmall)
-            .padding(.vertical, DesignSystem.spacingTiny)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusTiny)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusTiny)
-                            .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
-                    )
-            )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
-            .animation(DesignSystem.quickFadeAnimation, value: isPressed)
-            .onChange(of: configuration.isPressed) { _, pressed in
-                isPressed = pressed
-                if pressed {
-                    NSHapticFeedbackManager.defaultPerformer.perform(
-                        .levelChange,
-                        performanceTime: .now
-                    )
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        CompactButtonView(configuration: configuration)
+    }
+    
+    struct CompactButtonView: View {
+        let configuration: ButtonStyleConfiguration
+        @State private var isPressed = false
+        
+        var body: some View {
+            configuration.label
+                .font(DesignSystem.Typography.bodySmall)
+                .fontWeight(.medium)
+                .foregroundColor(.secondaryText)
+                .padding(.horizontal, DesignSystem.spacingSmall)
+                .padding(.vertical, DesignSystem.spacingTiny)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusTiny)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusTiny)
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                        )
+                )
+                .scaleEffect(isPressed ? 0.95 : 1.0)
+                .animation(DesignSystem.quickFadeAnimation, value: isPressed)
+                .onChange(of: configuration.isPressed) { _, pressed in
+                    isPressed = pressed
+                    if pressed {
+                        NSHapticFeedbackManager.defaultPerformer.perform(
+                            .levelChange,
+                            performanceTime: .now
+                        )
+                    }
                 }
-            }
+        }
     }
 }
 

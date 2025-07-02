@@ -467,46 +467,83 @@ struct PlaybackControlsCard: View {
     @ObservedObject var service: ReadAloudService
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingMedium) {
-            progressSection
+        HStack(spacing: DesignSystem.spacingLarge) {
+            // Left: Progress info (compact)
+            if service.totalSentences > 0 {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(service.currentSentenceIndex + 1) / \(service.totalSentences)")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                    
+                    ProgressView(value: service.progress)
+                        .progressViewStyle(LinearProgressViewStyle())
+                        .frame(width: 80)
+                }
+            }
+            
+            // Center: Playback controls
             playbackControls
-            speedControls
+            
+            Spacer()
+            
+            // Right: Speed controls (compact)
+            speedControlsCompact
         }
-        .padding(DesignSystem.spacingLarge)
+        .padding(.horizontal, DesignSystem.spacingLarge)
+        .padding(.vertical, DesignSystem.spacingSmall)
         .liquidGlassCard()
     }
     
     @ViewBuilder
-    private var progressSection: some View {
-        if service.totalSentences > 0 {
-            VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
-                HStack {
-                    Text("Progress")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.secondaryText)
-                    
-                    Spacer()
-                    
-                    Text("\(service.currentSentenceIndex + 1) of \(service.totalSentences)")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.tertiaryText)
+    private var speedControlsCompact: some View {
+        HStack(spacing: DesignSystem.spacingSmall) {
+            Text("\(String(format: "%.1fx", service.playbackSpeed))")
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(.primaryText)
+                .fontWeight(.medium)
+                .frame(width: 40)
+            
+            Slider(value: Binding(
+                get: { Double(service.playbackSpeed) },
+                set: { newValue in
+                    Task {
+                        await service.setPlaybackSpeed(Float(newValue))
+                    }
                 }
-                
-                ProgressView(value: service.progress)
-                    .progressViewStyle(LinearProgressViewStyle())
+            ), in: 0.5...2.5, step: 0.1)
+            .frame(width: 100)
+            
+            // Quick speed buttons
+            HStack(spacing: 4) {
+                ForEach([1.0, 1.5, 2.0], id: \.self) { speed in
+                    Button("\(speed == 1.0 ? "1" : String(format: "%.1g", speed))x") {
+                        Task {
+                            await service.setPlaybackSpeed(Float(speed))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundColor(abs(service.playbackSpeed - Float(speed)) < 0.01 ? .accentColor : .secondaryText)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(abs(service.playbackSpeed - Float(speed)) < 0.01 ? Color.accentColor.opacity(0.1) : Color.clear)
+                    )
+                }
             }
         }
     }
     
     private var playbackControls: some View {
-        HStack(spacing: DesignSystem.spacingLarge) {
+        HStack(spacing: DesignSystem.spacingMedium) {
             Button(action: {
                 Task {
                     await service.seekToSentence(max(0, service.currentSentenceIndex - 1))
                 }
             }) {
                 Image(systemName: "backward.fill")
-                    .font(.title2)
+                    .font(.system(size: 16))
             }
             .disabled(service.currentSentenceIndex == 0)
             
@@ -525,7 +562,7 @@ struct PlaybackControlsCard: View {
                 }
             }) {
                 Image(systemName: playPauseIcon)
-                    .font(.title)
+                    .font(.system(size: 20))
             }
             .disabled(!service.canLoadDocument && service.sessionState == .idle)
             
@@ -533,7 +570,7 @@ struct PlaybackControlsCard: View {
                 service.stopReading()
             }) {
                 Image(systemName: "stop.fill")
-                    .font(.title2)
+                    .font(.system(size: 16))
             }
             .disabled(service.sessionState == .idle || service.sessionState == .stopped)
             
@@ -543,67 +580,13 @@ struct PlaybackControlsCard: View {
                 }
             }) {
                 Image(systemName: "forward.fill")
-                    .font(.title2)
+                    .font(.system(size: 16))
             }
             .disabled(service.currentSentenceIndex >= service.totalSentences - 1)
         }
         .foregroundColor(.accentColor)
     }
     
-    private var speedControls: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
-            HStack {
-                Text("Playback Speed")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(.secondaryText)
-                
-                Spacer()
-                
-                Text("\(String(format: "%.1fx", service.playbackSpeed))")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(.primaryText)
-                    .fontWeight(.medium)
-            }
-            
-            HStack(spacing: DesignSystem.spacingMedium) {
-                ForEach([0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                    Button("\(speed == 1.0 ? "1" : String(format: "%.2g", speed))x") {
-                        Task {
-                            await service.setPlaybackSpeed(Float(speed))
-                        }
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .controlSize(.mini)
-                    .foregroundColor(abs(service.playbackSpeed - Float(speed)) < 0.01 ? .accentColor : .secondaryText)
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 4) {
-                    Slider(value: Binding(
-                        get: { Double(service.playbackSpeed) },
-                        set: { newValue in
-                            Task {
-                                await service.setPlaybackSpeed(Float(newValue))
-                            }
-                        }
-                    ), in: 0.5...2.5, step: 0.1)
-                    .frame(width: 100)
-                    
-                    HStack {
-                        Text("0.5")
-                            .font(.caption2)
-                            .foregroundColor(.tertiaryText)
-                        Spacer()
-                        Text("2.5")
-                            .font(.caption2)
-                            .foregroundColor(.tertiaryText)
-                    }
-                    .frame(width: 100)
-                }
-            }
-        }
-    }
     
     private var playPauseIcon: String {
         switch service.sessionState {
@@ -796,122 +779,105 @@ struct MiniPlayerView: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingMedium) {
-            // Header
+        VStack(spacing: DesignSystem.spacingSmall) {
+            // Compact header with title
             HStack {
-                Button("Close") {
-                    dismiss()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.tertiaryText)
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.plain)
                 
                 Spacer()
                 
-                Text("Mini Player")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button("Expand") {
-                    onExpand()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-            }
-            .padding(.horizontal, DesignSystem.spacingLarge)
-            .padding(.top, DesignSystem.spacingLarge)
-            
-            // Document info
-            VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
-                Text(document.title)
-                    .font(DesignSystem.Typography.body)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                
-                HStack {
-                    Text("Sentence \(service.currentSentenceIndex + 1) of \(service.totalSentences)")
+                VStack(spacing: 2) {
+                    Text(document.title)
                         .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.secondaryText)
-                    
-                    Spacer()
-                    
-                    Text("\(String(format: "%.1fx", service.playbackSpeed))")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.accentColor)
                         .fontWeight(.medium)
+                        .lineLimit(1)
+                    
+                    Text("\(service.currentSentenceIndex + 1) / \(service.totalSentences)")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(.secondaryText)
                 }
+                
+                Spacer()
+                
+                Button(action: onExpand) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 14))
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, DesignSystem.spacingLarge)
+            .padding(.horizontal, DesignSystem.spacingMedium)
+            .padding(.top, DesignSystem.spacingSmall)
             
-            // Progress bar
-            if service.totalSentences > 0 {
-                VStack(spacing: DesignSystem.spacingSmall) {
+            // Compact controls in single row
+            HStack(spacing: DesignSystem.spacingLarge) {
+                // Progress
+                if service.totalSentences > 0 {
                     ProgressView(value: service.progress)
                         .progressViewStyle(LinearProgressViewStyle())
-                    
-                    HStack {
-                        Text("0:00")
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(.tertiaryText)
-                        
-                        Spacer()
-                        
-                        Text("\(Int(document.estimatedReadingTime / 60)):\(String(format: "%02d", Int(document.estimatedReadingTime) % 60))")
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(.tertiaryText)
-                    }
+                        .frame(width: 60)
                 }
-                .padding(.horizontal, DesignSystem.spacingLarge)
-            }
-            
-            // Compact controls
-            HStack(spacing: DesignSystem.spacingLarge) {
-                Button(action: {
-                    Task {
-                        await service.seekToSentence(max(0, service.currentSentenceIndex - 3))
-                    }
-                }) {
-                    Image(systemName: "gobackward.15")
-                        .font(.title2)
-                }
-                .disabled(service.currentSentenceIndex == 0)
                 
-                Button(action: {
-                    Task {
-                        switch service.sessionState {
-                        case .idle, .stopped:
-                            await service.startReading()
-                        case .playing:
-                            service.pauseReading()
-                        case .paused:
-                            await service.resumeReading()
-                        default:
-                            break
+                // Playback controls
+                HStack(spacing: DesignSystem.spacingMedium) {
+                    Button(action: {
+                        Task {
+                            await service.seekToSentence(max(0, service.currentSentenceIndex - 3))
                         }
+                    }) {
+                        Image(systemName: "gobackward.15")
+                            .font(.system(size: 16))
                     }
-                }) {
-                    Image(systemName: miniPlayerPlayIcon)
-                        .font(.largeTitle)
-                        .foregroundColor(.accentColor)
+                    .disabled(service.currentSentenceIndex == 0)
+                    
+                    Button(action: {
+                        Task {
+                            switch service.sessionState {
+                            case .idle, .stopped:
+                                await service.startReading()
+                            case .playing:
+                                service.pauseReading()
+                            case .paused:
+                                await service.resumeReading()
+                            default:
+                                break
+                            }
+                        }
+                    }) {
+                        Image(systemName: miniPlayerPlayIcon)
+                            .font(.system(size: 24))
+                            .foregroundColor(.accentColor)
+                    }
+                    
+                    Button(action: {
+                        Task {
+                            await service.seekToSentence(min(service.totalSentences - 1, service.currentSentenceIndex + 3))
+                        }
+                    }) {
+                        Image(systemName: "goforward.15")
+                            .font(.system(size: 16))
+                    }
+                    .disabled(service.currentSentenceIndex >= service.totalSentences - 1)
                 }
                 
-                Button(action: {
-                    Task {
-                        await service.seekToSentence(min(service.totalSentences - 1, service.currentSentenceIndex + 3))
-                    }
-                }) {
-                    Image(systemName: "goforward.15")
-                        .font(.title2)
-                }
-                .disabled(service.currentSentenceIndex >= service.totalSentences - 1)
+                // Speed indicator
+                Text("\(String(format: "%.1fx", service.playbackSpeed))")
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 35)
             }
             .foregroundColor(.primaryText)
-            .padding(.horizontal, DesignSystem.spacingLarge)
-            .padding(.bottom, DesignSystem.spacingLarge)
+            .padding(.horizontal, DesignSystem.spacingMedium)
+            .padding(.bottom, DesignSystem.spacingSmall)
         }
-        .frame(width: 400, height: 250)
+        .frame(width: 320, height: 100)
         .background(.regularMaterial)
         .cornerRadius(DesignSystem.cornerRadiusMedium)
+        .shadow(radius: 8)
     }
     
     private var miniPlayerPlayIcon: String {

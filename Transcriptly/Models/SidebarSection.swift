@@ -9,11 +9,11 @@ import Foundation
 
 enum SidebarSection: String, CaseIterable, Codable {
     case home = "Home"
-    case dictation = "Dictation"
+    case dictation = "Dictation"  
     case readAloud = "Read Aloud"
-    case aiProviders = "AI Providers"
     case learning = "Learning"
     case settings = "Settings"
+    // Remove: case aiProviders = "AI Providers"
     
     var title: String {
         return rawValue
@@ -21,25 +21,18 @@ enum SidebarSection: String, CaseIterable, Codable {
     
     var icon: String {
         switch self {
-        case .home:
-            return "house.fill"
-        case .dictation:
-            return "text.quote"
-        case .readAloud:
-            return "speaker.wave.3.fill"
-        case .aiProviders:
-            return "cpu"
-        case .learning:
-            return "brain"
-        case .settings:
-            return "gearshape.fill"
+        case .home: return "house.fill"
+        case .dictation: return "mic.fill"
+        case .readAloud: return "speaker.wave.3.fill"
+        case .learning: return "brain.head.profile"
+        case .settings: return "gearshape.fill"
         }
     }
     
     var isEnabled: Bool {
         switch self {
-        case .home, .dictation, .readAloud, .aiProviders, .learning, .settings:
-            return true
+        case .home, .dictation, .readAloud, .settings: return true
+        case .learning: return false  // Still coming soon
         }
     }
 }

@@ -32,38 +32,42 @@ struct RecordButton: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.spacingSmall) {
                 // Icon with state-specific styling
-                Group {
-                    switch currentState {
-                    case .default:
-                        Image(systemName: "mic.circle.fill")
-                    case .recording:
-                        Image(systemName: "stop.circle.fill")
-                    case .processing:
-                        Image(systemName: "waveform.circle.fill")
-                            .rotationEffect(.degrees(processingRotation))
-                    }
+                switch currentState {
+                case .default:
+                    Image(systemName: "mic.circle.fill")
+                        .font(.system(size: 18))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.white)
+                case .recording:
+                    Image(systemName: "stop.circle.fill")
+                        .font(.system(size: 18))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.white)
+                case .processing:
+                    Image(systemName: "waveform.circle.fill")
+                        .font(.system(size: 18))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.white)
+                        .rotationEffect(.degrees(processingRotation))
                 }
-                .font(.system(size: 18))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundColor(.white)
                 
                 // Text content based on state
-                Group {
-                    switch currentState {
-                    case .default:
-                        Text("Record")
-                            .font(DesignSystem.Typography.body)
-                            .fontWeight(.medium)
-                    case .recording:
-                        Text(timeString(from: recordingTime))
-                            .font(DesignSystem.Typography.monospacedCaption)
-                            .frame(width: 44)
-                    case .processing:
-                        Text("Processing...")
-                            .font(DesignSystem.Typography.bodySmall)
-                    }
+                switch currentState {
+                case .default:
+                    Text("Record")
+                        .font(DesignSystem.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                case .recording:
+                    Text(timeString(from: recordingTime))
+                        .font(DesignSystem.Typography.monospacedCaption)
+                        .frame(width: 44)
+                        .foregroundColor(.white)
+                case .processing:
+                    Text("Processing...")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
             }
             .padding(.horizontal, DesignSystem.spacingLarge)
             .padding(.vertical, DesignSystem.spacingMedium)

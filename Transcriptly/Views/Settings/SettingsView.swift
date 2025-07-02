@@ -14,11 +14,11 @@ struct SettingsView: View {
     let onFloat: () -> Void
     @AppStorage("playCompletionSound") private var playCompletionSound = true
     @AppStorage("showNotifications") private var showNotifications = true
-    @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⇧V"
-    @AppStorage("rawModeShortcut") private var rawModeShortcut = "⌘1"
-    @AppStorage("cleanupModeShortcut") private var cleanupModeShortcut = "⌘2"
-    @AppStorage("emailModeShortcut") private var emailModeShortcut = "⌘3"
-    @AppStorage("messagingModeShortcut") private var messagingModeShortcut = "⌘4"
+    @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⌥V"
+    @AppStorage("rawModeShortcut") private var rawModeShortcut = "⌘⌥1"
+    @AppStorage("cleanupModeShortcut") private var cleanupModeShortcut = "⌘⌥2"
+    @AppStorage("emailModeShortcut") private var emailModeShortcut = "⌘⌥3"
+    @AppStorage("messagingModeShortcut") private var messagingModeShortcut = "⌘⌥4"
     @State private var showingHistory = false
     
     var body: some View {
@@ -34,151 +34,71 @@ struct SettingsView: View {
             
             // Main content
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                
-                // Account Section
-                SettingsCard(
-                    title: "Account",
-                    icon: "person.circle",
-                    accentColor: .blue
-                ) {
-                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                        HStack {
-                            Text("Sign in to sync your preferences")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(.secondaryText)
-                            
-                            Spacer()
-                            
-                            Button("Sign In") {
-                                // TODO: Implement in future phase
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                            .disabled(true)
+                VStack(alignment: .leading, spacing: 30) {
+                    // Account Section (Placeholder)
+                    SettingsSection(
+                        title: "Account",
+                        icon: "person.circle",
+                        content: {
+                            AccountSettingsContent()
                         }
-                        
-                        Text("Account features coming soon")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(.tertiaryText)
-                            .padding(.vertical, DesignSystem.spacingTiny)
-                            .padding(.horizontal, DesignSystem.spacingSmall)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(DesignSystem.cornerRadiusTiny)
-                    }
-                }
-                
-                // Notifications Section
-                SettingsCard(
-                    title: "Notifications",
-                    icon: "bell",
-                    accentColor: .green
-                ) {
-                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                        Toggle("Play sound on completion", isOn: $playCompletionSound)
-                            .toggleStyle(SwitchToggleStyle())
-                            .tint(.accentColor)
-                        
-                        Divider()
-                            .background(Color.white.opacity(0.1))
-                        
-                        Toggle("Show notifications", isOn: $showNotifications)
-                            .toggleStyle(SwitchToggleStyle())
-                            .tint(.accentColor)
-                    }
-                }
-                
-                // History Section
-                SettingsCard(
-                    title: "History",
-                    icon: "clock.arrow.circlepath",
-                    accentColor: .purple
-                ) {
-                    HStack {
-                        Text("View transcription history")
-                            .font(DesignSystem.Typography.body)
-                            .foregroundColor(.secondaryText)
-                        
-                        Spacer()
-                        
-                        Button("View History") {
-                            showingHistory = true
+                    )
+                    
+                    // AI Providers Section (moved from main navigation)
+                    SettingsSection(
+                        title: "AI Providers",
+                        icon: "cpu",
+                        content: {
+                            AIProvidersSettingsContent()
                         }
-                        .buttonStyle(SecondaryButtonStyle())
-                    }
-                }
+                    )
                 
-                // Keyboard Shortcuts Section
-                SettingsCard(
-                    title: "Keyboard Shortcuts",
-                    icon: "keyboard",
-                    accentColor: .orange
-                ) {
-                    VStack(spacing: DesignSystem.spacingSmall) {
-                        ShortcutRow(
-                            title: "Start/Stop Recording",
-                            shortcut: $recordingShortcut,
-                            isEditable: true
-                        )
-                        
-                        Divider().background(Color.white.opacity(0.1))
-                        
-                        ShortcutRow(
-                            title: "Raw Transcription",
-                            shortcut: $rawModeShortcut,
-                            isEditable: true
-                        )
-                        
-                        ShortcutRow(
-                            title: "Clean-up Mode",
-                            shortcut: $cleanupModeShortcut,
-                            isEditable: true
-                        )
-                        
-                        ShortcutRow(
-                            title: "Email Mode",
-                            shortcut: $emailModeShortcut,
-                            isEditable: true
-                        )
-                        
-                        ShortcutRow(
-                            title: "Messaging Mode",
-                            shortcut: $messagingModeShortcut,
-                            isEditable: true
-                        )
-                    }
-                }
+                    // Notifications Section
+                    SettingsSection(
+                        title: "Notifications", 
+                        icon: "bell",
+                        content: {
+                            NotificationSettingsContent(
+                                playCompletionSound: $playCompletionSound,
+                                showNotifications: $showNotifications
+                            )
+                        }
+                    )
                 
-                // About Section
-                SettingsCard(
-                    title: "About",
-                    icon: "info.circle",
-                    accentColor: .gray
-                ) {
-                    VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-                        HStack {
-                            Text("Transcriptly")
-                                .font(DesignSystem.Typography.bodyLarge)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primaryText)
-                            
-                            Spacer()
-                            
-                            Text("Version 1.0.0")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(.secondaryText)
+                    // Keyboard Shortcuts Section
+                    SettingsSection(
+                        title: "Keyboard Shortcuts",
+                        icon: "keyboard",
+                        content: {
+                            KeyboardShortcutsContent(
+                                recordingShortcut: $recordingShortcut,
+                                rawModeShortcut: $rawModeShortcut,
+                                cleanupModeShortcut: $cleanupModeShortcut,
+                                emailModeShortcut: $emailModeShortcut,
+                                messagingModeShortcut: $messagingModeShortcut
+                            )
                         }
-                        
-                        HStack(spacing: DesignSystem.spacingLarge) {
-                            Link("Help", destination: URL(string: "https://transcriptly.app/help")!)
-                                .foregroundColor(.accentColor)
-                                .font(DesignSystem.Typography.body)
-                            
-                            Link("Privacy Policy", destination: URL(string: "https://transcriptly.app/privacy")!)
-                                .foregroundColor(.accentColor)
-                                .font(DesignSystem.Typography.body)
+                    )
+                    
+                    // History Section
+                    SettingsSection(
+                        title: "History",
+                        icon: "clock.arrow.circlepath",
+                        content: {
+                            HistorySettingsContent(showingHistory: $showingHistory)
                         }
-                    }
-                }
+                    )
+                
+                    // About Section
+                    SettingsSection(
+                        title: "About",
+                        icon: "info.circle",
+                        content: {
+                            AboutSettingsContent()
+                        }
+                    )
+                    
+                    Spacer()
             }
             .padding(DesignSystem.marginStandard)
         }
@@ -192,6 +112,791 @@ struct SettingsView: View {
 }
 
 // MARK: - Supporting Views
+
+struct SettingsSection<Content: View>: View {
+    let title: String
+    let icon: String
+    let content: () -> Content
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Section Header
+            Button(action: { 
+                withAnimation(DesignSystem.springAnimation) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(.accentColor)
+                        .frame(width: 24)
+                    
+                    Text(title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(DesignSystem.quickAnimation, value: isExpanded)
+                }
+                .padding(DesignSystem.spacingMedium)
+            }
+            .buttonStyle(.plain)
+            .liquidGlassCard()
+            
+            // Section Content
+            if isExpanded {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+                    content()
+                }
+                .padding(.top, DesignSystem.spacingSmall)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+            }
+        }
+    }
+}
+
+// Account Settings Content
+struct AccountSettingsContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            Text("Sign in to sync your preferences")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Button("Sign In") {
+                // TODO: Implement in future phase
+            }
+            .buttonStyle(.bordered)
+            .disabled(true)
+            
+            Text("Account features coming soon")
+                .font(.caption2)
+                .foregroundColor(.tertiaryText)
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
+
+// AI Providers Settings Content
+struct AIProvidersSettingsContent: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    @State private var expandedProvider: ProviderType?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            Text("Configure AI services for transcription, refinement, and text-to-speech")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            // Service Selection
+            ServiceSelectionSection()
+                .padding(.bottom, DesignSystem.spacingSmall)
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+                .padding(.vertical, DesignSystem.spacingSmall)
+            
+            Text("PROVIDER CONFIGURATION")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.tertiaryText)
+                .tracking(0.5)
+            
+            // All Providers
+            VStack(spacing: DesignSystem.spacingSmall) {
+                ForEach(ProviderType.allCases, id: \.self) { providerType in
+                    ExpandableProviderRow(
+                        providerType: providerType,
+                        isExpanded: expandedProvider == providerType,
+                        onToggle: {
+                            withAnimation(DesignSystem.springAnimation) {
+                                expandedProvider = expandedProvider == providerType ? nil : providerType
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
+
+// Service Selection Section
+struct ServiceSelectionSection: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(spacing: DesignSystem.spacingSmall) {
+            // Transcription Service
+            HStack {
+                Label("Transcription", systemImage: "mic.circle")
+                    .font(.caption)
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.transcriptionProvider },
+                    set: { provider in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.transcriptionProvider = provider
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(ProviderType.allCases, id: \.self) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Refinement Service
+            HStack {
+                Label("Refinement", systemImage: "wand.and.sparkles")
+                    .font(.caption)
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.refinementProvider },
+                    set: { provider in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.refinementProvider = provider
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(ProviderType.allCases, id: \.self) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Text-to-Speech Service
+            HStack {
+                Label("Text-to-Speech", systemImage: "speaker.wave.3")
+                    .font(.caption)
+                    .foregroundColor(.primaryText)
+                
+                Spacer()
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.textToSpeechProvider },
+                    set: { provider in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.textToSpeechProvider = provider
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(ProviderType.allCases, id: \.self) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+        }
+    }
+}
+
+// Expandable Provider Row
+struct ExpandableProviderRow: View {
+    let providerType: ProviderType
+    let isExpanded: Bool
+    let onToggle: () -> Void
+    
+    @StateObject private var providerManager = AIProviderManager.shared
+    @State private var apiKey = ""
+    @State private var isValidating = false
+    @State private var validationStatus: ValidationStatus = .none
+    
+    private var provider: (any AIProvider)? {
+        providerManager.providers[providerType]
+    }
+    
+    private var healthStatus: ProviderHealthStatus {
+        switch providerType {
+        case .apple:
+            return (provider as? AppleProvider)?.healthStatus ?? .unavailable
+        case .openai:
+            return (provider as? OpenAIProvider)?.healthStatus ?? .unavailable
+        case .openrouter:
+            return (provider as? OpenRouterProvider)?.healthStatus ?? .unavailable
+        case .googleCloud:
+            return (provider as? GoogleCloudProvider)?.healthStatus ?? .unavailable
+        case .elevenLabs:
+            return (provider as? ElevenLabsProvider)?.healthStatus ?? .unavailable
+        }
+    }
+    
+    enum ValidationStatus {
+        case none, valid, invalid
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Provider Header (always visible)
+            Button(action: onToggle) {
+                HStack {
+                    // Provider Icon
+                    Image(systemName: providerType.icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(.accentColor)
+                        .frame(width: 20)
+                    
+                    // Provider Info
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(providerType.displayName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primaryText)
+                        
+                        Text(providerDescription)
+                            .font(.caption2)
+                            .foregroundColor(.secondaryText)
+                    }
+                    
+                    Spacer()
+                    
+                    // Status Badge
+                    HStack(spacing: 4) {
+                        Image(systemName: healthStatus.icon)
+                            .font(.system(size: 10))
+                        Text(healthStatus.displayName)
+                            .font(.caption2)
+                    }
+                    .foregroundColor(healthStatus.color)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(healthStatus.color.opacity(0.1))
+                    .cornerRadius(4)
+                    
+                    // Chevron
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(.tertiaryText)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
+                .padding(.vertical, DesignSystem.spacingSmall)
+                .padding(.horizontal, DesignSystem.spacingMedium)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            // Expanded Content
+            if isExpanded {
+                VStack(spacing: DesignSystem.spacingMedium) {
+                    Divider()
+                        .background(Color.white.opacity(0.05))
+                    
+                    // API Key Configuration (if needed)
+                    if providerType.requiresAPIKey {
+                        APIKeyConfigurationView(
+                            providerType: providerType,
+                            apiKey: $apiKey,
+                            isValidating: $isValidating,
+                            validationStatus: $validationStatus
+                        )
+                    }
+                    
+                    // Model/Voice Selection
+                    if provider?.isConfigured == true || !providerType.requiresAPIKey {
+                        ProviderOptionsView(providerType: providerType)
+                    }
+                }
+                .padding(.horizontal, DesignSystem.spacingMedium)
+                .padding(.bottom, DesignSystem.spacingMedium)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+            }
+        }
+        .background(Color.white.opacity(0.02))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
+        .onAppear {
+            loadAPIKey()
+        }
+    }
+    
+    private var providerDescription: String {
+        switch providerType {
+        case .apple:
+            return "Local processing • Always available • Privacy-first"
+        case .openai:
+            return "Whisper transcription • GPT refinement • TTS voices"
+        case .openrouter:
+            return "Free & premium models • Flexible refinement"
+        case .googleCloud:
+            return "WaveNet & Standard voices • 1M free chars/month"
+        case .elevenLabs:
+            return "Premium AI voices • Natural speech synthesis"
+        }
+    }
+    
+    private func loadAPIKey() {
+        if let existingKey = try? APIKeyManager.shared.getAPIKey(for: providerType) {
+            apiKey = existingKey
+            validationStatus = provider?.isConfigured == true ? .valid : .none
+        }
+    }
+}
+
+// API Key Configuration View
+struct APIKeyConfigurationView: View {
+    let providerType: ProviderType
+    @Binding var apiKey: String
+    @Binding var isValidating: Bool
+    @Binding var validationStatus: ExpandableProviderRow.ValidationStatus
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            Text("API KEY")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.tertiaryText)
+                .tracking(0.5)
+            
+            HStack {
+                SecureField("Enter your API key", text: $apiKey)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .disabled(isValidating)
+                
+                Button(action: validateAndSave) {
+                    if isValidating {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else {
+                        Text(validationStatus == .valid ? "Valid" : "Validate")
+                            .font(.caption)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(apiKey.isEmpty || isValidating)
+                
+                // Status icon
+                switch validationStatus {
+                case .valid:
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                case .invalid:
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                case .none:
+                    EmptyView()
+                }
+            }
+            .padding(DesignSystem.spacingSmall)
+            .background(Color.white.opacity(0.03))
+            .cornerRadius(DesignSystem.cornerRadiusTiny)
+        }
+    }
+    
+    private func validateAndSave() {
+        isValidating = true
+        
+        Task {
+            do {
+                try await providerManager.configureProvider(providerType, with: apiKey)
+                await MainActor.run {
+                    validationStatus = .valid
+                    isValidating = false
+                }
+            } catch {
+                await MainActor.run {
+                    validationStatus = .invalid
+                    isValidating = false
+                }
+            }
+        }
+    }
+}
+
+// Provider Options View (Models/Voices)
+struct ProviderOptionsView: View {
+    let providerType: ProviderType
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            switch providerType {
+            case .apple:
+                // Apple has no configurable options
+                EmptyView()
+                
+            case .openai:
+                OpenAIOptionsView()
+                
+            case .openrouter:
+                OpenRouterOptionsView()
+                
+            case .googleCloud:
+                GoogleCloudOptionsView()
+                
+            case .elevenLabs:
+                ElevenLabsOptionsView()
+            }
+        }
+    }
+}
+
+// OpenAI Options
+struct OpenAIOptionsView: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            // Transcription Model
+            HStack {
+                Text("Transcription Model")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.openaiTranscriptionModel },
+                    set: { newModel in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.openaiTranscriptionModel = newModel
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(OpenAIModels.transcriptionModels.keys), id: \.self) { modelKey in
+                        Text(OpenAIModels.transcriptionModels[modelKey] ?? modelKey)
+                            .tag(modelKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Refinement Model
+            HStack {
+                Text("Refinement Model")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.openaiRefinementModel },
+                    set: { newModel in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.openaiRefinementModel = newModel
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(OpenAIModels.refinementModels.keys), id: \.self) { modelKey in
+                        Text(OpenAIModels.refinementModels[modelKey] ?? modelKey)
+                            .tag(modelKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // TTS Voice
+            HStack {
+                Text("TTS Voice")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.openaiTTSVoice ?? "alloy" },
+                    set: { newVoice in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.openaiTTSVoice = newVoice
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(OpenAIModels.ttsVoices.keys).sorted(), id: \.self) { voiceKey in
+                        Text(OpenAIModels.ttsVoices[voiceKey] ?? voiceKey)
+                            .tag(voiceKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+        }
+    }
+}
+
+// OpenRouter Options
+struct OpenRouterOptionsView: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            // Refinement Model
+            HStack {
+                Text("Refinement Model")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.openrouterRefinementModel },
+                    set: { newModel in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.openrouterRefinementModel = newModel
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(OpenRouterModels.freeRefinementModels.keys), id: \.self) { modelKey in
+                        Text(OpenRouterModels.freeRefinementModels[modelKey] ?? modelKey)
+                            .tag(modelKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Browse Models Link
+            HStack {
+                Spacer()
+                Button("Browse Free Models →") {
+                    if let url = URL(string: "https://openrouter.ai/models?type=free") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .font(.caption2)
+                .foregroundColor(.accentColor)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// Google Cloud Options
+struct GoogleCloudOptionsView: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            // TTS Voice
+            HStack {
+                Text("TTS Voice")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.googleCloudTTSVoice },
+                    set: { newVoice in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.googleCloudTTSVoice = newVoice
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(GoogleCloudModels.ttsVoices.keys), id: \.self) { voiceKey in
+                        Text(GoogleCloudModels.ttsVoices[voiceKey] ?? voiceKey)
+                            .tag(voiceKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Voice Type Info
+            Text("WaveNet voices are higher quality but cost more")
+                .font(.caption2)
+                .foregroundColor(.tertiaryText)
+        }
+    }
+}
+
+// ElevenLabs Options
+struct ElevenLabsOptionsView: View {
+    @StateObject private var providerManager = AIProviderManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+            // TTS Voice
+            HStack {
+                Text("TTS Voice")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.elevenLabsTTSVoice },
+                    set: { newVoice in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.elevenLabsTTSVoice = newVoice
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    ForEach(Array(ElevenLabsModels.ttsVoices.keys), id: \.self) { voiceKey in
+                        Text(ElevenLabsModels.ttsVoices[voiceKey] ?? voiceKey)
+                            .tag(voiceKey)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+            
+            // Model Selection
+            HStack {
+                Text("Model")
+                    .font(.caption)
+                    .foregroundColor(.secondaryText)
+                    .frame(width: 110, alignment: .leading)
+                
+                Picker("", selection: .init(
+                    get: { providerManager.preferences.elevenLabsTTSModel ?? "eleven_multilingual_v2" },
+                    set: { newModel in
+                        var newPrefs = providerManager.preferences
+                        newPrefs.elevenLabsTTSModel = newModel
+                        providerManager.updatePreferences(newPrefs)
+                    }
+                )) {
+                    Text("Multilingual v2").tag("eleven_multilingual_v2")
+                    Text("Monolingual v1").tag("eleven_monolingual_v1")
+                    Text("Turbo v2").tag("eleven_turbo_v2")
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+            }
+        }
+    }
+}
+
+// Notification Settings Content
+struct NotificationSettingsContent: View {
+    @Binding var playCompletionSound: Bool
+    @Binding var showNotifications: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            Toggle("Play sound on completion", isOn: $playCompletionSound)
+                .toggleStyle(SwitchToggleStyle())
+                .tint(.accentColor)
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
+            Toggle("Show notifications", isOn: $showNotifications)
+                .toggleStyle(SwitchToggleStyle())
+                .tint(.accentColor)
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
+
+// Keyboard Shortcuts Content
+struct KeyboardShortcutsContent: View {
+    @Binding var recordingShortcut: String
+    @Binding var rawModeShortcut: String
+    @Binding var cleanupModeShortcut: String
+    @Binding var emailModeShortcut: String
+    @Binding var messagingModeShortcut: String
+    
+    var body: some View {
+        VStack(spacing: DesignSystem.spacingSmall) {
+            ShortcutRow(
+                title: "Start/Stop Recording",
+                shortcut: $recordingShortcut,
+                isEditable: true
+            )
+            
+            Divider().background(Color.white.opacity(0.1))
+            
+            ShortcutRow(
+                title: "Raw Transcription",
+                shortcut: $rawModeShortcut,
+                isEditable: true
+            )
+            
+            ShortcutRow(
+                title: "Clean-up Mode",
+                shortcut: $cleanupModeShortcut,
+                isEditable: true
+            )
+            
+            ShortcutRow(
+                title: "Email Mode",
+                shortcut: $emailModeShortcut,
+                isEditable: true
+            )
+            
+            ShortcutRow(
+                title: "Messaging Mode",
+                shortcut: $messagingModeShortcut,
+                isEditable: true
+            )
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
+
+// History Settings Content
+struct HistorySettingsContent: View {
+    @Binding var showingHistory: Bool
+    
+    var body: some View {
+        HStack {
+            Text("View transcription history")
+                .font(.body)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Button("View History") {
+                showingHistory = true
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
+
+// About Settings Content
+struct AboutSettingsContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            HStack {
+                Text("Transcriptly")
+                    .font(.system(size: 16, weight: .medium))
+                
+                Spacer()
+                
+                Text("Version 1.0.0")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            HStack(spacing: DesignSystem.spacingLarge) {
+                Link("Help", destination: URL(string: "https://transcriptly.app/help")!)
+                    .foregroundColor(.accentColor)
+                
+                Link("Privacy Policy", destination: URL(string: "https://transcriptly.app/privacy")!)
+                    .foregroundColor(.accentColor)
+            }
+        }
+        .padding(DesignSystem.spacingMedium)
+        .liquidGlassCard()
+    }
+}
 
 /// Reusable settings card component with Liquid Glass design
 struct SettingsCard<Content: View>: View {
@@ -292,16 +997,16 @@ struct ShortcutRow: View {
         }
     }
     
-    private func findRecorderView() -> KeyboardRecorderView? {
+    private func findRecorderView() -> SimpleKeyRecorderView? {
         // Helper function to find the recorder view in the view hierarchy
         guard let window = NSApplication.shared.keyWindow else { return nil }
         return findRecorderInView(window.contentView)
     }
     
-    private func findRecorderInView(_ view: NSView?) -> KeyboardRecorderView? {
+    private func findRecorderInView(_ view: NSView?) -> SimpleKeyRecorderView? {
         guard let view = view else { return nil }
         
-        if let recorder = view as? KeyboardRecorderView {
+        if let recorder = view as? SimpleKeyRecorderView {
             return recorder
         }
         

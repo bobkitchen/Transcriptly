@@ -103,7 +103,6 @@ struct InteractiveSurface: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .hoverOverlay(isHovered: isHovered, cornerRadius: cornerRadius)
             .scaleEffect(isPressed ? 0.98 : (isHovered ? 1.01 : 1.0))
             .animation(DesignSystem.fastSpringAnimation, value: isHovered)
             .animation(DesignSystem.quickFadeAnimation, value: isPressed)
@@ -140,7 +139,7 @@ struct SelectableCard: ViewModifier {
     init(
         isSelected: Bool,
         cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium,
-        accentColor: Color = DesignSystem.Colors.accent
+        accentColor: Color = .accentColor
     ) {
         self.isSelected = isSelected
         self.cornerRadius = cornerRadius
@@ -166,7 +165,6 @@ struct SelectableCard: ViewModifier {
                 radius: isSelected ? 8 : 4,
                 y: isSelected ? 4 : 2
             )
-            .hoverOverlay(isHovered: isHovered, cornerRadius: cornerRadius)
             .scaleEffect(isHovered ? 1.01 : 1.0)
             .animation(DesignSystem.springAnimation, value: isSelected)
             .animation(DesignSystem.fadeAnimation, value: isHovered)
@@ -208,7 +206,7 @@ extension View {
     func selectableCard(
         isSelected: Bool,
         cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium,
-        accentColor: Color = DesignSystem.Colors.accent
+        accentColor: Color = .accentColor
     ) -> some View {
         modifier(SelectableCard(isSelected: isSelected, cornerRadius: cornerRadius, accentColor: accentColor))
     }

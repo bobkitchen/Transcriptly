@@ -75,18 +75,21 @@ final class AppViewModel: ObservableObject {
         
         // Set up keyboard shortcut handlers
         keyboardShortcutService.onShortcutPressed = { [weak self] in
+            print("AppViewModel: Recording shortcut callback triggered")
             Task { @MainActor in
                 await self?.handleKeyboardShortcut()
             }
         }
         
         keyboardShortcutService.onModeChangePressed = { [weak self] mode in
+            print("AppViewModel: Mode change callback triggered for mode: \(mode)")
             Task { @MainActor in
                 self?.handleModeChange(mode)
             }
         }
         
         keyboardShortcutService.onCancelPressed = { [weak self] in
+            print("AppViewModel: Cancel callback triggered")
             Task { @MainActor in
                 await self?.handleCancel()
             }
@@ -604,17 +607,24 @@ final class AppViewModel: ObservableObject {
     
     @MainActor
     private func handleKeyboardShortcut() async {
+        print("handleKeyboardShortcut called - isRecording: \(isRecording)")
         if isRecording {
             // Stop recording
+            print("Stopping recording via keyboard shortcut")
             let recordingURL = await stopRecording()
             if recordingURL != nil {
                 // Recording completed successfully
+                print("Recording stopped successfully")
             }
         } else {
             // Check permissions and start recording
+            print("Starting recording via keyboard shortcut")
             let hasPermission = await checkPermissions()
             if hasPermission {
+                print("Permissions granted, starting recording")
                 _ = await startRecording()
+            } else {
+                print("Permissions denied")
             }
         }
     }
@@ -625,6 +635,7 @@ final class AppViewModel: ObservableObject {
     
     @MainActor
     private func handleModeChange(_ mode: RefinementMode) {
+        print("handleModeChange called with mode: \(mode)")
         currentRefinementMode = mode
         showModeChangeNotification(mode)
     }

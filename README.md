@@ -16,7 +16,7 @@ Transcriptly is a native macOS 26 application that captures speech via keyboard 
 
 ## Core Features 
 ### Phase 1 Complete ✅
-- Global keyboard shortcuts (⌘⇧V)
+- Global keyboard shortcuts (⌘⌥V - changed from ⌘⇧V to avoid conflicts)
 - Post-recording transcription using Apple's Speech framework
 - Auto-paste to active application
 - Basic recording interface
@@ -26,10 +26,20 @@ Transcriptly is a native macOS 26 application that captures speech via keyboard 
 - **Sidebar Navigation**: Home, Transcription, AI Providers, Learning, Settings sections
 - **Capsule Mode**: Floating minimal recording interface with bidirectional navigation
 - **User-Editable Prompts**: Character-counted prompt editing with reset functionality
-- **Enhanced Shortcuts**: ⌘1-4 for mode switching, Escape for cancel
+- **Enhanced Shortcuts**: ⌘⌥1-4 for mode switching (changed from ⌘⇧1-4), Escape for cancel
 - **Menu Bar Enhancements**: Animated waveform during recording
 - **Completion Notifications**: User-configurable notifications with sound
 - **Settings Management**: Notification preferences, history view, shortcuts display
+
+### Keyboard Shortcuts
+- **⌘⌥V**: Start/Stop Recording (changed from ⌘⇧V to avoid conflicts with system shortcuts)
+- **⌘⌥1**: Raw Transcription Mode
+- **⌘⌥2**: Clean-up Mode
+- **⌘⌥3**: Email Mode
+- **⌘⌥4**: Messaging Mode
+- **Escape**: Cancel Recording (while recording)
+
+**Note**: If keyboard shortcuts fail to register, check System Settings → Keyboard → Keyboard Shortcuts for conflicts
 
 ## Technical Requirements
 - **macOS**: 26.0+ only (no backward compatibility)

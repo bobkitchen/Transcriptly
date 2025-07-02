@@ -21,6 +21,7 @@ struct ProductivityCard: View {
     @State private var isHovered = false
     @State private var isPressed = false
     @State private var isDragOver = false
+    @State private var animationScale: CGFloat = 1.0
     
     // Convenience initializer for non-dropzone cards
     init(
@@ -63,98 +64,134 @@ struct ProductivityCard: View {
     }
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingMedium) {
-            // Icon section with dropzone indicator
+        VStack(spacing: 0) {
+            // Icon section with dropzone indicator - Fixed height
             VStack(spacing: DesignSystem.spacingSmall) {
                 ZStack {
                     Image(systemName: icon)
                         .font(.system(size: 32, weight: .medium))
                         .foregroundColor(isDragOver ? .white : color)
                         .symbolRenderingMode(.hierarchical)
+                        .frame(height: 40)
                     
                     // Drop overlay when dragging
-                    if isDragOver && isDropzone {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .background(
-                                Circle()
-                                    .fill(color)
-                                    .frame(width: 24, height: 24)
-                            )
-                            .offset(x: 12, y: -12)
-                    }
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.white)
+                        .background(
+                            Circle()
+                                .fill(color)
+                                .frame(width: 24, height: 24)
+                        )
+                        .offset(x: 12, y: -12)
+                        .opacity(isDragOver && isDropzone ? 1 : 0)
                 }
+                .frame(height: 40)
                 
                 Text(title)
                     .font(DesignSystem.Typography.titleMedium)
                     .fontWeight(.semibold)
                     .foregroundColor(isDragOver ? .white : .primaryText)
+                    .frame(height: 24)
                 
-                Text(isDragOver && isDropzone ? "Drop files here" : subtitle)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(isDragOver ? .white.opacity(0.9) : .secondaryText)
-                    .multilineTextAlignment(.center)
-                    .animation(.easeInOut(duration: 0.2), value: isDragOver)
-            }
-            
-            Spacer()
-            
-            // Action button with dropzone hint
-            Button(action: onTap) {
-                HStack(spacing: DesignSystem.spacingSmall) {
-                    if isDropzone && !isDragOver {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .medium))
-                    }
+                // Use ZStack to overlay text without layout shift
+                ZStack {
+                    Text(subtitle)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .opacity(isDragOver && isDropzone ? 0 : 1)
                     
-                    Text(isDragOver ? "Drop Here" : action)
+                    Text("Drop files here")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .opacity(isDragOver && isDropzone ? 1 : 0)
+                }
+                .frame(height: 40)
+            }
+            .padding(.top, DesignSystem.spacingLarge)
+            
+            Spacer(minLength: DesignSystem.spacingMedium)
+            
+            // Action button with fixed size
+            Button(action: onTap) {
+                ZStack {
+                    // Normal state
+                    HStack(spacing: DesignSystem.spacingSmall) {
+                        if isDropzone {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        Text(action)
+                            .font(DesignSystem.Typography.body)
+                            .fontWeight(.medium)
+                    }
+                    .opacity(isDragOver ? 0 : 1)
+                    
+                    // Drag state
+                    Text("Drop Here")
                         .font(DesignSystem.Typography.body)
                         .fontWeight(.medium)
+                        .opacity(isDragOver ? 1 : 0)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, DesignSystem.spacingMedium)
-                .padding(.vertical, DesignSystem.spacingSmall)
+                .frame(width: 140, height: 32)
                 .background(
                     Capsule()
                         .fill(isDragOver ? color.opacity(0.8) : color)
                 )
             }
             .buttonStyle(.plain)
+            .padding(.bottom, DesignSystem.spacingLarge)
         }
-        .padding(DesignSystem.spacingLarge)
-        .frame(minHeight: 200)
-        .background(
-            LiquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusMedium)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
-                        .strokeBorder(
-                            isDragOver ? color : color.opacity(0.3), 
-                            lineWidth: isDragOver ? 2 : 1
-                        )
-                        .animation(DesignSystem.springAnimation, value: isDragOver)
+        .padding(.horizontal, DesignSystem.spacingLarge)
+        .frame(width: 220, height: 220)
+        .performantGlass(
+            material: .regularMaterial,
+            cornerRadius: DesignSystem.cornerRadiusMedium,
+            strokeOpacity: isDragOver ? 0.3 : 0.15
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                .strokeBorder(
+                    isDragOver ? color : Color.clear, 
+                    lineWidth: isDragOver ? 1.5 : 0
                 )
         )
         .background(
             // Drop highlight background
             RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
-                .fill(isDragOver ? color.opacity(0.2) : Color.clear)
-                .animation(DesignSystem.springAnimation, value: isDragOver)
+                .fill(isDragOver ? color.opacity(0.15) : Color.clear)
         )
-        .scaleEffect(isPressed ? 0.98 : (isHovered || isDragOver ? 1.02 : 1.0))
-        .animation(DesignSystem.springAnimation, value: isHovered)
-        .animation(DesignSystem.springAnimation, value: isPressed)
-        .animation(DesignSystem.springAnimation, value: isDragOver)
+        .overlay(
+            // Simple hover overlay
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
+                .fill(Color.white.opacity((isHovered && !isDragOver) ? 0.05 : 0))
+                .allowsHitTesting(false)
+        )
+        .shadow(
+            color: .black.opacity((isHovered || isDragOver) ? 0.15 : 0.12),
+            radius: (isHovered || isDragOver) ? 10 : 8,
+            y: (isHovered || isDragOver) ? 5 : 4
+        )
+        .scaleEffect(animationScale)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: animationScale)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isDragOver)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
+            updateScale()
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     isPressed = true
+                    updateScale()
                 }
                 .onEnded { _ in
                     isPressed = false
+                    updateScale()
                     onTap()
                 }
         )
@@ -162,12 +199,23 @@ struct ProductivityCard: View {
             isDropzone: isDropzone,
             supportedTypes: supportedTypes,
             isDragOver: $isDragOver,
-            onDrop: onDrop
+            onDrop: onDrop,
+            onDragChange: updateScale
         )
     }
     
     private var isDropzone: Bool {
         return onDrop != nil && !supportedTypes.isEmpty
+    }
+    
+    private func updateScale() {
+        if isPressed {
+            animationScale = 0.98
+        } else if isHovered || isDragOver {
+            animationScale = 1.02
+        } else {
+            animationScale = 1.0
+        }
     }
 }
 
@@ -178,13 +226,20 @@ extension View {
         isDropzone: Bool,
         supportedTypes: [UTType],
         isDragOver: Binding<Bool>,
-        onDrop: ((URL) -> Void)?
+        onDrop: ((URL) -> Void)?,
+        onDragChange: (() -> Void)? = nil
     ) -> some View {
         Group {
             if isDropzone {
                 self.onDrop(
                     of: [.fileURL],
-                    isTargeted: isDragOver
+                    isTargeted: Binding(
+                        get: { isDragOver.wrappedValue },
+                        set: { newValue in
+                            isDragOver.wrappedValue = newValue
+                            onDragChange?()
+                        }
+                    )
                 ) { providers in
                     handleCardDrop(providers: providers, onDrop: onDrop)
                 }
