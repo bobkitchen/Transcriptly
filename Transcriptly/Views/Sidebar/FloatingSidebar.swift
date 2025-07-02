@@ -10,60 +10,64 @@ import SwiftUI
 
 struct FloatingSidebar: View {
     @Binding var selectedSection: SidebarSection
+    @Binding var isCollapsed: Bool
     @State private var hoveredSection: SidebarSection?
-    @State private var isCollapsed = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("NAVIGATION")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.tertiaryText)
-                    .textCase(.uppercase)
-                    .tracking(0.5)
+                if !isCollapsed {
+                    Text("NAVIGATION")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.tertiaryText)
+                        .textCase(.uppercase)
+                        .tracking(0.5)
+                    
+                    Spacer()
+                }
                 
-                Spacer()
-                
-                // Optional collapse button
-                Button(action: { isCollapsed.toggle() }) {
+                // Collapse button
+                Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { isCollapsed.toggle() } }) {
                     Image(systemName: isCollapsed ? "sidebar.left" : "sidebar.leading")
                         .font(.system(size: 12))
                         .foregroundColor(.tertiaryText)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
+                .help(isCollapsed ? "Expand Sidebar (⌘⌥S)" : "Collapse Sidebar (⌘⌥S)")
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, isCollapsed ? 8 : 16)
             .padding(.top, 16)
             .padding(.bottom, 8)
             
-            if !isCollapsed {
-                // Navigation items
-                VStack(spacing: 2) {
-                    ForEach(SidebarSection.allCases, id: \.self) { section in
-                        FloatingSidebarItem(
-                            section: section,
-                            isSelected: selectedSection == section,
-                            isHovered: hoveredSection == section,
-                            isEnabled: section.isEnabled
-                        )
-                        .onTapGesture {
-                            if section.isEnabled {
-                                selectedSection = section
-                            }
-                        }
-                        .onHover { hovering in
-                            hoveredSection = hovering ? section : nil
+            // Navigation items
+            VStack(spacing: 2) {
+                ForEach(SidebarSection.allCases, id: \.self) { section in
+                    FloatingSidebarItem(
+                        section: section,
+                        isSelected: selectedSection == section,
+                        isHovered: hoveredSection == section,
+                        isEnabled: section.isEnabled,
+                        isCollapsed: isCollapsed
+                    )
+                    .onTapGesture {
+                        if section.isEnabled {
+                            selectedSection = section
                         }
                     }
+                    .onHover { hovering in
+                        hoveredSection = hovering ? section : nil
+                    }
+                    .help(isCollapsed ? section.title : "")
                 }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 16)
             }
+            .padding(.horizontal, isCollapsed ? 4 : 8)
+            .padding(.bottom, 16)
             
             Spacer()
         }
-        .frame(width: isCollapsed ? 60 : 220)
+        .frame(width: isCollapsed ? 68 : 220)
         .performantGlass(
             material: .regularMaterial,
             cornerRadius: 12,
@@ -83,6 +87,7 @@ struct FloatingSidebarItem: View {
     let isSelected: Bool
     let isHovered: Bool
     let isEnabled: Bool
+    let isCollapsed: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -92,26 +97,28 @@ struct FloatingSidebarItem: View {
                 .foregroundColor(iconColor)
                 .frame(width: 20)
             
-            Text(section.title)
-                .font(.system(size: 14, weight: isSelected ? .medium : .regular))
-                .foregroundColor(textColor)
-            
-            Spacer()
-            
-            if !isEnabled {
-                Text("Soon")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.tertiaryText)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(.quaternary)
-                    )
+            if !isCollapsed {
+                Text(section.title)
+                    .font(.system(size: 14, weight: isSelected ? .medium : .regular))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                if !isEnabled {
+                    Text("Soon")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.tertiaryText)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(.quaternary)
+                        )
+                }
             }
         }
         .padding(.vertical, 6)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, isCollapsed ? 8 : 12)
         .background(selectionBackground)
         .hoverOverlay(
             isHovered: isHovered && isEnabled,
@@ -148,7 +155,7 @@ struct FloatingSidebarItem: View {
 }
 
 #Preview {
-    FloatingSidebar(selectedSection: .constant(.home))
+    FloatingSidebar(selectedSection: .constant(.home), isCollapsed: .constant(false))
         .padding(20)
         .background(Color.primaryBackground)
 }
