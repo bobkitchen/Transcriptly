@@ -4,6 +4,7 @@
 //
 //  Created by Claude Code on 6/26/25.
 //  Updated by Claude Code on 6/28/25 for Phase 4 Liquid Glass UI
+//  Updated by Claude Code on 1/3/25 for Phase 10 Visual Polish
 //
 
 import SwiftUI
@@ -14,158 +15,133 @@ struct HomeView: View {
     @Binding var selectedSection: SidebarSection
     let onFloat: () -> Void
     @ObservedObject private var historyService = TranscriptionHistoryService.shared
+    @StateObject private var userStats = UserStats()
     @State private var showingHistory = false
     
     var body: some View {
         ScrollView {
-            VStack(spacing: DesignSystem.spacingLarge) {
-                // Welcome message
+            VStack(spacing: DesignSystem.spacingXLarge) {
+                // Simplified header
                 welcomeSection
                 
-                // Three main action cards
-                threeCardLayout
+                // Enhanced Action Cards
+                enhancedActionCards
                 
-                // Recent activity section
-                recentActivitySection
+                // Stats Dashboard
+                statsDashboard
             }
             .padding(.horizontal, DesignSystem.marginStandard)
-            .padding(.vertical, DesignSystem.spacingLarge)
+            .padding(.vertical, DesignSystem.marginStandard)
         }
         .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
         }
+        .onAppear {
+            userStats.loadTodayStats()
+        }
     }
     
     
     @ViewBuilder
     private var welcomeSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingSmall) {
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
             Text("Welcome back")
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(.primaryText)
-                .fontWeight(.medium)
+                .font(DesignSystem.Typography.heroTitle)
+                .foregroundColor(.primary)
             
-            Text("Choose how you'd like to be productive with your voice today")
+            // Subtle status line
+            Text("\(userStats.todaySessions) transcriptions today • \(userStats.wordsFormatted) words • \(userStats.todayMinutesSaved) minutes saved")
                 .font(DesignSystem.Typography.body)
-                .foregroundColor(.secondaryText)
+                .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, DesignSystem.spacingMedium)
     }
     
     @ViewBuilder
-    private var threeCardLayout: some View {
-        HStack(spacing: DesignSystem.spacingMedium) {
-            
-            // Card 1: Record Dictation
-            ProductivityCard(
-                icon: "mic.fill",
+    private var enhancedActionCards: some View {
+        HStack(spacing: DesignSystem.spacingLarge) {
+            EnhancedActionCard(
+                icon: "mic.circle.fill",
                 title: "Record Dictation",
                 subtitle: "Voice to text with AI refinement",
-                action: "Start Recording",
-                color: .blue,
-                onTap: {
+                buttonText: "Start Recording",
+                buttonColor: .blue,
+                action: {
                     selectedSection = .dictation
                 }
             )
             
-            // Card 2: Read Documents (Dropzone)
-            ProductivityCard(
+            EnhancedActionCard(
                 icon: "doc.text.fill",
                 title: "Read Documents",
                 subtitle: "Text to speech for any document",
-                action: "Choose Document",
-                color: .green,
-                supportedTypes: [
-                    .pdf,
-                    .plainText,
-                    .rtf,
-                    .html,
-                    UTType(filenameExtension: "docx") ?? .data,
-                    UTType(filenameExtension: "doc") ?? .data
-                ],
-                onTap: {
+                buttonText: "Choose Document",
+                buttonColor: .green,
+                action: {
                     selectedSection = .readAloud
-                },
-                onDrop: { url in
-                    handleFileImport(url)
                 }
             )
             
-            // Card 3: Transcribe Media (Dropzone) 
-            ProductivityCard(
+            EnhancedActionCard(
                 icon: "waveform",
                 title: "Transcribe Media",
                 subtitle: "Convert audio files to text",
-                action: "Select Audio",
-                color: .purple,
-                supportedTypes: [
-                    .audio,
-                    .mp3,
-                    .wav,
-                    UTType(filenameExtension: "m4a") ?? .data,
-                    UTType(filenameExtension: "aac") ?? .data
-                ],
-                onTap: {
-                    // Future feature - for now show a helpful message
-                    // Could implement a coming soon alert or redirect to dictation
+                buttonText: "Select Audio",
+                buttonColor: .purple,
+                action: {
+                    // Future feature - for now redirect to dictation
                     selectedSection = .dictation
-                },
-                onDrop: { url in
-                    handleFileImport(url)
                 }
             )
         }
+        .frame(height: 200)
     }
     
     @ViewBuilder
-    private var recentActivitySection: some View {
+    private var statsDashboard: some View {
         VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
             HStack {
-                Text("Recent Activity")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .foregroundColor(.primaryText)
-                    .fontWeight(.medium)
+                Text("Today's Productivity")
+                    .font(DesignSystem.Typography.sectionTitle)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button("View All") {
+                Button("View History") {
                     showingHistory = true
                 }
-                .font(DesignSystem.Typography.bodySmall)
+                .font(DesignSystem.Typography.body)
                 .foregroundColor(.accentColor)
             }
             
-            if recentTranscriptions.isEmpty {
-                // Empty state
-                VStack(spacing: DesignSystem.spacingSmall) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 24))
-                        .foregroundColor(.tertiaryText)
-                    
-                    Text("No recent activity")
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(.secondaryText)
-                    
-                    Text("Your recent dictations and documents will appear here")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.tertiaryText)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, DesignSystem.spacingLarge)
-                .background(
-                    LiquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusSmall)
+            HStack(spacing: DesignSystem.spacingLarge) {
+                ProductivityStatCard(
+                    title: "Words",
+                    value: userStats.wordsFormatted,
+                    subtitle: userStats.growthFormatted,
+                    icon: "textformat.size",
+                    color: Color.blue
                 )
-            } else {
-                LazyVStack(spacing: DesignSystem.spacingSmall) {
-                    ForEach(recentTranscriptions) { transcription in
-                        TranscriptionCard(transcription: transcription)
-                    }
-                }
+                
+                ProductivityStatCard(
+                    title: "Time Saved",
+                    value: "\(userStats.todayMinutesSaved)m",
+                    subtitle: "vs typing",
+                    icon: "clock.arrow.circlepath",
+                    color: Color.green
+                )
+                
+                ProductivityStatCard(
+                    title: "Streak",
+                    value: "\(userStats.currentStreak)",
+                    subtitle: userStats.currentStreak >= 3 ? "🔥 Keep it up!" : "days",
+                    icon: "flame.fill",
+                    color: Color.orange
+                )
             }
+            .frame(height: 120)
         }
     }
     
