@@ -43,8 +43,9 @@ struct FloatingSidebar: View {
                 baseOpacity: 0.15
             )
         }
+        .padding(.leading, 16)
+        .padding(.vertical, 16)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCollapsed)
-        .padding(16)
     }
     
     @ViewBuilder

@@ -20,21 +20,21 @@ struct MainWindowView: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar container
-            FloatingSidebar(
-                selectedSection: $selectedSection,
-                isCollapsed: $isSidebarCollapsed
-            )
-            .frame(height: .infinity)
-            
-            // Content area that responds to sidebar width
+        ZStack(alignment: .topLeading) {
+            // Content area with dynamic padding
             FullWidthContentView(
                 selectedSection: $selectedSection,
                 viewModel: viewModel,
                 onFloat: capsuleManager.showCapsule
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.leading, isSidebarCollapsed ? 100 : 252) // Adjust for sidebar width
+            
+            // Floating sidebar overlay
+            FloatingSidebar(
+                selectedSection: $selectedSection,
+                isCollapsed: $isSidebarCollapsed
+            )
         }
         .frame(minWidth: 800, minHeight: 640) // Adjusted for collapsible sidebar
         .background(Color.primaryBackground)
