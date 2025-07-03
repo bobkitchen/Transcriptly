@@ -15,127 +15,127 @@ struct FloatingSidebar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                if !isCollapsed {
-                    Text("NAVIGATION")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.tertiaryText)
-                        .textCase(.uppercase)
-                        .tracking(0.5)
-                    
-                    Spacer()
-                }
+            // Sidebar content
+            VStack(spacing: 0) {
+                // Header
+                sidebarHeader
                 
-                // Collapse button
-                Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { isCollapsed.toggle() } }) {
-                    Image(systemName: isCollapsed ? "sidebar.left" : "sidebar.leading")
-                        .font(.system(size: 12))
-                        .foregroundColor(.tertiaryText)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.plain)
-                .help(isCollapsed ? "Expand Sidebar (⌘⌥S)" : "Collapse Sidebar (⌘⌥S)")
-            }
-            .padding(.horizontal, isCollapsed ? 8 : 16)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
-            
-            // Navigation items
-            VStack(spacing: 2) {
-                ForEach(SidebarSection.allCases, id: \.self) { section in
-                    FloatingSidebarItem(
-                        section: section,
-                        isSelected: selectedSection == section,
-                        isHovered: hoveredSection == section,
-                        isEnabled: section.isEnabled,
-                        isCollapsed: isCollapsed
-                    )
-                    .onTapGesture {
-                        if section.isEnabled {
-                            selectedSection = section
-                        }
+                // Navigation items
+                VStack(spacing: 2) {
+                    ForEach(SidebarSection.allCases, id: \.self) { section in
+                        sidebarItem(for: section)
                     }
-                    .onHover { hovering in
-                        hoveredSection = hovering ? section : nil
-                    }
-                    .help(isCollapsed ? section.title : "")
                 }
-            }
-            .padding(.horizontal, isCollapsed ? 4 : 8)
-            .padding(.bottom, 16)
-            
-            Spacer()
-        }
-        .frame(width: isCollapsed ? 68 : 220)
-        .performantGlass(
-            material: .regularMaterial,
-            cornerRadius: 12,
-            strokeOpacity: 0.15
-        )
-        .adaptiveShadow(
-            isHovered: false,
-            baseRadius: 12,
-            baseOpacity: 0.15
-        )
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCollapsed)
-    }
-}
-
-struct FloatingSidebarItem: View {
-    let section: SidebarSection
-    let isSelected: Bool
-    let isHovered: Bool
-    let isEnabled: Bool
-    let isCollapsed: Bool
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: section.icon)
-                .font(.system(size: 16))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundColor(iconColor)
-                .frame(width: 20)
-            
-            if !isCollapsed {
-                Text(section.title)
-                    .font(.system(size: 14, weight: isSelected ? .medium : .regular))
-                    .foregroundColor(textColor)
+                .padding(.horizontal, 8)
                 
                 Spacer()
+            }
+            .frame(width: isCollapsed ? 68 : 220)
+            .frame(maxHeight: .infinity)
+            .performantGlass(
+                material: .regularMaterial,
+                cornerRadius: 12,
+                strokeOpacity: 0.15
+            )
+            .adaptiveShadow(
+                isHovered: false,
+                baseRadius: 12,
+                baseOpacity: 0.15
+            )
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCollapsed)
+        .padding(16)
+    }
+    
+    @ViewBuilder
+    private var sidebarHeader: some View {
+        HStack(spacing: 8) {
+            if !isCollapsed {
+                Text("NAVIGATION")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.tertiaryText)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
                 
-                if !isEnabled {
-                    Text("Soon")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.tertiaryText)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(.quaternary)
-                        )
+                Spacer()
+            }
+            
+            Button(action: toggleSidebar) {
+                Image(systemName: isCollapsed ? "sidebar.left" : "sidebar.leading")
+                    .font(.system(size: 12))
+                    .foregroundColor(.tertiaryText)
+                    .frame(width: 20, height: 20)
+                    .frame(maxWidth: isCollapsed ? .infinity : nil)
+            }
+            .buttonStyle(.plain)
+            .help(isCollapsed ? "Expand Sidebar (⌘⌥S)" : "Collapse Sidebar (⌘⌥S)")
+        }
+        .padding(.horizontal, isCollapsed ? 8 : 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+    
+    @ViewBuilder
+    private func sidebarItem(for section: SidebarSection) -> some View {
+        Button(action: {
+            if section.isEnabled {
+                selectedSection = section
+            }
+        }) {
+            HStack(spacing: isCollapsed ? 0 : 12) {
+                Image(systemName: section.icon)
+                    .font(.system(size: 16))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundColor(itemIconColor(for: section))
+                    .frame(width: 20)
+                    .frame(maxWidth: isCollapsed ? .infinity : nil)
+                
+                if !isCollapsed {
+                    Text(section.title)
+                        .font(.system(size: 14, weight: selectedSection == section ? .medium : .regular))
+                        .foregroundColor(itemTextColor(for: section))
+                    
+                    Spacer()
+                    
+                    if !section.isEnabled {
+                        Text("Soon")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.tertiaryText)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(.quaternary)
+                            )
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, isCollapsed ? 8 : 6)
+            .padding(.horizontal, 12)
+            .background(itemBackground(for: section))
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, isCollapsed ? 8 : 12)
-        .background(selectionBackground)
+        .buttonStyle(.plain)
+        .disabled(!section.isEnabled)
+        .onHover { hovering in
+            hoveredSection = hovering ? section : nil
+        }
         .hoverOverlay(
-            isHovered: isHovered && isEnabled,
+            isHovered: hoveredSection == section && section.isEnabled,
             cornerRadius: 6,
             intensity: 0.05
         )
         .cornerRadius(6)
-        .contentShape(Rectangle())
+        .help(isCollapsed ? section.title : "")
     }
     
     @ViewBuilder
-    private var selectionBackground: some View {
-        if isSelected {
-            // Native macOS selection style
+    private func itemBackground(for section: SidebarSection) -> some View {
+        if selectedSection == section {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.accentColor.opacity(0.15))
-        } else if isHovered && isEnabled {
+        } else if hoveredSection == section && section.isEnabled {
             RoundedRectangle(cornerRadius: 6)
                 .fill(.quaternary)
         } else {
@@ -143,19 +143,28 @@ struct FloatingSidebarItem: View {
         }
     }
     
-    private var iconColor: Color {
-        if !isEnabled { return .tertiaryText }
-        return isSelected ? .accentColor : .secondaryText
+    private func itemIconColor(for section: SidebarSection) -> Color {
+        if !section.isEnabled { return .tertiaryText }
+        return selectedSection == section ? .accentColor : .secondaryText
     }
     
-    private var textColor: Color {
-        if !isEnabled { return .tertiaryText }
-        return isSelected ? .primaryText : .secondaryText
+    private func itemTextColor(for section: SidebarSection) -> Color {
+        if !section.isEnabled { return .tertiaryText }
+        return selectedSection == section ? .primaryText : .secondaryText
+    }
+    
+    private func toggleSidebar() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isCollapsed.toggle()
+        }
     }
 }
 
 #Preview {
-    FloatingSidebar(selectedSection: .constant(.home), isCollapsed: .constant(false))
-        .padding(20)
-        .background(Color.primaryBackground)
+    HStack {
+        FloatingSidebar(selectedSection: .constant(.home), isCollapsed: .constant(false))
+        Spacer()
+    }
+    .frame(width: 800, height: 600)
+    .background(Color.primaryBackground)
 }

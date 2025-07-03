@@ -21,17 +21,12 @@ struct MainWindowView: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            // Sidebar
+            // Sidebar container
             FloatingSidebar(
                 selectedSection: $selectedSection,
                 isCollapsed: $isSidebarCollapsed
             )
-            .padding(.leading, 16)
-            .padding(.vertical, 16)
-            
-            // Divider
-            Divider()
-                .opacity(0.3)
+            .frame(height: .infinity)
             
             // Content area that responds to sidebar width
             FullWidthContentView(
@@ -40,9 +35,6 @@ struct MainWindowView: View {
                 onFloat: capsuleManager.showCapsule
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.trailing, 16)
-            .padding(.vertical, 16)
-            .padding(.leading, 8)
         }
         .frame(minWidth: 800, minHeight: 640) // Adjusted for collapsible sidebar
         .background(Color.primaryBackground)
