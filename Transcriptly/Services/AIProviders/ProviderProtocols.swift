@@ -11,6 +11,7 @@ import SwiftUI
 
 // MARK: - Core Provider Protocol
 
+@MainActor
 protocol AIProvider: ObservableObject {
     var type: ProviderType { get }
     var isAvailable: Bool { get }

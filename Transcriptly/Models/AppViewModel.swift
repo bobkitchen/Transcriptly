@@ -14,6 +14,7 @@ import AppKit
 import ObjectiveC
 
 
+@MainActor
 final class AppViewModel: ObservableObject {
     @Published var currentStatus: AppStatus = .ready
     @Published var isRecording = false

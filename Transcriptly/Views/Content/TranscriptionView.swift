@@ -208,10 +208,9 @@ struct TranscriptionView: View {
                         .cornerRadius(DesignSystem.cornerRadiusMedium)
                     }
                 }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .adjustForFloatingSidebar()
         .background(Color.primaryBackground)

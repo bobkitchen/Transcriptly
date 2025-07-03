@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import Supabase
 
+@MainActor
 class SupabaseManager: ObservableObject {
     static let shared = SupabaseManager()
     
