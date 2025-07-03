@@ -18,6 +18,24 @@ struct HomeView: View {
     @StateObject private var userStats = UserStats()
     @State private var showingHistory = false
     
+    // Responsive layout properties
+    @Environment(\.availableWidth) private var availableWidth
+    @Environment(\.sidebarCollapsed) private var sidebarCollapsed
+    
+    // Calculate optimal layout based on available width
+    private var maxContentWidth: CGFloat {
+        min(availableWidth * 0.9, 1200) // Max 1200pt, 90% of available
+    }
+    
+    private var shouldCenterContent: Bool {
+        availableWidth > 1000 // Center content on very wide displays
+    }
+    
+    private var cardSpacing: CGFloat {
+        // Increase spacing when sidebar collapsed for better use of space
+        sidebarCollapsed ? DesignSystem.spacingXLarge : DesignSystem.spacingLarge
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: DesignSystem.spacingXLarge) {
@@ -30,8 +48,11 @@ struct HomeView: View {
                 // Stats Dashboard
                 statsDashboard
             }
+            .frame(maxWidth: maxContentWidth)
+            .frame(maxWidth: .infinity, alignment: shouldCenterContent ? .center : .leading)
             .padding(.horizontal, DesignSystem.marginStandard)
             .padding(.vertical, DesignSystem.marginStandard)
+            .animation(DesignSystem.gentleSpring, value: sidebarCollapsed)
         }
         .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
@@ -46,7 +67,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var welcomeSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+        VStack(alignment: shouldCenterContent ? .center : .leading, spacing: DesignSystem.spacingMedium) {
             Text("Welcome back")
                 .font(DesignSystem.Typography.heroTitle)
                 .foregroundColor(.primary)
@@ -56,12 +77,12 @@ struct HomeView: View {
                 .font(DesignSystem.Typography.body)
                 .foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: shouldCenterContent ? .center : .leading)
     }
     
     @ViewBuilder
     private var enhancedActionCards: some View {
-        HStack(spacing: DesignSystem.spacingLarge) {
+        HStack(spacing: cardSpacing) {
             EnhancedActionCard(
                 icon: "mic.circle.fill",
                 title: "Record Dictation",
@@ -101,7 +122,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var statsDashboard: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+        VStack(alignment: shouldCenterContent ? .center : .leading, spacing: DesignSystem.spacingMedium) {
             HStack {
                 Text("Today's Productivity")
                     .font(DesignSystem.Typography.sectionTitle)
@@ -115,8 +136,9 @@ struct HomeView: View {
                 .font(DesignSystem.Typography.body)
                 .foregroundColor(.accentColor)
             }
+            .frame(maxWidth: .infinity)
             
-            HStack(spacing: DesignSystem.spacingLarge) {
+            HStack(spacing: cardSpacing) {
                 ProductivityStatCard(
                     title: "Words",
                     value: userStats.wordsFormatted,

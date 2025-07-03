@@ -19,6 +19,16 @@ struct MainWindowView: View {
         self._capsuleManager = StateObject(wrappedValue: CapsuleWindowManager(viewModel: vm))
     }
     
+    // Calculate dynamic content padding when sidebar is collapsed
+    private var contentLeadingPadding: CGFloat {
+        isSidebarCollapsed ? DesignSystem.marginStandard : 0
+    }
+    
+    // Adjust minimum window width based on sidebar state
+    private var minimumWindowWidth: CGFloat {
+        isSidebarCollapsed ? 600 : 800
+    }
+    
     var body: some View {
         HStack(spacing: 8) {
             // Sidebar - fixed width based on state
@@ -29,18 +39,22 @@ struct MainWindowView: View {
             .frame(width: isSidebarCollapsed ? 68 : 220)
             .padding(.leading, 16)
             .padding(.vertical, 16)
+            .animation(DesignSystem.gentleSpring, value: isSidebarCollapsed)
             
             // Main content fills remaining space
-            FullWidthContentView(
+            ResponsiveContentWrapper(
                 selectedSection: $selectedSection,
                 viewModel: viewModel,
-                onFloat: capsuleManager.showCapsule
+                onFloat: capsuleManager.showCapsule,
+                sidebarCollapsed: isSidebarCollapsed,
+                contentLeadingPadding: contentLeadingPadding
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.vertical, 16)
             .padding(.trailing, 16)
+            .animation(DesignSystem.gentleSpring, value: isSidebarCollapsed)
         }
-        .frame(minWidth: 800, minHeight: 640) // Adjusted for collapsible sidebar
+        .frame(minWidth: minimumWindowWidth, minHeight: 640)
         .background(Color.primaryBackground)
         .onReceive(NotificationCenter.default.publisher(for: .capsuleClosed)) { _ in
             // Bring main window to front when capsule closes
