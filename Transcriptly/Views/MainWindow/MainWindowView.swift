@@ -21,7 +21,7 @@ struct MainWindowView: View {
     
     // Calculate dynamic content padding when sidebar is collapsed
     private var contentLeadingPadding: CGFloat {
-        isSidebarCollapsed ? DesignSystem.marginStandard : 0
+        0 // No extra padding needed - content should use all space
     }
     
     // Adjust minimum window width based on sidebar state
@@ -30,15 +30,15 @@ struct MainWindowView: View {
     }
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             // Sidebar - fixed width based on state
             FloatingSidebar(
                 selectedSection: $selectedSection,
                 isCollapsed: $isSidebarCollapsed
             )
             .frame(width: isSidebarCollapsed ? 68 : 220)
-            .padding(.leading, 16)
-            .padding(.vertical, 16)
+            .padding(.leading, 12)
+            .padding(.vertical, 12)
             .animation(DesignSystem.gentleSpring, value: isSidebarCollapsed)
             
             // Main content fills remaining space
@@ -50,8 +50,6 @@ struct MainWindowView: View {
                 contentLeadingPadding: contentLeadingPadding
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 16)
-            .padding(.trailing, 16)
             .animation(DesignSystem.gentleSpring, value: isSidebarCollapsed)
         }
         .frame(minWidth: minimumWindowWidth, minHeight: 640)

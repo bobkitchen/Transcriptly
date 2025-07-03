@@ -24,11 +24,11 @@ struct HomeView: View {
     
     // Calculate optimal layout based on available width
     private var maxContentWidth: CGFloat {
-        min(availableWidth * 0.9, 1200) // Max 1200pt, 90% of available
+        .infinity // Use all available space
     }
     
     private var shouldCenterContent: Bool {
-        availableWidth > 1000 // Center content on very wide displays
+        false // Always align to leading for better space usage
     }
     
     private var cardSpacing: CGFloat {
@@ -48,13 +48,12 @@ struct HomeView: View {
                 // Stats Dashboard
                 statsDashboard
             }
-            .frame(maxWidth: maxContentWidth)
-            .frame(maxWidth: .infinity, alignment: shouldCenterContent ? .center : .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DesignSystem.marginStandard)
-            .padding(.vertical, DesignSystem.marginStandard)
+            .padding(.vertical, DesignSystem.spacingLarge)
             .animation(DesignSystem.gentleSpring, value: sidebarCollapsed)
         }
-        .adjustForFloatingSidebar()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
@@ -117,6 +116,7 @@ struct HomeView: View {
                 }
             )
         }
+        .frame(maxWidth: .infinity)
         .frame(height: 200)
     }
     
@@ -163,6 +163,7 @@ struct HomeView: View {
                     color: Color.orange
                 )
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 120)
         }
     }
