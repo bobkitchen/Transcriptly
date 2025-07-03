@@ -149,12 +149,16 @@ extension AppleProvider: RefinementProvider {
         
         if hasFoundationModels {
             // Use Foundation Models directly to avoid circular dependency
-            do {
-                let refinedText = try await refineWithFoundationModelsDirect(text: text, mode: mode)
-                return .success(refinedText)
-                
-            } catch {
-                return .failure(ProviderError.custom("Foundation Models refinement failed: \(error.localizedDescription)"))
+            if #available(macOS 26.0, *) {
+                do {
+                    let refinedText = try await refineWithFoundationModelsDirect(text: text, mode: mode)
+                    return .success(refinedText)
+                    
+                } catch {
+                    return .failure(ProviderError.custom("Foundation Models refinement failed: \(error.localizedDescription)"))
+                }
+            } else {
+                return .failure(ProviderError.custom("Foundation Models not available on this macOS version."))
             }
         } else {
             // Fallback for older macOS versions - suggest using cloud providers
@@ -163,6 +167,7 @@ extension AppleProvider: RefinementProvider {
     }
     
     #if canImport(FoundationModels)
+    @available(macOS 26.0, *)
     private func refineWithFoundationModelsDirect(text: String, mode: RefinementMode) async throws -> String {
         // Get the system model directly
         let systemModel = SystemLanguageModel.default

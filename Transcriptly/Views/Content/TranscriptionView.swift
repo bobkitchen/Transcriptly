@@ -234,6 +234,7 @@ struct TranscriptionView: View {
             }
         }
     }
+    }
     
     // MARK: - Computed Properties
     
@@ -506,7 +507,9 @@ struct EditingModeWrapper: Identifiable {
     let mode: RefinementMode
 }
 
-#Preview {
-    TranscriptionView(viewModel: AppViewModel(), onFloat: {})
-        .padding()
+struct TranscriptionView_Previews: PreviewProvider {
+    static var previews: some View {
+        TranscriptionView(viewModel: AppViewModel(), onFloat: {})
+            .padding()
+    }
 }
