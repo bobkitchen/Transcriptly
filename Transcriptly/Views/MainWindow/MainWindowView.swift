@@ -48,19 +48,6 @@ struct MainWindowView: View {
                 NSApp.activate(ignoringOtherApps: true)
             }
         }
-        .onAppear {
-            // Set up keyboard shortcut for sidebar toggle
-            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                // ⌘⌥S to toggle sidebar
-                if event.modifierFlags.contains([.command, .option]) && event.charactersIgnoringModifiers == "s" {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        self.isSidebarCollapsed.toggle()
-                    }
-                    return nil
-                }
-                return event
-            }
-        }
     }
 }
 

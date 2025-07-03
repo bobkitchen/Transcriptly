@@ -81,12 +81,6 @@ final class AppViewModel: ObservableObject {
             }
         }
         
-        keyboardShortcutService.onModeChangePressed = { [weak self] mode in
-            print("AppViewModel: Mode change callback triggered for mode: \(mode)")
-            Task { @MainActor in
-                self?.handleModeChange(mode)
-            }
-        }
         
         keyboardShortcutService.onCancelPressed = { [weak self] in
             print("AppViewModel: Cancel callback triggered")
@@ -633,18 +627,6 @@ final class AppViewModel: ObservableObject {
         return await pasteService.pasteAtCursorLocation()
     }
     
-    @MainActor
-    private func handleModeChange(_ mode: RefinementMode) {
-        print("handleModeChange called with mode: \(mode)")
-        currentRefinementMode = mode
-        showModeChangeNotification(mode)
-    }
-    
-    private func showModeChangeNotification(_ mode: RefinementMode) {
-        // Show brief visual feedback for mode change
-        // This could be implemented as a temporary overlay or menu bar update
-        print("Mode changed to: \(mode.rawValue)")
-    }
     
     private func handleCancel() async {
         guard isRecording else { return }

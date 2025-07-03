@@ -12,7 +12,6 @@ import Carbon
 
 final class KeyboardShortcutService: ObservableObject {
     var onShortcutPressed: (() -> Void)?
-    var onModeChangePressed: ((RefinementMode) -> Void)?
     var onCancelPressed: (() -> Void)?
     
     private var globalMonitor: Any?
@@ -35,10 +34,6 @@ final class KeyboardShortcutService: ObservableObject {
     // Hotkey IDs for different shortcuts
     private enum HotKeyID: UInt32 {
         case recording = 1
-        case rawMode = 2
-        case cleanupMode = 3
-        case emailMode = 4
-        case messagingMode = 5
     }
     
     // Dynamic shortcuts from UserDefaults - Changed to ⌘⌥ to avoid conflicts
@@ -49,38 +44,6 @@ final class KeyboardShortcutService: ObservableObject {
             // Reset to default if invalid
             UserDefaults.standard.set("⌘⌥V", forKey: "recordingShortcut")
             return "⌘⌥V"
-        }
-        return saved
-    }
-    private var rawModeShortcut: String {
-        let saved = UserDefaults.standard.string(forKey: "rawModeShortcut") ?? "⌘⌥1"
-        if saved.contains("→") || saved.contains("←") {
-            UserDefaults.standard.set("⌘⌥1", forKey: "rawModeShortcut")
-            return "⌘⌥1"
-        }
-        return saved
-    }
-    private var cleanupModeShortcut: String {
-        let saved = UserDefaults.standard.string(forKey: "cleanupModeShortcut") ?? "⌘⌥2"
-        if saved.contains("→") || saved.contains("←") {
-            UserDefaults.standard.set("⌘⌥2", forKey: "cleanupModeShortcut")
-            return "⌘⌥2"
-        }
-        return saved
-    }
-    private var emailModeShortcut: String {
-        let saved = UserDefaults.standard.string(forKey: "emailModeShortcut") ?? "⌘⌥3"
-        if saved.contains("→") || saved.contains("←") {
-            UserDefaults.standard.set("⌘⌥3", forKey: "emailModeShortcut")
-            return "⌘⌥3"
-        }
-        return saved
-    }
-    private var messagingModeShortcut: String {
-        let saved = UserDefaults.standard.string(forKey: "messagingModeShortcut") ?? "⌘⌥4"
-        if saved.contains("→") || saved.contains("←") {
-            UserDefaults.standard.set("⌘⌥4", forKey: "messagingModeShortcut")
-            return "⌘⌥4"
         }
         return saved
     }
@@ -102,10 +65,10 @@ final class KeyboardShortcutService: ObservableObject {
         ) { [weak self] notification in
             guard let self = self, !isUpdating else { return }
             
-            // Check if any keyboard shortcut keys changed
+            // Check if recording shortcut changed
             guard let userInfo = notification.userInfo,
                   let changedKeys = userInfo["NSUserDefaultsChangedKeys"] as? [String],
-                  changedKeys.contains(where: { $0.contains("Shortcut") }) else {
+                  changedKeys.contains("recordingShortcut") else {
                 return
             }
             
@@ -128,12 +91,14 @@ final class KeyboardShortcutService: ObservableObject {
         if needsMigration {
             print("Migrating to new keyboard shortcuts to avoid conflicts...")
             UserDefaults.standard.set("⌘⌥V", forKey: "recordingShortcut")
-            UserDefaults.standard.set("⌘⌥1", forKey: "rawModeShortcut")
-            UserDefaults.standard.set("⌘⌥2", forKey: "cleanupModeShortcut")
-            UserDefaults.standard.set("⌘⌥3", forKey: "emailModeShortcut")
-            UserDefaults.standard.set("⌘⌥4", forKey: "messagingModeShortcut")
             UserDefaults.standard.synchronize()
         }
+        
+        // Clean up old refinement mode shortcuts
+        UserDefaults.standard.removeObject(forKey: "rawModeShortcut")
+        UserDefaults.standard.removeObject(forKey: "cleanupModeShortcut")
+        UserDefaults.standard.removeObject(forKey: "emailModeShortcut")
+        UserDefaults.standard.removeObject(forKey: "messagingModeShortcut")
     }
     
     deinit {
@@ -179,18 +144,6 @@ final class KeyboardShortcutService: ObservableObject {
         return isShortcutMatch(event, shortcutString: recordingShortcut)
     }
     
-    private func getModeFromShortcut(_ event: NSEvent) -> RefinementMode? {
-        if isShortcutMatch(event, shortcutString: rawModeShortcut) {
-            return .raw
-        } else if isShortcutMatch(event, shortcutString: cleanupModeShortcut) {
-            return .cleanup
-        } else if isShortcutMatch(event, shortcutString: emailModeShortcut) {
-            return .email
-        } else if isShortcutMatch(event, shortcutString: messagingModeShortcut) {
-            return .messaging
-        }
-        return nil
-    }
     
     private func isEscapeKey(_ event: NSEvent) -> Bool {
         return event.keyCode == 53 // Escape key code
@@ -340,19 +293,11 @@ final class KeyboardShortcutService: ObservableObject {
             }, 1, &eventSpecArray, Unmanaged.passUnretained(self).toOpaque(), &hotKeyEventHandler)
         }
         
-        // Register individual hotkeys
-        print("Registering hotkeys:")
+        // Register recording hotkey
+        print("Registering hotkey:")
         print("  Recording: \(recordingShortcut)")
-        print("  Raw mode: \(rawModeShortcut)")
-        print("  Cleanup mode: \(cleanupModeShortcut)")
-        print("  Email mode: \(emailModeShortcut)")
-        print("  Messaging mode: \(messagingModeShortcut)")
         
         registerHotkey(recordingShortcut, id: .recording)
-        registerHotkey(rawModeShortcut, id: .rawMode)
-        registerHotkey(cleanupModeShortcut, id: .cleanupMode)
-        registerHotkey(emailModeShortcut, id: .emailMode)
-        registerHotkey(messagingModeShortcut, id: .messagingMode)
         
         // Show a single notification if any shortcuts failed (only once per app launch)
         if !notifiedShortcuts.isEmpty && !hasShownConflictDialog {
@@ -443,18 +388,6 @@ final class KeyboardShortcutService: ObservableObject {
             case .recording:
                 print("Recording hotkey triggered")
                 onShortcutPressed?()
-            case .rawMode:
-                print("Raw mode hotkey triggered")
-                onModeChangePressed?(.raw)
-            case .cleanupMode:
-                print("Cleanup mode hotkey triggered")
-                onModeChangePressed?(.cleanup)
-            case .emailMode:
-                print("Email mode hotkey triggered")
-                onModeChangePressed?(.email)
-            case .messagingMode:
-                print("Messaging mode hotkey triggered")
-                onModeChangePressed?(.messaging)
             case .none:
                 print("Unknown hotkey ID: \(hotKeyID.id)")
                 break
@@ -467,18 +400,6 @@ final class KeyboardShortcutService: ObservableObject {
                 case .recording:
                     print("Recording hotkey triggered (async)")
                     self.onShortcutPressed?()
-                case .rawMode:
-                    print("Raw mode hotkey triggered (async)")
-                    self.onModeChangePressed?(.raw)
-                case .cleanupMode:
-                    print("Cleanup mode hotkey triggered (async)")
-                    self.onModeChangePressed?(.cleanup)
-                case .emailMode:
-                    print("Email mode hotkey triggered (async)")
-                    self.onModeChangePressed?(.email)
-                case .messagingMode:
-                    print("Messaging mode hotkey triggered (async)")
-                    self.onModeChangePressed?(.messaging)
                 case .none:
                     print("Unknown hotkey ID: \(hotKeyID.id)")
                     break

@@ -15,10 +15,6 @@ struct SettingsView: View {
     @AppStorage("playCompletionSound") private var playCompletionSound = true
     @AppStorage("showNotifications") private var showNotifications = true
     @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⌥V"
-    @AppStorage("rawModeShortcut") private var rawModeShortcut = "⌘⌥1"
-    @AppStorage("cleanupModeShortcut") private var cleanupModeShortcut = "⌘⌥2"
-    @AppStorage("emailModeShortcut") private var emailModeShortcut = "⌘⌥3"
-    @AppStorage("messagingModeShortcut") private var messagingModeShortcut = "⌘⌥4"
     @State private var showingHistory = false
     
     var body: some View {
@@ -71,11 +67,7 @@ struct SettingsView: View {
                         icon: "keyboard",
                         content: {
                             KeyboardShortcutsContent(
-                                recordingShortcut: $recordingShortcut,
-                                rawModeShortcut: $rawModeShortcut,
-                                cleanupModeShortcut: $cleanupModeShortcut,
-                                emailModeShortcut: $emailModeShortcut,
-                                messagingModeShortcut: $messagingModeShortcut
+                                recordingShortcut: $recordingShortcut
                             )
                         }
                     )
@@ -804,10 +796,6 @@ struct NotificationSettingsContent: View {
 // Keyboard Shortcuts Content
 struct KeyboardShortcutsContent: View {
     @Binding var recordingShortcut: String
-    @Binding var rawModeShortcut: String
-    @Binding var cleanupModeShortcut: String
-    @Binding var emailModeShortcut: String
-    @Binding var messagingModeShortcut: String
     
     var body: some View {
         VStack(spacing: DesignSystem.spacingSmall) {
@@ -817,31 +805,11 @@ struct KeyboardShortcutsContent: View {
                 isEditable: true
             )
             
-            Divider().background(Color.white.opacity(0.1))
-            
-            ShortcutRow(
-                title: "Raw Transcription",
-                shortcut: $rawModeShortcut,
-                isEditable: true
-            )
-            
-            ShortcutRow(
-                title: "Clean-up Mode",
-                shortcut: $cleanupModeShortcut,
-                isEditable: true
-            )
-            
-            ShortcutRow(
-                title: "Email Mode",
-                shortcut: $emailModeShortcut,
-                isEditable: true
-            )
-            
-            ShortcutRow(
-                title: "Messaging Mode",
-                shortcut: $messagingModeShortcut,
-                isEditable: true
-            )
+            Text("Only recording shortcut is configurable. Refinement modes can be selected using the interface.")
+                .font(.caption)
+                .foregroundColor(.tertiaryText)
+                .multilineTextAlignment(.center)
+                .padding(.top, DesignSystem.spacingSmall)
         }
         .padding(DesignSystem.spacingMedium)
         .liquidGlassCard()

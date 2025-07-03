@@ -63,7 +63,7 @@ struct FloatingSidebar: View {
                     .frame(maxWidth: isCollapsed ? .infinity : nil)
             }
             .buttonStyle(.plain)
-            .help(isCollapsed ? "Expand Sidebar (⌘⌥S)" : "Collapse Sidebar (⌘⌥S)")
+            .help(isCollapsed ? "Expand Sidebar" : "Collapse Sidebar")
         }
         .padding(.horizontal, isCollapsed ? 8 : 16)
         .padding(.top, 16)
