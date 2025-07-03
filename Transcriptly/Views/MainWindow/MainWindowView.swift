@@ -20,27 +20,24 @@ struct MainWindowView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Main content with responsive padding
+        HStack(spacing: 0) {
+            // Sidebar takes its own space
+            FloatingSidebar(
+                selectedSection: $selectedSection,
+                isCollapsed: $isSidebarCollapsed
+            )
+            .padding(.leading, 16)
+            .padding(.vertical, 16)
+            .padding(.trailing, 8)
+            
+            // Main content fills remaining space
             FullWidthContentView(
                 selectedSection: $selectedSection,
                 viewModel: viewModel,
                 onFloat: capsuleManager.showCapsule
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.leading, isSidebarCollapsed ? 100 : 252) // 68+32 or 220+32 for sidebar + margins
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isSidebarCollapsed)
-            
-            // Floating sidebar
-            HStack(spacing: 0) {
-                FloatingSidebar(
-                    selectedSection: $selectedSection,
-                    isCollapsed: $isSidebarCollapsed
-                )
-                .padding(16)
-                
-                Spacer()
-            }
+            .padding(.trailing, 16)
         }
         .frame(minWidth: 800, minHeight: 640) // Adjusted for collapsible sidebar
         .background(Color.primaryBackground)
