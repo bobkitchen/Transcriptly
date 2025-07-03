@@ -28,8 +28,7 @@ struct FloatingSidebar: View {
             
             Spacer()
         }
-        .frame(width: isCollapsed ? 68 : 220)
-        .frame(maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .performantGlass(
             material: .regularMaterial,
             cornerRadius: 12,

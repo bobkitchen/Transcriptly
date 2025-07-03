@@ -20,13 +20,15 @@ struct MainWindowView: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar takes its own space
+        HStack(spacing: 8) {
+            // Sidebar - fixed width based on state
             FloatingSidebar(
                 selectedSection: $selectedSection,
                 isCollapsed: $isSidebarCollapsed
             )
-            .padding(16)
+            .frame(width: isSidebarCollapsed ? 68 : 220)
+            .padding(.leading, 16)
+            .padding(.vertical, 16)
             
             // Main content fills remaining space
             FullWidthContentView(
