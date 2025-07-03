@@ -26,9 +26,7 @@ struct MainWindowView: View {
                 selectedSection: $selectedSection,
                 isCollapsed: $isSidebarCollapsed
             )
-            .padding(.leading, 16)
-            .padding(.vertical, 16)
-            .padding(.trailing, 8)
+            .padding(16)
             
             // Main content fills remaining space
             FullWidthContentView(
@@ -37,6 +35,7 @@ struct MainWindowView: View {
                 onFloat: capsuleManager.showCapsule
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.vertical, 16)
             .padding(.trailing, 16)
         }
         .frame(minWidth: 800, minHeight: 640) // Adjusted for collapsible sidebar

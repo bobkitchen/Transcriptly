@@ -15,34 +15,31 @@ struct FloatingSidebar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Sidebar content
-            VStack(spacing: 0) {
-                // Header
-                sidebarHeader
-                
-                // Navigation items
-                VStack(spacing: 2) {
-                    ForEach(SidebarSection.allCases, id: \.self) { section in
-                        sidebarItem(for: section)
-                    }
+            // Header
+            sidebarHeader
+            
+            // Navigation items
+            VStack(spacing: 2) {
+                ForEach(SidebarSection.allCases, id: \.self) { section in
+                    sidebarItem(for: section)
                 }
-                .padding(.horizontal, 8)
-                
-                Spacer()
             }
-            .frame(width: isCollapsed ? 68 : 220)
-            .frame(maxHeight: .infinity)
-            .performantGlass(
-                material: .regularMaterial,
-                cornerRadius: 12,
-                strokeOpacity: 0.15
-            )
-            .adaptiveShadow(
-                isHovered: false,
-                baseRadius: 12,
-                baseOpacity: 0.15
-            )
+            .padding(.horizontal, 8)
+            
+            Spacer()
         }
+        .frame(width: isCollapsed ? 68 : 220)
+        .frame(maxHeight: .infinity)
+        .performantGlass(
+            material: .regularMaterial,
+            cornerRadius: 12,
+            strokeOpacity: 0.15
+        )
+        .adaptiveShadow(
+            isHovered: false,
+            baseRadius: 12,
+            baseOpacity: 0.15
+        )
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCollapsed)
     }
     
