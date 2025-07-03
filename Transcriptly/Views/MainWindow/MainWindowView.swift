@@ -21,13 +21,15 @@ struct MainWindowView: View {
     
     var body: some View {
         ZStack(alignment: .topLeading) {
-            // Main content
+            // Main content with responsive padding
             FullWidthContentView(
                 selectedSection: $selectedSection,
                 viewModel: viewModel,
                 onFloat: capsuleManager.showCapsule
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.leading, isSidebarCollapsed ? 100 : 252) // 68+32 or 220+32 for sidebar + margins
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isSidebarCollapsed)
             
             // Floating sidebar
             HStack(spacing: 0) {
