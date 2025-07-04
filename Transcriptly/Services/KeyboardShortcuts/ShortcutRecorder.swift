@@ -17,6 +17,8 @@ struct ShortcutRecorder: NSViewRepresentable {
     func makeNSView(context: Context) -> ShortcutRecorderView {
         let view = ShortcutRecorderView()
         view.delegate = context.coordinator
+        view.currentKeyCode = keyCode
+        view.currentModifiers = modifiers
         return view
     }
     
@@ -77,6 +79,9 @@ class ShortcutRecorderView: NSView {
         layer?.cornerRadius = 6
         layer?.borderWidth = 1
         layer?.borderColor = NSColor.controlAccentColor.cgColor
+        
+        // Set initial drawing state
+        needsDisplay = true
     }
     
     override var acceptsFirstResponder: Bool { true }
@@ -92,7 +97,13 @@ class ShortcutRecorderView: NSView {
     }
     
     override func mouseDown(with event: NSEvent) {
-        window?.makeFirstResponder(self)
+        // Ensure we have a window before trying to become first responder
+        guard let window = window else { return }
+        
+        // Defer becoming first responder to avoid crashes
+        DispatchQueue.main.async { [weak self] in
+            window.makeFirstResponder(self)
+        }
     }
     
     private func startRecording() {
@@ -135,6 +146,9 @@ class ShortcutRecorderView: NSView {
     
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        
+        // Ensure we have a valid graphics context
+        guard NSGraphicsContext.current != nil else { return }
         
         NSColor.controlBackgroundColor.setFill()
         dirtyRect.fill()

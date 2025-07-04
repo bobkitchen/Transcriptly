@@ -29,8 +29,8 @@ class ShortcutManager: ObservableObject {
         currentShortcuts = [
             ShortcutBinding(
                 id: "primary_record",
-                keyCode: kVK_ANSI_M,
-                modifiers: NSEvent.ModifierFlags.command.rawValue,
+                keyCode: kVK_ANSI_R,
+                modifiers: NSEvent.ModifierFlags([.command, .shift]).rawValue,
                 action: .toggleRecording,
                 name: "Start/Stop Recording",
                 isCustomizable: true,
@@ -239,6 +239,7 @@ struct ShortcutBinding: Codable, Identifiable {
     
     private func keyCodeToString(_ keyCode: Int) -> String {
         switch keyCode {
+        case kVK_ANSI_R: return "R"
         case kVK_ANSI_M: return "M"
         case kVK_ANSI_1: return "1"
         case kVK_ANSI_2: return "2"

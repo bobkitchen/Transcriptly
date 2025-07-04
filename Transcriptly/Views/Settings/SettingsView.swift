@@ -144,7 +144,7 @@ struct EnhancedSettingsSection<Content: View>: View {
             } else {
                 return "Partially enabled"
             }
-        case .keyboardShortcuts: return "⌘M to record"
+        case .keyboardShortcuts: return "⌘⇧R to record"
         case .history:
             let count = TranscriptionHistoryService.shared.transcriptions.count
             return "\(count) transcriptions"
