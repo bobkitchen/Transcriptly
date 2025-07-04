@@ -38,7 +38,7 @@ struct ProductivityStatCard: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                     .contentTransition(.numericText())
-                    .animation(DesignSystem.slowFade, value: animateValue)
+                    .animation(DesignSystem.safeSlowFade, value: animateValue)
                 
                 Text(subtitle)
                     .font(.system(size: 12))
@@ -51,9 +51,9 @@ struct ProductivityStatCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .liquidGlassCard(level: .secondary, isHovered: isHovered)
         .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(DesignSystem.gentleSpring, value: isHovered)
+        .animation(DesignSystem.safeSpring, value: isHovered)
         .onHover { hovering in
-            withAnimation(DesignSystem.gentleSpring) {
+            withAnimation(DesignSystem.safeSpring) {
                 isHovered = hovering
             }
         }

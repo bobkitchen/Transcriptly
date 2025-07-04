@@ -27,7 +27,7 @@ struct EnhancedActionCard: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundColor(buttonColor)
                     .scaleEffect(isHovered ? 1.05 : 1.0)
-                    .animation(DesignSystem.subtleSpring, value: isHovered)
+                    .animation(DesignSystem.safeSubtleSpring, value: isHovered)
                 
                 VStack(alignment: .leading, spacing: DesignSystem.spacingXSmall) {
                     Text(title)
@@ -73,9 +73,9 @@ struct EnhancedActionCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .liquidGlassCard(level: .primary, isHovered: isHovered)
         .scaleEffect(isHovered ? 1.01 : 1.0)
-        .animation(DesignSystem.gentleSpring, value: isHovered)
+        .animation(DesignSystem.safeSpring, value: isHovered)
         .onHover { hovering in
-            withAnimation(DesignSystem.gentleSpring) {
+            withAnimation(DesignSystem.safeSpring) {
                 isHovered = hovering
             }
         }

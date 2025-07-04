@@ -59,6 +59,29 @@ struct DesignSystem {
     static let quickAnimation = subtleSpring
     static let fadeAnimation = quickFade
     
+    // Safe Animation System - respects user's reduce motion preference
+    static func animation(_ base: Animation) -> Animation {
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        return reduceMotion ? .linear(duration: 0) : base
+    }
+    
+    // Safe variants of our animations
+    static var safeSpring: Animation {
+        animation(gentleSpring)
+    }
+    
+    static var safeSubtleSpring: Animation {
+        animation(subtleSpring)
+    }
+    
+    static var safeQuickFade: Animation {
+        animation(quickFade)
+    }
+    
+    static var safeSlowFade: Animation {
+        animation(slowFade)
+    }
+    
     // Additional constants needed by existing code
     static let spacingTiny: CGFloat = 2
     static let cornerRadiusTiny: CGFloat = 2
@@ -179,4 +202,38 @@ enum GlassLevel {
 
 enum ButtonStyle {
     case primary, secondary
+}
+
+// MARK: - Transition System
+
+extension AnyTransition {
+    /// Gentle slide transition for overlays and sheets
+    static let gentleSlide = AnyTransition.asymmetric(
+        insertion: .move(edge: .top).combined(with: .opacity),
+        removal: .move(edge: .top).combined(with: .opacity)
+    )
+    
+    /// Card entry transition for animated content
+    static let cardEntry = AnyTransition.asymmetric(
+        insertion: .scale(scale: 0.95).combined(with: .opacity),
+        removal: .scale(scale: 0.95).combined(with: .opacity)
+    )
+    
+    /// Badge appearance transition
+    static let badgeAppear = AnyTransition.asymmetric(
+        insertion: .scale(scale: 0.8).combined(with: .opacity),
+        removal: .scale(scale: 0.8).combined(with: .opacity)
+    )
+    
+    /// Sidebar transition
+    static let slideFromLeading = AnyTransition.asymmetric(
+        insertion: .move(edge: .leading),
+        removal: .move(edge: .leading)
+    )
+    
+    /// Settings expansion transition
+    static let expandFromTop = AnyTransition.asymmetric(
+        insertion: .move(edge: .top).combined(with: .opacity),
+        removal: .move(edge: .bottom).combined(with: .opacity)
+    )
 }
