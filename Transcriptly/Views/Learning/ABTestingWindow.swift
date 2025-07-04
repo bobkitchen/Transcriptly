@@ -43,23 +43,23 @@ struct ABTestingWindow: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: DesignSystem.spacingLarge) {
             // Header
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.spacingSmall) {
                 HStack {
                     Image(systemName: "text.alignleft")
                         .foregroundColor(.white)
                         .font(.title2)
                     
                     Text("Choose Your Preference")
-                        .font(.title2)
+                        .font(DesignSystem.Typography.titleLarge)
                         .fontWeight(.semibold)
                     
                     Spacer()
                 }
                 
                 Text("Help Transcriptly learn your style by choosing which version you prefer")
-                    .font(.caption)
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -148,11 +148,11 @@ struct ABTestingWindow: View {
                 .disabled(selectedOption == nil)
             }
         }
-        .padding(24)
+        .padding(DesignSystem.spacingXLarge)
         .frame(width: 550, height: 420)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12)
-        .shadow(radius: 20)
+        .cornerRadius(DesignSystem.cornerRadiusLarge)
+        .shadow(radius: DesignSystem.shadowElevated.radius)
     }
 }
 

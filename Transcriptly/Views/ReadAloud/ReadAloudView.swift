@@ -31,7 +31,7 @@ struct ReadAloudView: View {
             // Integrated header with controls
             HStack {
                 Text("Read Aloud")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(DesignSystem.Typography.pageTitle)
                     .foregroundColor(.primaryText)
                 
                 Spacer()
@@ -198,7 +198,7 @@ struct ReadAloudView: View {
                         .foregroundColor(.tertiaryText)
                         .multilineTextAlignment(.center)
                 }
-                .padding(40)
+                .padding(DesignSystem.spacingXLarge)
                 .frame(maxWidth: 500, minHeight: 200)
                 .background(
                     RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusMedium)
@@ -881,7 +881,7 @@ struct MiniPlayerView: View {
         .frame(width: 320, height: 100)
         .background(.regularMaterial)
         .cornerRadius(DesignSystem.cornerRadiusMedium)
-        .shadow(radius: 8)
+        .shadow(color: DesignSystem.shadowFloating.color, radius: DesignSystem.shadowFloating.radius, x: DesignSystem.shadowFloating.x, y: DesignSystem.shadowFloating.y)
     }
     
     private var miniPlayerPlayIcon: String {

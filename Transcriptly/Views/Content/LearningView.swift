@@ -27,7 +27,7 @@ struct LearningView: View {
             // Simple header (no controls)
             HStack {
                 Text("Learning")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(DesignSystem.Typography.pageTitle)
                     .foregroundColor(.primaryText)
                 
                 Spacer()

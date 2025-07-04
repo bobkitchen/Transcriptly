@@ -42,16 +42,16 @@ struct EditReviewWindow: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: DesignSystem.spacingLarge) {
             // Header
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.spacingSmall) {
                 HStack {
                     Image(systemName: "brain")
                         .foregroundColor(.blue)
                         .font(.title2)
                     
                     Text("Review & Improve")
-                        .font(.title2)
+                        .font(DesignSystem.Typography.titleLarge)
                         .fontWeight(.semibold)
                     
                     Spacer()
@@ -63,7 +63,7 @@ struct EditReviewWindow: View {
                             .font(.caption)
                         
                         Text(timeString(from: timeRemaining))
-                            .font(.caption)
+                            .font(DesignSystem.Typography.caption)
                             .foregroundColor(.secondary)
                             .monospacedDigit()
                     }
@@ -162,11 +162,11 @@ struct EditReviewWindow: View {
                 .disabled(userEditedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DesignSystem.spacingXLarge)
         .frame(width: 600, height: 480)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12)
-        .shadow(radius: 20)
+        .cornerRadius(DesignSystem.cornerRadiusLarge)
+        .shadow(radius: DesignSystem.shadowElevated.radius)
         .onAppear {
             startTimer()
         }
