@@ -21,8 +21,10 @@ class ShortcutManager: ObservableObject {
     private var runLoopSource: CFRunLoopSource?
     
     private init() {
+        print("🚀 ShortcutManager: Initializing...")
         setupDefaultShortcuts()
         setupEventTap()
+        print("✅ ShortcutManager: Initialization complete")
     }
     
     func setupDefaultShortcuts() {
@@ -82,31 +84,45 @@ class ShortcutManager: ObservableObject {
     }
     
     func updateShortcut(_ shortcutId: String, keyCode: Int, modifiers: NSEvent.ModifierFlags) async -> ShortcutUpdateResult {
+        print("🔄 ShortcutManager: Updating shortcut \(shortcutId) to keyCode: \(keyCode), modifiers: \(modifiers.rawValue)")
+        
         // Check for conflicts before updating
         let conflicts = await conflictDetector.detectConflicts(keyCode: keyCode, modifiers: modifiers)
         
         if !conflicts.isEmpty {
+            print("⚠️ ShortcutManager: Conflicts detected: \(conflicts)")
             return .conflictDetected(conflicts)
         }
         
         // Update shortcut
         if let index = currentShortcuts.firstIndex(where: { $0.id == shortcutId }) {
+            let oldShortcut = currentShortcuts[index]
+            print("📝 ShortcutManager: Updating \(oldShortcut.name) from \(oldShortcut.displayString) to new combination")
+            
             currentShortcuts[index].keyCode = keyCode
             currentShortcuts[index].eventModifiers = modifiers
             
+            print("💾 ShortcutManager: Saving updated shortcuts")
             saveShortcuts()
             registerAllShortcuts()
             
+            print("✅ ShortcutManager: Shortcut updated successfully")
             return .success
         }
         
+        print("❌ ShortcutManager: Shortcut not found: \(shortcutId)")
         return .notFound
     }
     
     func testShortcut(_ shortcutId: String) -> Bool {
+        print("🧪 ShortcutManager: Testing shortcut \(shortcutId)")
+        
         guard let shortcut = currentShortcuts.first(where: { $0.id == shortcutId }) else {
+            print("❌ ShortcutManager: Shortcut not found: \(shortcutId)")
             return false
         }
+        
+        print("🎯 ShortcutManager: Found shortcut: \(shortcut.name) - \(shortcut.displayString)")
         
         // Simulate shortcut execution for testing
         executeShortcutAction(shortcut.action)
@@ -127,9 +143,36 @@ class ShortcutManager: ObservableObject {
         }
     }
     
+    func retryEventTapSetup() {
+        print("🔄 ShortcutManager: Retrying event tap setup...")
+        
+        // Clean up existing event tap
+        if let eventTap = eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+        }
+        if let runLoopSource = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+        }
+        
+        eventTap = nil
+        runLoopSource = nil
+        
+        // Try setting up again
+        setupEventTap()
+    }
+    
     // MARK: - Private Methods
     
     private func setupEventTap() {
+        print("🔧 ShortcutManager: Setting up event tap...")
+        
+        // Check accessibility permissions first
+        if !checkAccessibilityPermissions() {
+            print("⚠️ ShortcutManager: Accessibility permissions not granted")
+            requestAccessibilityPermissions()
+            return
+        }
+        
         let eventMask = (1 << CGEventType.keyDown.rawValue)
         
         eventTap = CGEvent.tapCreate(
@@ -145,13 +188,55 @@ class ShortcutManager: ObservableObject {
         )
         
         guard let eventTap = eventTap else {
-            print("Failed to create event tap")
+            print("❌ ShortcutManager: Failed to create event tap - need accessibility permissions?")
+            requestAccessibilityPermissions()
             return
         }
+        
+        print("✅ ShortcutManager: Event tap created successfully")
         
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: eventTap, enable: true)
+        
+        print("🎯 ShortcutManager: Event tap enabled and running")
+        print("📋 ShortcutManager: Registered shortcuts:")
+        for shortcut in currentShortcuts {
+            print("   - \(shortcut.name): \(shortcut.displayString) (keyCode: \(shortcut.keyCode), modifiers: \(shortcut.modifiers))")
+        }
+    }
+    
+    private func checkAccessibilityPermissions() -> Bool {
+        let checkOptionPrompt = kAXTrustedCheckOptionPrompt.takeRetainedValue() as String
+        let options = [checkOptionPrompt: false] as CFDictionary
+        return AXIsProcessTrustedWithOptions(options)
+    }
+    
+    private func requestAccessibilityPermissions() {
+        print("🔐 ShortcutManager: Requesting accessibility permissions...")
+        let checkOptionPrompt = kAXTrustedCheckOptionPrompt.takeRetainedValue() as String
+        let options = [checkOptionPrompt: true] as CFDictionary
+        
+        if !AXIsProcessTrustedWithOptions(options) {
+            print("📝 ShortcutManager: Please grant accessibility permissions in System Settings")
+            
+            // Show alert to user
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Accessibility Permission Required"
+                alert.informativeText = "Transcriptly needs accessibility permissions to use global keyboard shortcuts.\n\nPlease grant permission in System Settings > Privacy & Security > Accessibility."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "Open System Settings")
+                alert.addButton(withTitle: "Later")
+                
+                if alert.runModal() == .alertFirstButtonReturn {
+                    // Open System Settings to Accessibility pane
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
+        }
     }
     
     private func handleKeyEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -160,25 +245,37 @@ class ShortcutManager: ObservableObject {
         let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let modifiers = NSEvent.ModifierFlags(rawValue: UInt(event.flags.rawValue))
         
-        // Check if this matches any of our shortcuts
-        for shortcut in currentShortcuts {
-            if shortcut.keyCode == keyCode && shortcut.eventModifiers == modifiers {
-                executeShortcutAction(shortcut.action)
-                return nil // Consume the event
+        // Debug: Log only keydown events with modifiers
+        if !modifiers.isEmpty {
+            print("⌨️ ShortcutManager: Key event - keyCode: \(keyCode), modifiers: \(modifiers.rawValue)")
+            
+            // Check if this matches any of our shortcuts
+            for shortcut in currentShortcuts {
+                if shortcut.keyCode == keyCode && shortcut.eventModifiers == modifiers {
+                    print("✅ ShortcutManager: Matched shortcut: \(shortcut.name) (\(shortcut.displayString))")
+                    executeShortcutAction(shortcut.action)
+                    return nil // Consume the event
+                }
             }
+            
+            print("❌ ShortcutManager: No matching shortcut found")
         }
         
         return Unmanaged.passUnretained(event)
     }
     
     private func executeShortcutAction(_ action: ShortcutAction) {
+        print("🎬 ShortcutManager: Executing action: \(action)")
         Task { @MainActor in
             switch action {
             case .toggleRecording:
+                print("📢 ShortcutManager: Posting toggleRecording notification")
                 NotificationCenter.default.post(name: .toggleRecording, object: nil)
             case .switchMode(let mode):
+                print("📢 ShortcutManager: Posting switchRefinementMode notification for mode: \(mode)")
                 NotificationCenter.default.post(name: .switchRefinementMode, object: mode)
             case .cancelRecording:
+                print("📢 ShortcutManager: Posting cancelRecording notification")
                 NotificationCenter.default.post(name: .cancelRecording, object: nil)
             }
         }
