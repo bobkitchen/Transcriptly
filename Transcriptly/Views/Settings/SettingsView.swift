@@ -93,6 +93,7 @@ struct SettingsView: View {
                             AboutSettingsContent()
                         }
                     )
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DesignSystem.marginStandard)
