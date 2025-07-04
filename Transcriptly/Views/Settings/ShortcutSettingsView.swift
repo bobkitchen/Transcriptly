@@ -17,9 +17,27 @@ struct ShortcutSettingsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-            Text("Keyboard Shortcuts")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
+            HStack {
+                Text("Keyboard Shortcuts")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                // Status indicator
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(shortcutManager.isEventTapActive ? Color.green : Color.red)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(shortcutManager.isEventTapActive ? "Active" : "Inactive")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help(shortcutManager.isEventTapActive ? 
+                      "Global shortcuts are working" : 
+                      "Accessibility permissions required")
+            }
             
             VStack(spacing: DesignSystem.spacingMedium) {
                 ForEach(shortcutManager.currentShortcuts) { shortcut in
