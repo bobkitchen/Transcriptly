@@ -98,11 +98,18 @@ struct StableShortcutRecorder: View {
         if event.type == .keyDown {
             let mods = event.modifierFlags.intersection([.command, .option, .shift, .control])
             
+            print("🎹 StableShortcutRecorder: Key event - keyCode: \(event.keyCode), modifiers: \(mods.rawValue)")
+            print("   Key character: '\(event.charactersIgnoringModifiers ?? "")'")
+            
             // Require at least one modifier
             if !mods.isEmpty {
                 // Update the binding
                 keyCode = Int(event.keyCode)
                 modifiers = mods
+                
+                print("✅ StableShortcutRecorder: Recording shortcut - keyCode: \(keyCode), modifiers: \(modifiers.rawValue)")
+                print("   Formatted as: \(formatShortcut())")
+                
                 onShortcutChange(keyCode, modifiers)
                 
                 // Stop recording
@@ -192,7 +199,7 @@ struct StableShortcutRecorder: View {
         case kVK_Delete: return "⌫"
         case kVK_Escape: return "⎋"
         case kVK_LeftArrow: return "←"
-        case kVK_RightArrow: return "→"
+        case kVK_RightArrow, 124: return "→"
         case kVK_DownArrow: return "↓"
         case kVK_UpArrow: return "↑"
         

@@ -73,6 +73,12 @@ struct ShortcutSettingsView: View {
                 
                 Spacer()
                 
+                Button("Check Permissions") {
+                    shortcutManager.retryEventTapSetup()
+                }
+                .buttonStyle(.bordered)
+                .help("Re-check accessibility permissions and restart keyboard monitoring")
+                
                 Button("Import Shortcuts") {
                     // TODO: Implement import
                 }
