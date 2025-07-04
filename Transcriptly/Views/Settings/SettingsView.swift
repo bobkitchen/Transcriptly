@@ -14,7 +14,6 @@ struct SettingsView: View {
     let onFloat: () -> Void
     @AppStorage("playCompletionSound") private var playCompletionSound = true
     @AppStorage("showNotifications") private var showNotifications = true
-    @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⌥V"
     @State private var showingHistory = false
     @State private var expandedSections: Set<SettingsSectionType> = []
     
@@ -61,12 +60,7 @@ struct SettingsView: View {
                                         showNotifications: $showNotifications
                                     )
                                 case .keyboardShortcuts:
-                                    KeyboardShortcutsContent(
-                                        recordingShortcut: .init(
-                                            get: { ShortcutManager.shared.recordingShortcut.displayString },
-                                            set: { _ in }
-                                        )
-                                    )
+                                    ShortcutSettingsView()
                                 case .history:
                                     HistorySettingsContent(showingHistory: $showingHistory)
                                 case .about:

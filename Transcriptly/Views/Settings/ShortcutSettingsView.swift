@@ -136,7 +136,7 @@ struct ShortcutRowView: View {
             Spacer()
             
             if isEditing {
-                ShortcutRecorder(
+                StableShortcutRecorder(
                     keyCode: $tempKeyCode,
                     modifiers: $tempModifiers,
                     onShortcutChange: { keyCode, modifiers in
@@ -144,7 +144,7 @@ struct ShortcutRowView: View {
                         tempModifiers = modifiers
                     }
                 )
-                .frame(width: 200, height: 30)
+                .frame(height: 30)
                 
                 Button("Save") {
                     onSave(tempKeyCode, tempModifiers)
