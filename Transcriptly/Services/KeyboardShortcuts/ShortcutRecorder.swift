@@ -54,14 +54,28 @@ class ShortcutRecorderView: NSView {
     weak var delegate: ShortcutRecorderDelegate?
     
     var currentKeyCode: Int = 0 {
-        didSet { needsDisplay = true }
+        didSet { 
+            DispatchQueue.main.async { [weak self] in
+                self?.needsDisplay = true
+            }
+        }
     }
     
     var currentModifiers: NSEvent.ModifierFlags = [] {
-        didSet { needsDisplay = true }
+        didSet { 
+            DispatchQueue.main.async { [weak self] in
+                self?.needsDisplay = true
+            }
+        }
     }
     
-    private var isRecording = false
+    private var isRecording = false {
+        didSet {
+            DispatchQueue.main.async { [weak self] in
+                self?.needsDisplay = true
+            }
+        }
+    }
     private var monitor: Any?
     
     override init(frame frameRect: NSRect) {
@@ -84,35 +98,23 @@ class ShortcutRecorderView: NSView {
         needsDisplay = true
     }
     
-    override var acceptsFirstResponder: Bool { true }
-    
-    override func becomeFirstResponder() -> Bool {
-        startRecording()
-        return super.becomeFirstResponder()
-    }
-    
-    override func resignFirstResponder() -> Bool {
-        stopRecording()
-        return super.resignFirstResponder()
-    }
+    override var acceptsFirstResponder: Bool { false }
     
     override func mouseDown(with event: NSEvent) {
-        // Ensure we have a window before trying to become first responder
-        guard let window = window else { return }
-        
-        // Defer becoming first responder to avoid crashes
-        DispatchQueue.main.async { [weak self] in
-            window.makeFirstResponder(self)
+        // Handle the click directly without changing first responder
+        if !isRecording {
+            startRecording()
+        } else {
+            stopRecording()
         }
     }
     
     private func startRecording() {
         isRecording = true
-        needsDisplay = true
         
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+        // Use global monitor to avoid focus issues
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             self?.handleKeyEvent(event)
-            return nil // Consume the event
         }
     }
     
@@ -139,20 +141,26 @@ class ShortcutRecorderView: NSView {
                 currentModifiers = modifiers
                 delegate?.shortcutRecorderDidChange(keyCode: keyCode, modifiers: modifiers)
                 stopRecording()
-                window?.makeFirstResponder(nil)
             }
         }
     }
     
     override func draw(_ dirtyRect: NSRect) {
+        // Ensure we're on main thread and have a valid context
+        guard Thread.isMainThread,
+              let context = NSGraphicsContext.current else { return }
+        
         super.draw(dirtyRect)
         
-        // Ensure we have a valid graphics context
-        guard NSGraphicsContext.current != nil else { return }
+        // Save graphics state
+        context.saveGraphicsState()
+        defer { context.restoreGraphicsState() }
         
+        // Fill background
         NSColor.controlBackgroundColor.setFill()
         dirtyRect.fill()
         
+        // Determine text and color
         let text: String
         let textColor: NSColor
         
@@ -167,19 +175,28 @@ class ShortcutRecorderView: NSView {
             textColor = .secondaryLabelColor
         }
         
+        // Create attributed string
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 13),
-            .foregroundColor: textColor
+            .foregroundColor: textColor,
+            .paragraphStyle: paragraphStyle
         ]
         
         let attributedString = NSAttributedString(string: text, attributes: attributes)
+        
+        // Calculate text rect
+        let textSize = attributedString.size()
         let textRect = NSRect(
-            x: 10,
-            y: (bounds.height - attributedString.size().height) / 2,
-            width: bounds.width - 20,
-            height: attributedString.size().height
+            x: 0,
+            y: (bounds.height - textSize.height) / 2,
+            width: bounds.width,
+            height: textSize.height
         )
         
+        // Draw the text
         attributedString.draw(in: textRect)
     }
     

@@ -61,7 +61,12 @@ struct SettingsView: View {
                                         showNotifications: $showNotifications
                                     )
                                 case .keyboardShortcuts:
-                                    ShortcutSettingsView()
+                                    KeyboardShortcutsContent(
+                                        recordingShortcut: .init(
+                                            get: { ShortcutManager.shared.recordingShortcut.displayString },
+                                            set: { _ in }
+                                        )
+                                    )
                                 case .history:
                                     HistorySettingsContent(showingHistory: $showingHistory)
                                 case .about:
@@ -1005,6 +1010,26 @@ struct SettingToggleRow: View {
 // Keyboard Shortcuts Content
 struct KeyboardShortcutsContent: View {
     @Binding var recordingShortcut: String
+    @ObservedObject private var shortcutManager = ShortcutManager.shared
+    
+    // Create a binding that actually updates the ShortcutManager
+    private var recordingShortcutBinding: Binding<String> {
+        Binding(
+            get: { shortcutManager.recordingShortcut.displayString },
+            set: { newValue in
+                // Parse the new shortcut string and update the manager
+                if let (keyCode, modifiers) = parseShortcutString(newValue) {
+                    Task {
+                        await shortcutManager.updateShortcut(
+                            "recording",
+                            keyCode: keyCode,
+                            modifiers: modifiers
+                        )
+                    }
+                }
+            }
+        )
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
@@ -1019,7 +1044,7 @@ struct KeyboardShortcutsContent: View {
                     title: "Start/Stop Recording",
                     subtitle: "Toggle recording from anywhere",
                     icon: "mic.circle.fill",
-                    shortcut: $recordingShortcut,
+                    shortcut: recordingShortcutBinding,
                     isEditable: true
                 )
             }
@@ -1077,7 +1102,6 @@ struct EnhancedShortcutRow: View {
     let icon: String
     @Binding var shortcut: String
     let isEditable: Bool
-    @State private var isWaitingForKeypress = false
     
     var body: some View {
         HStack(spacing: DesignSystem.spacingMedium) {
@@ -1098,37 +1122,18 @@ struct EnhancedShortcutRow: View {
             
             Spacer()
             
-            if isWaitingForKeypress {
-                Text("Press keys...")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(.orange)
+            if isEditable {
+                SafeShortcutRecorder(shortcut: $shortcut)
+            } else {
+                Text(shortcut)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundColor(.primaryText)
                     .padding(.horizontal, DesignSystem.spacingMedium)
                     .padding(.vertical, DesignSystem.spacingSmall)
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(DesignSystem.cornerRadiusSmall)
-            } else {
-                HStack(spacing: DesignSystem.spacingSmall) {
-                    Text(shortcut)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(.primaryText)
-                        .padding(.horizontal, DesignSystem.spacingMedium)
-                        .padding(.vertical, DesignSystem.spacingSmall)
-                        .liquidGlassBackground(
-                            material: .ultraThinMaterial,
-                            cornerRadius: DesignSystem.cornerRadiusSmall
-                        )
-                    
-                    if isEditable {
-                        Button(action: {
-                            isWaitingForKeypress = true
-                        }) {
-                            Text("Edit")
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(.accentColor)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                    .liquidGlassBackground(
+                        material: .ultraThinMaterial,
+                        cornerRadius: DesignSystem.cornerRadiusSmall
+                    )
             }
         }
         .padding(DesignSystem.spacingSmall)
@@ -1403,98 +1408,6 @@ struct SettingsCard<Content: View>: View {
     }
 }
 
-struct ShortcutRow: View {
-    let title: String
-    @Binding var shortcut: String
-    let isEditable: Bool
-    @State private var isWaitingForKeypress = false
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(.primaryText)
-            
-            Spacer()
-            
-            if isWaitingForKeypress {
-                ZStack {
-                    Text("Press keys... (ESC to cancel)")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, DesignSystem.spacingSmall)
-                        .padding(.vertical, DesignSystem.spacingTiny)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(DesignSystem.cornerRadiusTiny)
-                    
-                    KeyboardShortcutRecorder(
-                        shortcut: $shortcut,
-                        onStartRecording: {
-                            // Already in recording state
-                        },
-                        onStopRecording: {
-                            isWaitingForKeypress = false
-                        }
-                    )
-                    .frame(width: 0, height: 0)
-                    .opacity(0)
-                    .onAppear {
-                        // Start recording when the recorder appears
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            if let recorderView = findRecorderView() {
-                                recorderView.startRecording()
-                            }
-                        }
-                    }
-                }
-            } else {
-                Text(shortcut)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.secondaryText)
-                    .padding(.horizontal, DesignSystem.spacingSmall)
-                    .padding(.vertical, DesignSystem.spacingTiny)
-                    .background(Color.tertiaryBackground)
-                    .cornerRadius(DesignSystem.cornerRadiusTiny)
-            }
-            
-            if isEditable {
-                Button(isWaitingForKeypress ? "Cancel" : "Edit") {
-                    if isWaitingForKeypress {
-                        if let recorderView = findRecorderView() {
-                            recorderView.stopRecording()
-                        }
-                        isWaitingForKeypress = false
-                    } else {
-                        isWaitingForKeypress = true
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-    
-    private func findRecorderView() -> SimpleKeyRecorderView? {
-        // Helper function to find the recorder view in the view hierarchy
-        guard let window = NSApplication.shared.keyWindow else { return nil }
-        return findRecorderInView(window.contentView)
-    }
-    
-    private func findRecorderInView(_ view: NSView?) -> SimpleKeyRecorderView? {
-        guard let view = view else { return nil }
-        
-        if let recorder = view as? SimpleKeyRecorderView {
-            return recorder
-        }
-        
-        for subview in view.subviews {
-            if let recorder = findRecorderInView(subview) {
-                return recorder
-            }
-        }
-        
-        return nil
-    }
-}
 
 #Preview {
     SettingsView(viewModel: AppViewModel(), onFloat: {})
