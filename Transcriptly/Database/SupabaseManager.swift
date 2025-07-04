@@ -181,6 +181,41 @@ class SupabaseManager: ObservableObject {
         cachedPatterns.removeAll()
     }
     
+    func clearAllCachedData() async {
+        cachedPatterns.removeAll()
+        offlineQueue.removeAll()
+    }
+    
+    func deletePattern(_ patternId: UUID) async throws {
+        guard let userId = currentUser?.id else { return }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        try await client
+            .from("learned_patterns")
+            .delete()
+            .eq("id", value: patternId.uuidString)
+            .eq("user_id", value: userId)
+            .execute()
+        
+        // Remove from cache
+        cachedPatterns.removeAll { $0.id == patternId }
+    }
+    
+    func getAllLearnedPatterns() async throws -> [LearnedPattern] {
+        guard let userId = currentUser?.id else { 
+            return cachedPatterns 
+        }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // For now, return cached patterns
+        // TODO: Implement proper Supabase query once SDK compatibility is resolved
+        return cachedPatterns
+    }
+    
     // MARK: - Offline Support
     
     private enum PendingOperation {

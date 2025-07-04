@@ -61,6 +61,8 @@ struct SettingsView: View {
                                     )
                                 case .keyboardShortcuts:
                                     ShortcutSettingsView()
+                                case .syncStatus:
+                                    SyncStatusView()
                                 case .history:
                                     HistorySettingsContent(showingHistory: $showingHistory)
                                 case .about:
@@ -90,6 +92,7 @@ enum SettingsSectionType: String, CaseIterable {
     case aiProviders = "AI Providers"
     case notifications = "Notifications"
     case keyboardShortcuts = "Keyboard Shortcuts"
+    case syncStatus = "Sync Status"
     case history = "History"
     case about = "About"
     
@@ -99,6 +102,7 @@ enum SettingsSectionType: String, CaseIterable {
         case .aiProviders: return "cpu"
         case .notifications: return "bell.fill"
         case .keyboardShortcuts: return "keyboard"
+        case .syncStatus: return "arrow.triangle.2.circlepath"
         case .history: return "clock.arrow.circlepath"
         case .about: return "info.circle.fill"
         }
@@ -110,6 +114,7 @@ enum SettingsSectionType: String, CaseIterable {
         case .aiProviders: return "Configure transcription and refinement services"
         case .notifications: return "Manage alerts and sounds"
         case .keyboardShortcuts: return "Customize recording shortcuts"
+        case .syncStatus: return "Monitor and manage data synchronization"
         case .history: return "View and manage transcription history"
         case .about: return "Version, help, and privacy information"
         }
