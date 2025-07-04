@@ -14,6 +14,9 @@ struct TranscriptlyApp: App {
     @StateObject private var menuBarController = MenuBarController()
     
     init() {
+        // Initialize ShortcutManager to register keyboard shortcuts
+        _ = ShortcutManager.shared
+        
         // Menu bar controller will be connected to app view model in body
     }
     
