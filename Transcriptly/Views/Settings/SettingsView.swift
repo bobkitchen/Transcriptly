@@ -1030,7 +1030,10 @@ struct EnhancedShortcutRow: View {
             Spacer()
             
             if isEditable {
-                SafeShortcutRecorder(shortcut: $shortcut)
+                // Using simplified text field for now to avoid crashes
+                TextField("Shortcut", text: $shortcut)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 150)
             } else {
                 Text(shortcut)
                     .font(.system(.body, design: .monospaced))
