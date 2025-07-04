@@ -16,6 +16,7 @@ struct SettingsView: View {
     @AppStorage("showNotifications") private var showNotifications = true
     @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⌥V"
     @State private var showingHistory = false
+    @State private var expandedSections: Set<SettingsSectionType> = []
     
     // Responsive layout properties
     @Environment(\.availableWidth) private var availableWidth
@@ -34,65 +35,43 @@ struct SettingsView: View {
             
             // Main content
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
-                    // Account Section (Placeholder)
-                    SettingsSection(
-                        title: "Account",
-                        icon: "person.circle",
-                        content: {
-                            AccountSettingsContent()
-                        }
-                    )
-                    
-                    // AI Providers Section (moved from main navigation)
-                    SettingsSection(
-                        title: "AI Providers",
-                        icon: "cpu",
-                        content: {
-                            AIProvidersSettingsContent()
-                        }
-                    )
-                
-                    // Notifications Section
-                    SettingsSection(
-                        title: "Notifications", 
-                        icon: "bell",
-                        content: {
-                            NotificationSettingsContent(
-                                playCompletionSound: $playCompletionSound,
-                                showNotifications: $showNotifications
-                            )
-                        }
-                    )
-                
-                    // Keyboard Shortcuts Section
-                    SettingsSection(
-                        title: "Keyboard Shortcuts",
-                        icon: "keyboard",
-                        content: {
-                            KeyboardShortcutsContent(
-                                recordingShortcut: $recordingShortcut
-                            )
-                        }
-                    )
-                    
-                    // History Section
-                    SettingsSection(
-                        title: "History",
-                        icon: "clock.arrow.circlepath",
-                        content: {
-                            HistorySettingsContent(showingHistory: $showingHistory)
-                        }
-                    )
-                
-                    // About Section
-                    SettingsSection(
-                        title: "About",
-                        icon: "info.circle",
-                        content: {
-                            AboutSettingsContent()
-                        }
-                    )
+                VStack(spacing: DesignSystem.spacingLarge) {
+                    ForEach(SettingsSectionType.allCases, id: \.self) { section in
+                        EnhancedSettingsSection(
+                            section: section,
+                            isExpanded: expandedSections.contains(section),
+                            onToggle: {
+                                withAnimation(DesignSystem.gentleSpring) {
+                                    if expandedSections.contains(section) {
+                                        expandedSections.remove(section)
+                                    } else {
+                                        expandedSections.insert(section)
+                                    }
+                                }
+                            },
+                            content: {
+                                switch section {
+                                case .account:
+                                    AccountSettingsContent()
+                                case .aiProviders:
+                                    AIProvidersSettingsContent()
+                                case .notifications:
+                                    NotificationSettingsContent(
+                                        playCompletionSound: $playCompletionSound,
+                                        showNotifications: $showNotifications
+                                    )
+                                case .keyboardShortcuts:
+                                    KeyboardShortcutsContent(
+                                        recordingShortcut: $recordingShortcut
+                                    )
+                                case .history:
+                                    HistorySettingsContent(showingHistory: $showingHistory)
+                                case .about:
+                                    AboutSettingsContent()
+                                }
+                            }
+                        )
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,7 +86,159 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Settings Section Type
+
+enum SettingsSectionType: String, CaseIterable {
+    case account = "Account"
+    case aiProviders = "AI Providers"
+    case notifications = "Notifications"
+    case keyboardShortcuts = "Keyboard Shortcuts"
+    case history = "History"
+    case about = "About"
+    
+    var icon: String {
+        switch self {
+        case .account: return "person.circle.fill"
+        case .aiProviders: return "cpu"
+        case .notifications: return "bell.fill"
+        case .keyboardShortcuts: return "keyboard"
+        case .history: return "clock.arrow.circlepath"
+        case .about: return "info.circle.fill"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .account: return "Sign in to sync across devices"
+        case .aiProviders: return "Configure transcription and refinement services"
+        case .notifications: return "Manage alerts and sounds"
+        case .keyboardShortcuts: return "Customize recording shortcuts"
+        case .history: return "View and manage transcription history"
+        case .about: return "Version, help, and privacy information"
+        }
+    }
+}
+
 // MARK: - Supporting Views
+
+struct EnhancedSettingsSection<Content: View>: View {
+    let section: SettingsSectionType
+    let isExpanded: Bool
+    let onToggle: () -> Void
+    @ViewBuilder let content: () -> Content
+    
+    @State private var isHovered = false
+    
+    private var previewInfo: String {
+        switch section {
+        case .account: return "Not signed in"
+        case .aiProviders: 
+            let providerManager = AIProviderManager.shared
+            let activeCount = providerManager.providers.values.filter { $0.isConfigured }.count
+            return "\(activeCount) configured"
+        case .notifications: 
+            @AppStorage("showNotifications") var showNotifs = true
+            @AppStorage("playCompletionSound") var playSound = true
+            if showNotifs && playSound {
+                return "All enabled"
+            } else if !showNotifs && !playSound {
+                return "All disabled"
+            } else {
+                return "Partially enabled"
+            }
+        case .keyboardShortcuts: return "⌘⇧V to record"
+        case .history:
+            let count = TranscriptionHistoryService.shared.transcriptions.count
+            return "\(count) transcriptions"
+        case .about: return "Version 1.0.0"
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Enhanced Section Header
+            Button(action: onToggle) {
+                HStack(spacing: DesignSystem.spacingMedium) {
+                    // Prominent icon
+                    Image(systemName: section.icon)
+                        .font(.system(size: 24))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.accentColor)
+                        .frame(width: 32)
+                    
+                    // Content
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(section.rawValue)
+                                .font(DesignSystem.Typography.titleMedium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primaryText)
+                            
+                            Spacer()
+                            
+                            // Preview info when collapsed
+                            if !isExpanded {
+                                Text(previewInfo)
+                                    .font(DesignSystem.Typography.bodySmall)
+                                    .foregroundColor(.secondaryText)
+                                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                            }
+                        }
+                        
+                        Text(section.subtitle)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.secondaryText)
+                            .lineLimit(isExpanded ? nil : 1)
+                            .animation(DesignSystem.quickAnimation, value: isExpanded)
+                    }
+                    
+                    // Chevron
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.tertiaryText)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(DesignSystem.springAnimation, value: isExpanded)
+                }
+                .padding(DesignSystem.spacingLarge)
+            }
+            .buttonStyle(.plain)
+            
+            // Expanded Content
+            if isExpanded {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                    Divider()
+                        .background(Color.white.opacity(0.1))
+                    
+                    content()
+                        .padding(.horizontal, DesignSystem.spacingLarge)
+                        .padding(.bottom, DesignSystem.spacingLarge)
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+            }
+        }
+        .liquidGlassBackground(
+            material: isHovered ? .thickMaterial : .regularMaterial,
+            cornerRadius: DesignSystem.cornerRadiusLarge
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.cornerRadiusLarge)
+                .strokeBorder(
+                    Color.white.opacity(isHovered ? 0.15 : 0.1),
+                    lineWidth: 1
+                )
+        )
+        .scaleEffect(isHovered ? 1.005 : 1.0) // Very subtle scale
+        .animation(DesignSystem.gentleSpring, value: isHovered)
+        .onHover { hovering in
+            withAnimation(DesignSystem.gentleSpring) {
+                isHovered = hovering
+            }
+        }
+    }
+}
 
 struct SettingsSection<Content: View>: View {
     let title: String
@@ -190,41 +321,47 @@ struct AIProvidersSettingsContent: View {
     @State private var expandedProvider: ProviderType?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-            Text("Configure AI services for transcription, refinement, and text-to-speech")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            // Service Selection
-            ServiceSelectionSection()
-                .padding(.bottom, DesignSystem.spacingSmall)
+        VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+            // Service Configuration Section
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("Service Configuration")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                Text("Choose which AI providers to use for each service")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.secondaryText)
+                
+                ServiceSelectionSection()
+            }
             
             Divider()
                 .background(Color.white.opacity(0.1))
-                .padding(.vertical, DesignSystem.spacingSmall)
             
-            Text("PROVIDER CONFIGURATION")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.tertiaryText)
-                .tracking(0.5)
-            
-            // All Providers
-            VStack(spacing: DesignSystem.spacingSmall) {
-                ForEach(ProviderType.allCases, id: \.self) { providerType in
-                    ExpandableProviderRow(
-                        providerType: providerType,
-                        isExpanded: expandedProvider == providerType,
-                        onToggle: {
-                            withAnimation(DesignSystem.springAnimation) {
-                                expandedProvider = expandedProvider == providerType ? nil : providerType
+            // Provider Configuration Section
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("Provider Configuration")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                // All Providers
+                VStack(spacing: DesignSystem.spacingSmall) {
+                    ForEach(ProviderType.allCases, id: \.self) { providerType in
+                        ExpandableProviderRow(
+                            providerType: providerType,
+                            isExpanded: expandedProvider == providerType,
+                            onToggle: {
+                                withAnimation(DesignSystem.springAnimation) {
+                                    expandedProvider = expandedProvider == providerType ? nil : providerType
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
-        .padding(DesignSystem.spacingMedium)
-        .liquidGlassCard()
     }
 }
 
@@ -233,79 +370,83 @@ struct ServiceSelectionSection: View {
     @StateObject private var providerManager = AIProviderManager.shared
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingSmall) {
+        VStack(spacing: DesignSystem.spacingMedium) {
             // Transcription Service
-            HStack {
-                Label("Transcription", systemImage: "mic.circle")
-                    .font(.caption)
-                    .foregroundColor(.primaryText)
-                
-                Spacer()
-                
-                Picker("", selection: .init(
+            ServiceSelectorRow(
+                title: "Transcription",
+                icon: "mic.circle",
+                selection: Binding(
                     get: { providerManager.preferences.transcriptionProvider },
                     set: { provider in
                         var newPrefs = providerManager.preferences
                         newPrefs.transcriptionProvider = provider
                         providerManager.updatePreferences(newPrefs)
                     }
-                )) {
-                    ForEach(ProviderType.allCases, id: \.self) { provider in
-                        Text(provider.displayName).tag(provider)
-                    }
-                }
-                .pickerStyle(.menu)
-                .controlSize(.small)
-            }
+                )
+            )
             
             // Refinement Service
-            HStack {
-                Label("Refinement", systemImage: "wand.and.sparkles")
-                    .font(.caption)
-                    .foregroundColor(.primaryText)
-                
-                Spacer()
-                
-                Picker("", selection: .init(
+            ServiceSelectorRow(
+                title: "Refinement",
+                icon: "wand.and.sparkles",
+                selection: Binding(
                     get: { providerManager.preferences.refinementProvider },
                     set: { provider in
                         var newPrefs = providerManager.preferences
                         newPrefs.refinementProvider = provider
                         providerManager.updatePreferences(newPrefs)
                     }
-                )) {
-                    ForEach(ProviderType.allCases, id: \.self) { provider in
-                        Text(provider.displayName).tag(provider)
-                    }
-                }
-                .pickerStyle(.menu)
-                .controlSize(.small)
-            }
+                )
+            )
             
             // Text-to-Speech Service
-            HStack {
-                Label("Text-to-Speech", systemImage: "speaker.wave.3")
-                    .font(.caption)
-                    .foregroundColor(.primaryText)
-                
-                Spacer()
-                
-                Picker("", selection: .init(
+            ServiceSelectorRow(
+                title: "Text-to-Speech",
+                icon: "speaker.wave.3",
+                selection: Binding(
                     get: { providerManager.preferences.textToSpeechProvider },
                     set: { provider in
                         var newPrefs = providerManager.preferences
                         newPrefs.textToSpeechProvider = provider
                         providerManager.updatePreferences(newPrefs)
                     }
-                )) {
-                    ForEach(ProviderType.allCases, id: \.self) { provider in
-                        Text(provider.displayName).tag(provider)
-                    }
-                }
-                .pickerStyle(.menu)
-                .controlSize(.small)
-            }
+                )
+            )
         }
+    }
+}
+
+// Service Selector Row
+struct ServiceSelectorRow: View {
+    let title: String
+    let icon: String
+    @Binding var selection: ProviderType
+    
+    var body: some View {
+        HStack {
+            Label(title, systemImage: icon)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.primaryText)
+                .frame(minWidth: 140, alignment: .leading)
+            
+            Spacer()
+            
+            Picker("", selection: $selection) {
+                ForEach(ProviderType.allCases, id: \.self) { provider in
+                    Text(provider.displayName).tag(provider)
+                }
+            }
+            .pickerStyle(.menu)
+            .controlSize(.regular)
+            .tint(.accentColor)
+            .liquidGlassBackground(
+                material: .ultraThinMaterial,
+                cornerRadius: DesignSystem.cornerRadiusSmall
+            )
+        }
+        .padding(DesignSystem.spacingSmall)
+        .background(Color.white.opacity(0.02))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
     }
 }
 
@@ -780,20 +921,86 @@ struct NotificationSettingsContent: View {
     @Binding var showNotifications: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-            Toggle("Play sound on completion", isOn: $playCompletionSound)
-                .toggleStyle(SwitchToggleStyle())
-                .tint(.accentColor)
+        VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+            // Sound Settings
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("Sound Settings")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                SettingToggleRow(
+                    title: "Play sound on completion",
+                    subtitle: "Play a chime when transcription finishes",
+                    icon: "speaker.wave.2.fill",
+                    isOn: $playCompletionSound
+                )
+            }
             
             Divider()
                 .background(Color.white.opacity(0.1))
             
-            Toggle("Show notifications", isOn: $showNotifications)
+            // Notification Settings
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("System Notifications")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                SettingToggleRow(
+                    title: "Show notifications",
+                    subtitle: "Display system alerts for completed transcriptions",
+                    icon: "bell.fill",
+                    isOn: $showNotifications
+                )
+                
+                if showNotifications {
+                    Text("Make sure notifications are enabled in System Settings")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.tertiaryText)
+                        .padding(.horizontal, DesignSystem.spacingMedium)
+                        .padding(.vertical, DesignSystem.spacingSmall)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(DesignSystem.cornerRadiusSmall)
+                }
+            }
+        }
+    }
+}
+
+// Setting Toggle Row
+struct SettingToggleRow: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(.accentColor)
+                .frame(width: 28)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(.primaryText)
+                
+                Text(subtitle)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.secondaryText)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
                 .toggleStyle(SwitchToggleStyle())
                 .tint(.accentColor)
         }
-        .padding(DesignSystem.spacingMedium)
-        .liquidGlassCard()
+        .padding(DesignSystem.spacingSmall)
+        .background(Color.white.opacity(0.02))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
     }
 }
 
@@ -802,71 +1009,370 @@ struct KeyboardShortcutsContent: View {
     @Binding var recordingShortcut: String
     
     var body: some View {
-        VStack(spacing: DesignSystem.spacingSmall) {
-            ShortcutRow(
-                title: "Start/Stop Recording",
-                shortcut: $recordingShortcut,
-                isEditable: true
-            )
+        VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+            // Configurable Shortcuts
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("Configurable Shortcuts")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                EnhancedShortcutRow(
+                    title: "Start/Stop Recording",
+                    subtitle: "Toggle recording from anywhere",
+                    icon: "mic.circle.fill",
+                    shortcut: $recordingShortcut,
+                    isEditable: true
+                )
+            }
             
-            Text("Only recording shortcut is configurable. Refinement modes can be selected using the interface.")
-                .font(.caption)
-                .foregroundColor(.tertiaryText)
-                .multilineTextAlignment(.center)
-                .padding(.top, DesignSystem.spacingSmall)
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
+            // Fixed Shortcuts
+            VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+                Text("Fixed Shortcuts")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                VStack(spacing: DesignSystem.spacingSmall) {
+                    FixedShortcutRow(
+                        title: "Cancel Recording",
+                        shortcut: "Escape",
+                        icon: "xmark.circle.fill"
+                    )
+                    
+                    FixedShortcutRow(
+                        title: "Raw Mode",
+                        shortcut: "⌘1",
+                        icon: "text.quote"
+                    )
+                    
+                    FixedShortcutRow(
+                        title: "Clean-up Mode",
+                        shortcut: "⌘2",
+                        icon: "text.justify"
+                    )
+                    
+                    FixedShortcutRow(
+                        title: "Email Mode",
+                        shortcut: "⌘3",
+                        icon: "envelope.fill"
+                    )
+                    
+                    FixedShortcutRow(
+                        title: "Messaging Mode",
+                        shortcut: "⌘4",
+                        icon: "message.fill"
+                    )
+                }
+            }
         }
-        .padding(DesignSystem.spacingMedium)
-        .liquidGlassCard()
+    }
+}
+
+// Enhanced Shortcut Row
+struct EnhancedShortcutRow: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    @Binding var shortcut: String
+    let isEditable: Bool
+    @State private var isWaitingForKeypress = false
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(.accentColor)
+                .frame(width: 28)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(.primaryText)
+                
+                Text(subtitle)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.secondaryText)
+            }
+            
+            Spacer()
+            
+            if isWaitingForKeypress {
+                Text("Press keys...")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, DesignSystem.spacingMedium)
+                    .padding(.vertical, DesignSystem.spacingSmall)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(DesignSystem.cornerRadiusSmall)
+            } else {
+                HStack(spacing: DesignSystem.spacingSmall) {
+                    Text(shortcut)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundColor(.primaryText)
+                        .padding(.horizontal, DesignSystem.spacingMedium)
+                        .padding(.vertical, DesignSystem.spacingSmall)
+                        .liquidGlassBackground(
+                            material: .ultraThinMaterial,
+                            cornerRadius: DesignSystem.cornerRadiusSmall
+                        )
+                    
+                    if isEditable {
+                        Button(action: {
+                            isWaitingForKeypress = true
+                        }) {
+                            Text("Edit")
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(DesignSystem.spacingSmall)
+        .background(Color.white.opacity(0.02))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
+    }
+}
+
+// Fixed Shortcut Row
+struct FixedShortcutRow: View {
+    let title: String
+    let shortcut: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingMedium) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.secondaryText)
+                .frame(width: 24)
+            
+            Text(title)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.primaryText)
+            
+            Spacer()
+            
+            Text(shortcut)
+                .font(.system(.body, design: .monospaced))
+                .foregroundColor(.secondaryText)
+                .padding(.horizontal, DesignSystem.spacingSmall)
+                .padding(.vertical, 2)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(4)
+        }
+        .padding(.horizontal, DesignSystem.spacingSmall)
+        .padding(.vertical, DesignSystem.spacingTiny)
     }
 }
 
 // History Settings Content
 struct HistorySettingsContent: View {
     @Binding var showingHistory: Bool
+    @ObservedObject private var historyService = TranscriptionHistoryService.shared
+    
+    private var weekCount: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) else {
+            return 0
+        }
+        return historyService.transcriptions.filter { $0.timestamp >= weekAgo }.count
+    }
     
     var body: some View {
-        HStack {
-            Text("View transcription history")
-                .font(.body)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Button("View History") {
-                showingHistory = true
+        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
+            // History Stats
+            HStack(spacing: DesignSystem.spacingLarge) {
+                HistoryStatItem(
+                    title: "Total",
+                    value: "\(historyService.transcriptions.count)",
+                    icon: "doc.text.fill"
+                )
+                
+                HistoryStatItem(
+                    title: "This Week",
+                    value: "\(weekCount)",
+                    icon: "calendar"
+                )
+                
+                HistoryStatItem(
+                    title: "Today",
+                    value: "\(historyService.getTodayTranscriptions().count)",
+                    icon: "clock.fill"
+                )
             }
-            .buttonStyle(.bordered)
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
+            // View History Button
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Full History")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primaryText)
+                    
+                    Text("View all transcriptions with search and filters")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                }
+                
+                Spacer()
+                
+                Button("View History") {
+                    showingHistory = true
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
         }
-        .padding(DesignSystem.spacingMedium)
-        .liquidGlassCard()
+    }
+}
+
+// History Stat Item
+struct HistoryStatItem: View {
+    let title: String
+    let value: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.spacingSmall) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.accentColor)
+            
+            VStack(alignment: .leading, spacing: 0) {
+                Text(value)
+                    .font(DesignSystem.Typography.titleMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primaryText)
+                
+                Text(title)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(.secondaryText)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(DesignSystem.spacingSmall)
+        .background(Color.white.opacity(0.02))
+        .cornerRadius(DesignSystem.cornerRadiusSmall)
     }
 }
 
 // About Settings Content
 struct AboutSettingsContent: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.spacingMedium) {
-            HStack {
-                Text("Transcriptly")
-                    .font(.system(size: 16, weight: .medium))
+        VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
+            // App Info
+            HStack(spacing: DesignSystem.spacingMedium) {
+                Image(systemName: "app.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.accentColor)
+                    .symbolRenderingMode(.hierarchical)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Transcriptly")
+                        .font(DesignSystem.Typography.titleLarge)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primaryText)
+                    
+                    Text("Version 1.0.0 (Build 100)")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.secondaryText)
+                    
+                    Text("© 2025 Transcriptly Inc.")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.tertiaryText)
+                }
+                
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+            
+            // Links
+            VStack(spacing: DesignSystem.spacingSmall) {
+                AboutLinkRow(
+                    title: "Help & Support",
+                    subtitle: "Get help with Transcriptly",
+                    icon: "questionmark.circle.fill",
+                    url: URL(string: "https://transcriptly.app/help")!
+                )
+                
+                AboutLinkRow(
+                    title: "Privacy Policy",
+                    subtitle: "How we handle your data",
+                    icon: "lock.shield.fill",
+                    url: URL(string: "https://transcriptly.app/privacy")!
+                )
+                
+                AboutLinkRow(
+                    title: "Terms of Service",
+                    subtitle: "Our service agreement",
+                    icon: "doc.text.fill",
+                    url: URL(string: "https://transcriptly.app/terms")!
+                )
+                
+                AboutLinkRow(
+                    title: "Send Feedback",
+                    subtitle: "Help us improve Transcriptly",
+                    icon: "envelope.fill",
+                    url: URL(string: "mailto:feedback@transcriptly.app")!
+                )
+            }
+        }
+    }
+}
+
+// About Link Row
+struct AboutLinkRow: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let url: URL
+    @State private var isHovered = false
+    
+    var body: some View {
+        Link(destination: url) {
+            HStack(spacing: DesignSystem.spacingMedium) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 28)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primaryText)
+                    
+                    Text(subtitle)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(.secondaryText)
+                }
                 
                 Spacer()
                 
-                Text("Version 1.0.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.tertiaryText)
+                    .opacity(isHovered ? 1 : 0.5)
             }
-            
-            HStack(spacing: DesignSystem.spacingLarge) {
-                Link("Help", destination: URL(string: "https://transcriptly.app/help")!)
-                    .foregroundColor(.accentColor)
-                
-                Link("Privacy Policy", destination: URL(string: "https://transcriptly.app/privacy")!)
-                    .foregroundColor(.accentColor)
-            }
+            .padding(DesignSystem.spacingSmall)
+            .background(Color.white.opacity(isHovered ? 0.05 : 0.02))
+            .cornerRadius(DesignSystem.cornerRadiusSmall)
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .animation(DesignSystem.quickAnimation, value: isHovered)
         }
-        .padding(DesignSystem.spacingMedium)
-        .liquidGlassCard()
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
