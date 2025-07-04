@@ -22,6 +22,10 @@ struct ReadAloudView: View {
     @State private var showingMiniPlayer = false
     @State private var cancellables = Set<AnyCancellable>()
     
+    // Responsive layout properties
+    @Environment(\.availableWidth) private var availableWidth
+    @Environment(\.sidebarCollapsed) private var sidebarCollapsed
+    
     var body: some View {
         VStack(spacing: 0) {
             // Integrated header with controls
@@ -69,8 +73,8 @@ struct ReadAloudView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, DesignSystem.marginStandard)
+            .padding(.vertical, DesignSystem.spacingLarge)
             .background(.regularMaterial.opacity(0.3))
             
             // Main content
@@ -84,11 +88,11 @@ struct ReadAloudView: View {
                         emptyStateContent
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, DesignSystem.marginStandard)
+                .padding(.bottom, DesignSystem.spacingLarge)
             }
         }
-        .adjustForFloatingSidebar()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primaryBackground)
         .onAppear {
             setupNotificationListeners()

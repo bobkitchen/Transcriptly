@@ -17,6 +17,10 @@ struct SettingsView: View {
     @AppStorage("recordingShortcut") private var recordingShortcut = "⌘⌥V"
     @State private var showingHistory = false
     
+    // Responsive layout properties
+    @Environment(\.availableWidth) private var availableWidth
+    @Environment(\.sidebarCollapsed) private var sidebarCollapsed
+    
     var body: some View {
         VStack(spacing: 0) {
             // Integrated header
@@ -30,7 +34,7 @@ struct SettingsView: View {
             
             // Main content
             ScrollView {
-                VStack(alignment: .leading, spacing: 30) {
+                VStack(alignment: .leading, spacing: DesignSystem.spacingLarge) {
                     // Account Section (Placeholder)
                     SettingsSection(
                         title: "Account",
@@ -89,16 +93,15 @@ struct SettingsView: View {
                             AboutSettingsContent()
                         }
                     )
-                    
-                    Spacer()
             }
-            .padding(DesignSystem.marginStandard)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignSystem.marginStandard)
+            .padding(.bottom, DesignSystem.spacingLarge)
         }
-        .adjustForFloatingSidebar()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingHistory) {
             HistoryView()
-        }
         }
     }
 }

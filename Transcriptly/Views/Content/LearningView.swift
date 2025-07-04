@@ -18,6 +18,10 @@ struct LearningView: View {
     @State private var showResetAlert = false
     @State private var selectedPattern: LearnedPattern?
     
+    // Responsive layout properties
+    @Environment(\.availableWidth) private var availableWidth
+    @Environment(\.sidebarCollapsed) private var sidebarCollapsed
+    
     var body: some View {
         VStack(spacing: 0) {
             // Simple header (no controls)
@@ -28,8 +32,8 @@ struct LearningView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, DesignSystem.marginStandard)
+            .padding(.vertical, DesignSystem.spacingLarge)
             .background(.regularMaterial.opacity(0.3))
             
             // Main content
@@ -88,11 +92,12 @@ struct LearningView: View {
                     }
                 }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DesignSystem.marginStandard)
+                .padding(.bottom, DesignSystem.spacingLarge)
             }
         }
-        .adjustForFloatingSidebar()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primaryBackground)
         .onAppear {
             loadPatterns()

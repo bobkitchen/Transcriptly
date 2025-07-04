@@ -17,6 +17,10 @@ struct TranscriptionView: View {
     @State private var showAppConfigAlert = false
     @State private var appConfigMode: RefinementMode?
     
+    // Responsive layout properties
+    @Environment(\.availableWidth) private var availableWidth
+    @Environment(\.sidebarCollapsed) private var sidebarCollapsed
+    
     var body: some View {
         VStack(spacing: 0) {
             // Integrated header
@@ -209,10 +213,11 @@ struct TranscriptionView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.horizontal, DesignSystem.marginStandard)
+            .padding(.bottom, DesignSystem.spacingLarge)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .adjustForFloatingSidebar()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primaryBackground)
         .sheet(item: Binding<EditingModeWrapper?>(
             get: { showEditPrompt && editingMode != nil ? EditingModeWrapper(mode: editingMode!) : nil },
