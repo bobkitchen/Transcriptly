@@ -31,8 +31,8 @@ class ShortcutManager: ObservableObject {
         currentShortcuts = [
             ShortcutBinding(
                 id: "primary_record",
-                keyCode: kVK_ANSI_R,
-                modifiers: NSEvent.ModifierFlags([.command, .shift]).rawValue,
+                keyCode: kVK_RightArrow,  // 124
+                modifiers: NSEvent.ModifierFlags.command.rawValue,
                 action: .toggleRecording,
                 name: "Start/Stop Recording",
                 isCustomizable: true,
