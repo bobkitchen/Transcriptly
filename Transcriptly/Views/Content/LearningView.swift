@@ -17,6 +17,7 @@ struct LearningView: View {
     @State private var error: String?
     @State private var showResetAlert = false
     @State private var selectedPattern: LearnedPattern?
+    @State private var showingDashboard = false
     
     // Responsive layout properties
     @Environment(\.availableWidth) private var availableWidth
@@ -24,13 +25,19 @@ struct LearningView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Simple header (no controls)
+            // Header with dashboard link
             HStack {
                 Text("Learning")
                     .font(DesignSystem.Typography.pageTitle)
                     .foregroundColor(.primaryText)
                 
                 Spacer()
+                
+                Button(action: { showingDashboard = true }) {
+                    Label("Dashboard", systemImage: "chart.xyaxis.line")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             .padding(.horizontal, DesignSystem.marginStandard)
             .padding(.vertical, DesignSystem.spacingLarge)
@@ -125,6 +132,10 @@ struct LearningView: View {
             if let pattern = selectedPattern {
                 Text("Delete pattern: \"\(pattern.originalPhrase)\" → \"\(pattern.correctedPhrase)\"?")
             }
+        }
+        .sheet(isPresented: $showingDashboard) {
+            LearningDashboard()
+                .frame(minWidth: 800, minHeight: 600)
         }
     }
     

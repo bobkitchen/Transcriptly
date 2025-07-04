@@ -208,9 +208,43 @@ class LearningService: ObservableObject {
         
         do {
             try await supabase.saveOrUpdatePattern(updatedPattern)
+            // Update local cache
+            cachedPatterns.removeAll { $0.id == pattern.id }
         } catch {
             print("Failed to delete pattern: \(error)")
         }
+    }
+    
+    func updatePatternEffectiveness(_ patternId: UUID, wasAccepted: Bool) async {
+        guard let index = cachedPatterns.firstIndex(where: { $0.id == patternId }) else { return }
+        
+        var pattern = cachedPatterns[index]
+        
+        // Update confidence based on user acceptance
+        if wasAccepted {
+            pattern.confidence = min(1.0, pattern.confidence + 0.05)
+        } else {
+            pattern.confidence = max(0.0, pattern.confidence - 0.1)
+        }
+        
+        cachedPatterns[index] = pattern
+        
+        // Save updated pattern
+        do {
+            try await supabase.saveOrUpdatePattern(pattern)
+        } catch {
+            print("Failed to update pattern effectiveness: \(error)")
+        }
+    }
+    
+    func getPatternEffectivenessScore() -> Double {
+        guard !cachedPatterns.isEmpty else { return 0 }
+        
+        let activePatterns = cachedPatterns.filter { $0.isActive }
+        guard !activePatterns.isEmpty else { return 0 }
+        
+        let totalConfidence = activePatterns.reduce(0.0) { $0 + $1.confidence }
+        return totalConfidence / Double(activePatterns.count)
     }
     
     func pauseLearning() {
