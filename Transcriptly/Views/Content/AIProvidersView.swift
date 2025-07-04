@@ -102,6 +102,49 @@ struct AIProvidersView: View {
                                 }
                             )
                             
+                            // File Transcription Provider Selection
+                            HStack {
+                                VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
+                                    Text("File Transcription")
+                                        .font(DesignSystem.Typography.body)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primaryText)
+                                    
+                                    Text("Provider for audio and video file transcription")
+                                        .font(DesignSystem.Typography.bodySmall)
+                                        .foregroundColor(.secondaryText)
+                                }
+                                
+                                Spacer()
+                                
+                                Menu {
+                                    Button("Apple Speech (Local)") {
+                                        // For now, always Apple Speech
+                                    }
+                                    
+                                    Button("GPT-4o Transcribe (Cloud)") {
+                                        // Future implementation
+                                    }
+                                    .disabled(true)
+                                } label: {
+                                    HStack(spacing: DesignSystem.spacingSmall) {
+                                        Image(systemName: "waveform.badge.mic")
+                                            .font(.system(size: 14))
+                                        Text("Apple Speech")
+                                            .font(DesignSystem.Typography.bodySmall)
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 10))
+                                    }
+                                    .padding(.horizontal, DesignSystem.spacingMedium)
+                                    .padding(.vertical, DesignSystem.spacingSmall)
+                                    .background(Color.secondaryBackground)
+                                    .cornerRadius(DesignSystem.cornerRadiusSmall)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(DesignSystem.spacingMedium)
+                            .liquidGlassBackground(cornerRadius: DesignSystem.cornerRadiusSmall)
+                            
                             // Fallback Hierarchy Toggle
                             HStack {
                                 Text("Enable Fallback Hierarchy")

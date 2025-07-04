@@ -567,20 +567,20 @@ struct PatternDetailView: View {
                 
                 // Statistics
                 HStack(spacing: DesignSystem.spacingMedium) {
-                    StatCard(
+                    LearningStatCard(
                         label: "Occurrences",
                         value: "\(pattern.occurrenceCount)",
                         icon: "number.circle"
                     )
                     
-                    StatCard(
+                    LearningStatCard(
                         label: "Confidence",
                         value: "\(Int(pattern.confidence * 100))%",
                         icon: "chart.bar.fill"
                     )
                     
                     if let mode = pattern.refinementMode {
-                        StatCard(
+                        LearningStatCard(
                             label: "Mode",
                             value: mode.rawValue,
                             icon: "text.bubble"
@@ -649,7 +649,7 @@ struct PatternDetailView: View {
     }
 }
 
-struct StatCard: View {
+struct LearningStatCard: View {
     let label: String
     let value: String
     let icon: String

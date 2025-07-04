@@ -90,7 +90,7 @@ struct UniversalDropzone: View {
         )
         .scaleEffect(isDragOver ? 1.02 : 1.0)
         .animation(DesignSystem.springAnimation, value: isDragOver)
-        .onDrop(of: dropTypes, isTargeted: $isDragOver) { providers in
+        .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
             handleDrop(providers: providers)
         }
     }
@@ -127,29 +127,19 @@ struct UniversalDropzone: View {
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
         
-        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
-                if let error = error {
-                    print("❌ UniversalDropzone: Error loading dropped item: \(error)")
-                    return
-                }
-                
-                guard let data = item as? Data,
-                      let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                    print("❌ UniversalDropzone: Could not get URL from dropped item")
-                    return
-                }
-                
-                DispatchQueue.main.async {
+        _ = provider.loadObject(ofClass: URL.self) { url, error in
+            DispatchQueue.main.async {
+                if let url = url {
                     print("✅ UniversalDropzone: File dropped: \(url.lastPathComponent)")
                     self.lastDroppedFile = url.lastPathComponent
                     self.onDrop(url)
+                } else if let error = error {
+                    print("❌ UniversalDropzone: Error loading dropped file: \(error.localizedDescription)")
                 }
             }
-            return true
         }
         
-        return false
+        return true
     }
 }
 

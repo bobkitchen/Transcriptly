@@ -19,6 +19,8 @@ struct MainContentView: View {
                 HomeView(viewModel: viewModel, selectedSection: $selectedSection, onFloat: onFloat)
             case .dictation:
                 TranscriptionView(viewModel: viewModel, onFloat: onFloat)
+            case .fileTranscription:
+                FileTranscriptionView()
             case .readAloud:
                 ReadAloudView()
             case .learning:

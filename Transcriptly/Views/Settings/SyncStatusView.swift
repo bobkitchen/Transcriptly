@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SyncStatusView: View {
     @ObservedObject private var syncMonitor = SyncMonitor.shared

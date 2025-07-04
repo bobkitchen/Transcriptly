@@ -15,6 +15,12 @@ class LearningService: ObservableObject {
     private let patternMatcher = PatternMatcher()
     private let preferenceProfiler = PreferenceProfiler()
     
+    // Cached patterns for performance
+    private var cachedPatterns: [LearnedPattern] = []
+    
+    // Make confidence property accessible for pattern updates
+    @MainActor @Published var currentPatterns: [LearnedPattern] = []
+    
     enum LearningQuality {
         case minimal    // < 10 sessions
         case basic      // 10-50 sessions
@@ -228,6 +234,11 @@ class LearningService: ObservableObject {
         }
         
         cachedPatterns[index] = pattern
+        
+        // Update the published array too
+        if let publishedIndex = currentPatterns.firstIndex(where: { $0.id == patternId }) {
+            currentPatterns[publishedIndex] = pattern
+        }
         
         // Save updated pattern
         do {

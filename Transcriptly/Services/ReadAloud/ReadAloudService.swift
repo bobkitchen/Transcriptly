@@ -523,4 +523,5 @@ extension Notification.Name {
     static let readAloudHighlightUpdate = Notification.Name("readAloudHighlightUpdate")
     static let readAloudSessionResumable = Notification.Name("readAloudSessionResumable")
     static let readAloudImportFile = Notification.Name("readAloudImportFile")
+    static let fileTranscriptionImportFile = Notification.Name("fileTranscriptionImportFile")
 }

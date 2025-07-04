@@ -7,6 +7,8 @@
 
 import Foundation
 import Combine
+import Supabase
+import PostgREST
 import SwiftUI
 
 @MainActor

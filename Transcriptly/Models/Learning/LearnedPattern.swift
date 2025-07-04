@@ -9,7 +9,7 @@ struct LearnedPattern: Codable, Identifiable, Sendable {
     let firstSeen: Date
     let lastSeen: Date
     let refinementMode: RefinementMode?
-    let confidence: Double
+    var confidence: Double
     var isActive: Bool
     
     var isReady: Bool {

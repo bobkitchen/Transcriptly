@@ -36,6 +36,10 @@ struct ResponsiveContentWrapper: View {
                         onFloat: onFloat,
                         availableWidth: geometry.size.width
                     )
+                case .fileTranscription:
+                    ResponsiveFileTranscriptionWrapper(
+                        availableWidth: geometry.size.width
+                    )
                 case .readAloud:
                     ResponsiveReadAloudWrapper(
                         availableWidth: geometry.size.width
@@ -115,6 +119,16 @@ struct ResponsiveLearningWrapper: View {
     
     var body: some View {
         LearningView()
+            .environment(\.availableWidth, availableWidth)
+    }
+}
+
+// Responsive wrapper for FileTranscriptionView
+struct ResponsiveFileTranscriptionWrapper: View {
+    let availableWidth: CGFloat
+    
+    var body: some View {
+        FileTranscriptionView()
             .environment(\.availableWidth, availableWidth)
     }
 }

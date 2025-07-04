@@ -9,7 +9,8 @@ import Foundation
 
 enum SidebarSection: String, CaseIterable, Codable {
     case home = "Home"
-    case dictation = "Dictation"  
+    case dictation = "Dictation"
+    case fileTranscription = "File Transcription"
     case readAloud = "Read Aloud"
     case learning = "Learning"
     case settings = "Settings"
@@ -23,6 +24,7 @@ enum SidebarSection: String, CaseIterable, Codable {
         switch self {
         case .home: return "house.fill"
         case .dictation: return "mic.fill"
+        case .fileTranscription: return "doc.viewfinder.fill"
         case .readAloud: return "speaker.wave.3.fill"
         case .learning: return "brain.head.profile"
         case .settings: return "gearshape.fill"
@@ -31,8 +33,7 @@ enum SidebarSection: String, CaseIterable, Codable {
     
     var isEnabled: Bool {
         switch self {
-        case .home, .dictation, .readAloud, .settings: return true
-        case .learning: return false  // Still coming soon
+        case .home, .dictation, .fileTranscription, .readAloud, .settings, .learning: return true
         }
     }
 }

@@ -133,26 +133,23 @@ struct EnhancedSettingsSection<Content: View>: View {
     
     private var previewInfo: String {
         switch section {
-        case .account: return "Not signed in"
+        case .account: 
+            return "Not signed in"
         case .aiProviders: 
             let providerManager = AIProviderManager.shared
             let activeCount = providerManager.providers.values.filter { $0.isConfigured }.count
             return "\(activeCount) configured"
         case .notifications: 
-            @AppStorage("showNotifications") var showNotifs = true
-            @AppStorage("playCompletionSound") var playSound = true
-            if showNotifs && playSound {
-                return "All enabled"
-            } else if !showNotifs && !playSound {
-                return "All disabled"
-            } else {
-                return "Partially enabled"
-            }
-        case .keyboardShortcuts: return "⌘⇧R to record"
+            return "Settings available"
+        case .keyboardShortcuts:
+            return "⌘→ (customizable)"
+        case .syncStatus:
+            return "Online"
         case .history:
             let count = TranscriptionHistoryService.shared.transcriptions.count
             return "\(count) transcriptions"
-        case .about: return "Version 1.0.0"
+        case .about:
+            return "v1.0.0"
         }
     }
     
