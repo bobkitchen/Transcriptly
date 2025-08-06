@@ -46,7 +46,7 @@ struct LearningView: View {
     }
     
     private var headerSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 HStack {
                     Image(systemName: "brain")
@@ -93,7 +93,7 @@ struct LearningView: View {
     }
     
     private var statusSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("Learning Status")
                     .font(.headline)
@@ -118,7 +118,7 @@ struct LearningView: View {
     }
     
     private var patternsSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("Learned Patterns")
                     .font(.headline)
@@ -158,7 +158,7 @@ struct LearningView: View {
     }
     
     private var controlsSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(spacing: DesignSystem.spacing.md) {
                 HStack {
                     Button(action: {

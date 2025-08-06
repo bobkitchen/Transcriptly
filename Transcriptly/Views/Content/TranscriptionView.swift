@@ -53,7 +53,7 @@ struct TranscriptionView: View {
     }
     
     private var recordingSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(spacing: DesignSystem.spacing.md) {
                 RecordButton(
                     isRecording: viewModel.isRecording,

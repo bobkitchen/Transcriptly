@@ -37,7 +37,7 @@ struct SettingsView: View {
     }
     
     private var headerSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             HStack {
                 Image(systemName: "gear")
                     .font(.largeTitle)
@@ -58,7 +58,7 @@ struct SettingsView: View {
     }
     
     private var generalSettings: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("General")
                     .font(.headline)
@@ -86,7 +86,7 @@ struct SettingsView: View {
     }
     
     private var notificationSettings: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("Notifications")
                     .font(.headline)
@@ -101,7 +101,7 @@ struct SettingsView: View {
     }
     
     private var keyboardShortcuts: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("Keyboard Shortcuts")
                     .font(.headline)
@@ -122,7 +122,7 @@ struct SettingsView: View {
     }
     
     private var aboutSection: some View {
-        LiquidGlassBackground {
+        LiquidGlassContainer {
             VStack(alignment: .leading, spacing: DesignSystem.spacing.md) {
                 Text("About")
                     .font(.headline)

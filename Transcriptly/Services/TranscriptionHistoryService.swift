@@ -23,6 +23,38 @@ struct TranscriptionRecord: Identifiable, Codable {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    // Add text property for backward compatibility
+    var text: String {
+        return refinedText.isEmpty ? originalText : refinedText
+    }
+    
+    static let sampleData: [TranscriptionRecord] = [
+        TranscriptionRecord(
+            date: Date(),
+            originalText: "Sample transcription text",
+            refinedText: "Refined sample text",
+            mode: .raw,
+            duration: 5,
+            wordCount: 50
+        ),
+        TranscriptionRecord(
+            date: Date().addingTimeInterval(-3600),
+            originalText: "Another sample",
+            refinedText: "Another refined sample",
+            mode: .cleanup,
+            duration: 3,
+            wordCount: 30
+        ),
+        TranscriptionRecord(
+            date: Date().addingTimeInterval(-7200),
+            originalText: "Third sample",
+            refinedText: "Third refined sample",
+            mode: .email,
+            duration: 7,
+            wordCount: 75
+        )
+    ]
 }
 
 struct TranscriptionStatistics {

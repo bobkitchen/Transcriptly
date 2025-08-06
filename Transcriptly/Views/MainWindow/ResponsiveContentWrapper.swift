@@ -147,23 +147,4 @@ struct ResponsiveSettingsWrapper: View {
     }
 }
 
-// Environment keys for responsive layout
-private struct AvailableWidthKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 800
-}
-
-private struct SidebarCollapsedKey: EnvironmentKey {
-    static let defaultValue: Bool = false
-}
-
-extension EnvironmentValues {
-    var availableWidth: CGFloat {
-        get { self[AvailableWidthKey.self] }
-        set { self[AvailableWidthKey.self] = newValue }
-    }
-    
-    var sidebarCollapsed: Bool {
-        get { self[SidebarCollapsedKey.self] }
-        set { self[SidebarCollapsedKey.self] = newValue }
-    }
-}
+// Environment keys are now defined in Extensions/EnvironmentKeys.swift

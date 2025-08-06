@@ -108,7 +108,7 @@ struct SimpleAppPicker: View {
         isPresented: .constant(true),
         mode: .email,
         onAppSelected: { app in
-            print("Selected app: \(app.displayName)")
+            print("Selected app: \(app.localizedName)")
         }
     )
 }

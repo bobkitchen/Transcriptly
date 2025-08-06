@@ -34,6 +34,56 @@ struct LiquidGlassBackground: View {
     }
 }
 
+/// Container version with content
+struct LiquidGlassContainer<Content: View>: View {
+    let content: Content
+    let material: Material
+    let cornerRadius: CGFloat
+    let strokeOpacity: CGFloat
+    
+    init(
+        material: Material = .ultraThinMaterial,
+        cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium,
+        strokeOpacity: CGFloat = 0.1,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.material = material
+        self.cornerRadius = cornerRadius
+        self.strokeOpacity = strokeOpacity
+        self.content = content()
+    }
+    
+    var body: some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(material)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.5)
+                    )
+            )
+    }
+}
+
+// MARK: - View Extension for Convenience
+
+extension View {
+    func liquidGlassBackground(
+        material: Material = .ultraThinMaterial,
+        cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium,
+        strokeOpacity: CGFloat = 0.1
+    ) -> some View {
+        self.background(
+            LiquidGlassBackground(
+                material: material,
+                cornerRadius: cornerRadius,
+                strokeOpacity: strokeOpacity
+            )
+        )
+    }
+}
+
 // MARK: - Preset Material Backgrounds
 
 struct LiquidGlassCard: View {
@@ -75,21 +125,6 @@ struct LiquidGlassHeader: View {
 // MARK: - View Extension
 
 extension View {
-    /// Apply liquid glass background with customizable material
-    func liquidGlassBackground(
-        material: Material = .ultraThinMaterial,
-        cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium,
-        strokeOpacity: CGFloat = 0.1
-    ) -> some View {
-        self.background(
-            LiquidGlassBackground(
-                material: material,
-                cornerRadius: cornerRadius,
-                strokeOpacity: strokeOpacity
-            )
-        )
-    }
-    
     /// Apply standard card background with liquid glass
     func liquidGlassCard(cornerRadius: CGFloat = DesignSystem.cornerRadiusMedium) -> some View {
         self.background(LiquidGlassCard(cornerRadius: cornerRadius))

@@ -105,7 +105,7 @@ struct AppPickerView: View {
             filteredApps = availableApps
         } else {
             filteredApps = availableApps.filter { app in
-                app.displayName.localizedCaseInsensitiveContains(searchText) ||
+                app.localizedName.localizedCaseInsensitiveContains(searchText) ||
                 app.bundleIdentifier.localizedCaseInsensitiveContains(searchText)
             }
         }
@@ -189,7 +189,7 @@ struct AppRowView: View {
                 // App info
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
-                        Text(app.displayName)
+                        Text(app.localizedName)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.primary)
                         
@@ -249,7 +249,7 @@ struct AppRowView: View {
         isPresented: .constant(true),
         mode: .email,
         onAppSelected: { app in
-            print("Selected: \(app.displayName)")
+            print("Selected: \(app.localizedName)")
         }
     )
 }

@@ -31,12 +31,30 @@ struct DesignSystem {
     static let spacingSmall: CGFloat = 12      // Increased from 8
     static let spacingXSmall: CGFloat = 8      // Increased from 4
     
+    // Nested spacing structure for new code
+    struct spacing {
+        static let xl: CGFloat = 24
+        static let lg: CGFloat = 20
+        static let md: CGFloat = 16
+        static let sm: CGFloat = 12
+        static let xs: CGFloat = 8
+    }
+    
     // Enhanced Corner Radius System
     static let cornerRadiusXLarge: CGFloat = 16  // For hero cards
     static let cornerRadiusLarge: CGFloat = 12   // For main cards
     static let cornerRadiusMedium: CGFloat = 10  // For sections
     static let cornerRadiusSmall: CGFloat = 8    // For buttons
     static let cornerRadiusXSmall: CGFloat = 6   // For badges
+    
+    // Nested cornerRadius structure for new code
+    struct cornerRadius {
+        static let xl: CGFloat = 16
+        static let large: CGFloat = 12
+        static let medium: CGFloat = 10
+        static let small: CGFloat = 8
+        static let xs: CGFloat = 6
+    }
     
     // Refined Shadow System
     static let shadowFloating = Shadow(color: .black.opacity(0.12), radius: 16, y: 8)
