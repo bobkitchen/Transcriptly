@@ -32,9 +32,9 @@ struct RefinementModeView: View {
                 )
                 
                 RefinementModeButton(
-                    mode: .professional,
+                    mode: .messaging,
                     selectedMode: $selectedMode,
-                    title: "Professional"
+                    title: "Messaging Mode"
                 )
                 
                 RefinementModeButton(
@@ -70,13 +70,6 @@ struct RefinementModeButton: View {
         .buttonStyle(.plain)
         .contentShape(Rectangle())
     }
-}
-
-enum RefinementMode: CaseIterable {
-    case email
-    case cleanup
-    case professional
-    case raw
 }
 
 #Preview {
