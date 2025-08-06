@@ -177,7 +177,7 @@ struct ModeStatistics: Sendable {
     let lastEditedDisplay: String?
     let assignedApps: [AppInfo]
     
-    nonisolated(unsafe) static let sampleData: [RefinementMode: ModeStatistics] = [
+    static let sampleData: [RefinementMode: ModeStatistics] = [
         .cleanup: ModeStatistics(
             usageCount: 127,
             lastEditedDisplay: "2 days ago",

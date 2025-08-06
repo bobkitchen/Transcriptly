@@ -18,12 +18,12 @@ struct FullWidthContentView: View {
         switch selectedSection {
         case .home:
             HomeView(viewModel: viewModel, selectedSection: $selectedSection, onFloat: onFloat)
-        case .dictation:
+        case .transcription:
             TranscriptionView(viewModel: viewModel, onFloat: onFloat)
-        case .fileTranscription:
+        case .dictation:
             FileTranscriptionView()
-        case .readAloud:
-            ReadAloudView()
+        case .aiProviders:
+            AIProvidersView()
         case .learning:
             LearningView()
         case .settings:

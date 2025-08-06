@@ -63,6 +63,10 @@ struct TranscriptionStatistics {
     let totalTime: TimeInterval
     let favoriteMode: RefinementMode
     let averageWordsPerMinute: Int
+    
+    var totalCount: Int {
+        totalTranscriptions
+    }
 }
 
 class UserStats: ObservableObject {
@@ -86,6 +90,7 @@ class TranscriptionHistoryService: ObservableObject {
     static let shared = TranscriptionHistoryService()
     
     @Published var history: [TranscriptionRecord] = []
+    @Published var transcriptions: [TranscriptionRecord] = []
     @Published var statistics: TranscriptionStatistics?
     @Published var userStats: UserStats
     
@@ -129,8 +134,13 @@ class TranscriptionHistoryService: ObservableObject {
     
     func clearHistory() {
         history.removeAll()
+        transcriptions.removeAll()
         saveHistory()
         updateStatistics()
+    }
+    
+    func getTranscriptions() {
+        transcriptions = history
     }
     
     func deleteRecord(_ record: TranscriptionRecord) {
@@ -143,6 +153,7 @@ class TranscriptionHistoryService: ObservableObject {
         if let data = userDefaults.data(forKey: historyKey),
            let decoded = try? JSONDecoder().decode([TranscriptionRecord].self, from: data) {
             history = decoded
+            transcriptions = decoded
         }
     }
     

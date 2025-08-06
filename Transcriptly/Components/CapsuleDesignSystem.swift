@@ -20,4 +20,5 @@ struct CapsuleDesignSystem {
     static let waveformHeight: CGFloat = 40
     static let minimalSize = CGSize(width: 280, height: 140)
     static let springAnimation = Animation.spring(response: 0.4, dampingFraction: 0.8)
+    static let expandDuration: TimeInterval = 0.3
 }
