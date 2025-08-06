@@ -7,8 +7,9 @@
 
 import Foundation
 import Combine
-import Supabase
-import PostgREST
+// Temporarily disabled - Supabase package needs to be added via Swift Package Manager
+// import Supabase
+// import PostgREST
 import SwiftUI
 
 @MainActor

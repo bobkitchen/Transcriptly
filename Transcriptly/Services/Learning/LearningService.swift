@@ -1,6 +1,7 @@
 import Foundation
 import Combine
-import Auth
+// Temporarily disabled - Auth is part of Supabase package
+// import Auth
 
 @MainActor
 class LearningService: ObservableObject {
