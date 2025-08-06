@@ -216,7 +216,6 @@ struct AIProvidersView: View {
                 .padding(.bottom, 20)
             }
         }
-        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .sheet(isPresented: $showingConfigSheet) {
             if let providerType = configureProviderType {

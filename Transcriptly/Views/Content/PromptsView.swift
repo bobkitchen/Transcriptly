@@ -64,7 +64,7 @@ struct PromptsView: View {
                         .onChange(of: selectedMode) { _, newMode in
                             // Load prompt for new mode
                             if let prompt = viewModel.refinementPrompts[newMode] {
-                                editingPrompt = prompt.userPrompt
+                                editingPrompt = prompt.userPrompt ?? ""
                             }
                             isEditing = false
                         }
@@ -86,7 +86,7 @@ struct PromptsView: View {
                                 Button("Reset to Default") {
                                     viewModel.resetRefinementPrompt(for: selectedMode)
                                     if let prompt = viewModel.refinementPrompts[selectedMode] {
-                                        editingPrompt = prompt.userPrompt
+                                        editingPrompt = prompt.userPrompt ?? ""
                                     }
                                 }
                                 .buttonStyle(SecondaryButtonStyle())
@@ -128,12 +128,11 @@ struct PromptsView: View {
                 .padding(.bottom, 20)
             }
         }
-        .adjustForFloatingSidebar()
         .background(Color.primaryBackground)
         .onAppear {
             // Initialize with current prompt
             if let prompt = viewModel.refinementPrompts[selectedMode] {
-                editingPrompt = prompt.userPrompt
+                editingPrompt = prompt.userPrompt ?? "" ?? ""
             }
         }
     }
