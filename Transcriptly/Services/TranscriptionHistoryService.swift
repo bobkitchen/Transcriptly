@@ -63,9 +63,20 @@ struct TranscriptionStatistics {
     let totalTime: TimeInterval
     let favoriteMode: RefinementMode
     let averageWordsPerMinute: Int
+    let todayCount: Int
     
     var totalCount: Int {
         totalTranscriptions
+    }
+    
+    init(totalTranscriptions: Int = 0, totalWords: Int = 0, totalTime: TimeInterval = 0, 
+         favoriteMode: RefinementMode = .raw, averageWordsPerMinute: Int = 0, todayCount: Int = 0) {
+        self.totalTranscriptions = totalTranscriptions
+        self.totalWords = totalWords
+        self.totalTime = totalTime
+        self.favoriteMode = favoriteMode
+        self.averageWordsPerMinute = averageWordsPerMinute
+        self.todayCount = todayCount
     }
 }
 
@@ -187,12 +198,17 @@ class TranscriptionHistoryService: ObservableObject {
         // Calculate average WPM (assuming 40 WPM typing speed)
         let avgWPM = totalTime > 0 ? Int(Double(totalWords) / (totalTime / 60)) : 0
         
+        // Calculate today count
+        let today = Calendar.current.startOfDay(for: Date())
+        let todayTranscriptions = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
+        
         statistics = TranscriptionStatistics(
             totalTranscriptions: history.count,
             totalWords: totalWords,
             totalTime: totalTime,
             favoriteMode: favoriteMode,
-            averageWordsPerMinute: avgWPM
+            averageWordsPerMinute: avgWPM,
+            todayCount: todayTranscriptions
         )
         
         // Calculate user stats

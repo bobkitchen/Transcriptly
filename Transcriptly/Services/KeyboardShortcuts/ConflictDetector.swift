@@ -24,6 +24,10 @@ struct ConflictInfo: Identifiable {
 class ConflictDetector: ObservableObject {
     @Published var conflicts: [ConflictInfo] = []
     
+    func detectConflicts(_ shortcut: String) -> [ConflictInfo] {
+        return Self.checkForConflicts(shortcut)
+    }
+    
     static func checkForConflicts(_ shortcut: String) -> [ConflictInfo] {
         // Placeholder implementation
         // In a real implementation, this would check system shortcuts and other apps
