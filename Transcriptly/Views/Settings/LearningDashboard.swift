@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Charts
+// import Charts - Not available in current macOS version
 
 struct LearningDashboard: View {
     @ObservedObject private var learningService = LearningService.shared
@@ -162,6 +162,9 @@ struct LearningDashboard: View {
             if effectivenessData.isEmpty {
                 EmptyChartView()
             } else {
+                // Chart functionality temporarily disabled - Charts framework not available
+                EmptyChartView()
+                /*
                 Chart(effectivenessData) { dataPoint in
                     LineMark(
                         x: .value("Date", dataPoint.date),
@@ -194,6 +197,7 @@ struct LearningDashboard: View {
                     material: .ultraThinMaterial,
                     cornerRadius: DesignSystem.cornerRadiusMedium
                 )
+                */
             }
         }
     }
