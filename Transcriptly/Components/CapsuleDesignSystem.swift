@@ -16,4 +16,5 @@ struct CapsuleDesignSystem {
     static let buttonSize: CGFloat = 60
     static let modeIndicatorHeight: CGFloat = 24
     static let waveformHeight: CGFloat = 40
+    static let minimalSize = CGSize(width: 280, height: 140)
 }

@@ -218,15 +218,9 @@ extension String {
     /// Estimates optimal chunk size based on text-to-speech provider
     /// - Parameter provider: The voice provider being used
     /// - Returns: Recommended chunk size in characters
-    static func recommendedChunkSize(for provider: VoiceProviderType) -> Int {
-        switch provider {
-        case .apple:
-            return 2000 // Apple's AVSpeechSynthesizer handles medium chunks well
-        case .googleCloud:
-            return 5000 // Google Cloud TTS has higher limits
-        case .elevenLabs:
-            return 2500 // ElevenLabs optimal for quality
-        }
+    static func recommendedChunkSize() -> Int {
+        // Default chunk size for Apple's speech synthesis
+        return 2000 // Apple's AVSpeechSynthesizer handles medium chunks well
     }
     
     /// Cleans text for better text-to-speech pronunciation

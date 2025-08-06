@@ -172,12 +172,12 @@ struct CompactButtonStyle: SwiftUI.ButtonStyle {
 
 // MARK: - Supporting Types
 
-struct ModeStatistics {
+struct ModeStatistics: Sendable {
     let usageCount: Int
     let lastEditedDisplay: String?
     let assignedApps: [AppInfo]
     
-    static let sampleData: [RefinementMode: ModeStatistics] = [
+    nonisolated(unsafe) static let sampleData: [RefinementMode: ModeStatistics] = [
         .cleanup: ModeStatistics(
             usageCount: 127,
             lastEditedDisplay: "2 days ago",
@@ -187,8 +187,8 @@ struct ModeStatistics {
             usageCount: 43,
             lastEditedDisplay: "1 week ago",
             assignedApps: [
-                AppInfo(bundleIdentifier: "com.apple.mail", localizedName: "Mail", executablePath: nil),
-                AppInfo(bundleIdentifier: "com.microsoft.outlook", localizedName: "Outlook", executablePath: nil)
+                AppInfo(bundleIdentifier: "com.apple.mail", localizedName: "Mail", icon: nil),
+                AppInfo(bundleIdentifier: "com.microsoft.outlook", localizedName: "Outlook", icon: nil)
             ]
         ),
         .messaging: ModeStatistics(
