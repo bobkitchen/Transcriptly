@@ -84,7 +84,7 @@ class FileTranscriptionService: ObservableObject {
     static let supportedVideoTypes: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "webm"]
     
     // OpenAI configuration
-    private let openAIKey: String? = APIKeyManager.shared.getAPIKey(for: .openai)
+    private lazy var openAIKey: String? = try? APIKeyManager.shared.getAPIKey(for: .openai)
     private let maxWhisperFileSize = 25 * 1024 * 1024 // 25MB limit for Whisper API
     
     private var cancellationToken: AnyCancellable?
