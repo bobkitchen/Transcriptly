@@ -8,10 +8,10 @@
 import Foundation
 import AppKit
 
-struct AppInfo: Identifiable, Hashable {
+struct AppInfo: Identifiable, Hashable, Sendable {
     let bundleIdentifier: String
     let localizedName: String
-    let icon: NSImage?
+    nonisolated(unsafe) let icon: NSImage?
     
     var id: String { bundleIdentifier }
     

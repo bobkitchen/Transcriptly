@@ -195,10 +195,10 @@ struct ModeStatistics: Sendable {
             usageCount: 89,
             lastEditedDisplay: "3 days ago",
             assignedApps: [
-                AppInfo(bundleIdentifier: "com.apple.messages", localizedName: "Messages", executablePath: nil),
-                AppInfo(bundleIdentifier: "com.tinyspeck.slackmacgap", localizedName: "Slack", executablePath: nil),
-                AppInfo(bundleIdentifier: "com.hnc.Discord", localizedName: "Discord", executablePath: nil),
-                AppInfo(bundleIdentifier: "com.microsoft.teams2", localizedName: "Teams", executablePath: nil)
+                AppInfo(bundleIdentifier: "com.apple.messages", localizedName: "Messages", icon: nil),
+                AppInfo(bundleIdentifier: "com.tinyspeck.slackmacgap", localizedName: "Slack", icon: nil),
+                AppInfo(bundleIdentifier: "com.hnc.Discord", localizedName: "Discord", icon: nil),
+                AppInfo(bundleIdentifier: "com.microsoft.teams2", localizedName: "Teams", icon: nil)
             ]
         )
     ]
