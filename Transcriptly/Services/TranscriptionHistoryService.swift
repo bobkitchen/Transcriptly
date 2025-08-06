@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 struct TranscriptionRecord: Identifiable, Codable {
     let id = UUID()
@@ -32,12 +33,20 @@ struct TranscriptionStatistics {
     let averageWordsPerMinute: Int
 }
 
-struct UserStats {
-    let totalWords: Int
-    let timeSaved: TimeInterval
-    let currentStreak: Int
-    let longestStreak: Int
-    let todayCount: Int
+class UserStats: ObservableObject {
+    @Published var totalWords: Int
+    @Published var timeSaved: TimeInterval
+    @Published var currentStreak: Int
+    @Published var longestStreak: Int
+    @Published var todayCount: Int
+    
+    init(totalWords: Int = 0, timeSaved: TimeInterval = 0, currentStreak: Int = 0, longestStreak: Int = 0, todayCount: Int = 0) {
+        self.totalWords = totalWords
+        self.timeSaved = timeSaved
+        self.currentStreak = currentStreak
+        self.longestStreak = longestStreak
+        self.todayCount = todayCount
+    }
 }
 
 @MainActor

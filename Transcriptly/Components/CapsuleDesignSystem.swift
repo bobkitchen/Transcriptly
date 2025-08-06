@@ -2,21 +2,18 @@
 //  CapsuleDesignSystem.swift
 //  Transcriptly
 //
-//  Created by Claude Code on 6/26/25.
+//  Created by Claude Code on 8/6/25.
 //
 
 import Foundation
-import SwiftUI
+import CoreGraphics
 
 struct CapsuleDesignSystem {
+    static let windowWidth: CGFloat = 320
+    static let windowHeight: CGFloat = 180
     static let cornerRadius: CGFloat = 20
-    static let padding: CGFloat = 12
-    static let iconSize: CGFloat = 24
-    static let animationDuration: Double = 0.3
-    
-    struct Colors {
-        static let background = Color.black.opacity(0.8)
-        static let recordingBackground = Color.red.opacity(0.9)
-        static let processingBackground = Color.orange.opacity(0.9)
-    }
+    static let padding: CGFloat = 20
+    static let buttonSize: CGFloat = 60
+    static let modeIndicatorHeight: CGFloat = 24
+    static let waveformHeight: CGFloat = 40
 }
