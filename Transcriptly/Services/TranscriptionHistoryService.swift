@@ -15,8 +15,10 @@ struct TranscriptionRecord: Identifiable, Codable {
     let originalText: String
     let refinedText: String
     let mode: RefinementMode
-    let duration: TimeInterval
+    let duration: TimeInterval?
     let wordCount: Int
+    let learningType: LearningType?
+    let deviceId: String
     
     var timestamp: String {
         let formatter = DateFormatter()
@@ -36,7 +38,9 @@ struct TranscriptionRecord: Identifiable, Codable {
             refinedText: "Refined sample text",
             mode: .raw,
             duration: 5,
-            wordCount: 50
+            wordCount: 50,
+            learningType: nil,
+            deviceId: "Mac"
         ),
         TranscriptionRecord(
             date: Date().addingTimeInterval(-3600),
@@ -44,7 +48,9 @@ struct TranscriptionRecord: Identifiable, Codable {
             refinedText: "Another refined sample",
             mode: .cleanup,
             duration: 3,
-            wordCount: 30
+            wordCount: 30,
+            learningType: .editReview,
+            deviceId: "Mac"
         ),
         TranscriptionRecord(
             date: Date().addingTimeInterval(-7200),
@@ -52,7 +58,9 @@ struct TranscriptionRecord: Identifiable, Codable {
             refinedText: "Third refined sample",
             mode: .email,
             duration: 7,
-            wordCount: 75
+            wordCount: 75,
+            learningType: .abTesting,
+            deviceId: "Mac"
         )
     ]
 }
@@ -149,13 +157,16 @@ class TranscriptionHistoryService: ObservableObject {
     
     func addTranscription(original: String, refined: String, mode: RefinementMode, duration: TimeInterval) {
         let wordCount = refined.split(separator: " ").count
+        let deviceId = Host.current().localizedName ?? "Mac"
         let record = TranscriptionRecord(
             date: Date(),
             originalText: original,
             refinedText: refined,
             mode: mode,
             duration: duration,
-            wordCount: wordCount
+            wordCount: wordCount,
+            learningType: nil,
+            deviceId: deviceId
         )
         
         history.insert(record, at: 0)
