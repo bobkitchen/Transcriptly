@@ -15,6 +15,10 @@ enum SidebarSection: String, CaseIterable {
     case learning = "Learning"
     case settings = "Settings"
     
+    var title: String {
+        self.rawValue
+    }
+    
     var icon: String {
         switch self {
         case .home: return "house"

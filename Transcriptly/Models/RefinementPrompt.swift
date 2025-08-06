@@ -10,9 +10,12 @@ import Foundation
 struct RefinementPrompt: Codable, Identifiable {
     let id = UUID()
     let mode: RefinementMode
-    var prompt: String
+    var userPrompt: String?
+    var defaultPrompt: String {
+        Self.defaultPrompts[mode] ?? ""
+    }
     
-    static let defaults: [RefinementMode: String] = [
+    static let defaultPrompts: [RefinementMode: String] = [
         .raw: "",
         .cleanup: "Clean up this transcription by removing filler words, fixing grammar, and improving clarity while maintaining the original meaning.",
         .email: "Transform this transcription into a professional email format with proper greeting, body, and closing.",
@@ -20,6 +23,6 @@ struct RefinementPrompt: Codable, Identifiable {
     ]
     
     static func getDefault(for mode: RefinementMode) -> String {
-        return defaults[mode] ?? ""
+        return defaultPrompts[mode] ?? ""
     }
 }

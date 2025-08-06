@@ -8,6 +8,8 @@
 import Foundation
 import CoreGraphics
 
+import SwiftUI
+
 struct CapsuleDesignSystem {
     static let windowWidth: CGFloat = 320
     static let windowHeight: CGFloat = 180
@@ -17,4 +19,5 @@ struct CapsuleDesignSystem {
     static let modeIndicatorHeight: CGFloat = 24
     static let waveformHeight: CGFloat = 40
     static let minimalSize = CGSize(width: 280, height: 140)
+    static let springAnimation = Animation.spring(response: 0.4, dampingFraction: 0.8)
 }
