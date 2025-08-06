@@ -66,8 +66,8 @@ struct HistoryView: View {
                 }
                 
                 // Statistics
-                if !historyService.transcriptions.isEmpty {
-                    HistoryStatsView(statistics: historyService.statistics)
+                if !historyService.transcriptions.isEmpty, let statistics = historyService.statistics {
+                    HistoryStatsView(statistics: statistics)
                 }
             }
             .padding(.horizontal)
@@ -132,10 +132,21 @@ struct HistoryView: View {
     }
     
     private var filteredTranscriptions: [TranscriptionRecord] {
-        return historyService.getTranscriptions(
-            mode: selectedMode,
-            searchText: searchText.isEmpty ? nil : searchText
-        )
+        historyService.getTranscriptions()
+        var filtered = historyService.transcriptions
+        
+        if selectedMode != .all {
+            filtered = filtered.filter { $0.mode == selectedMode }
+        }
+        
+        if !searchText.isEmpty {
+            filtered = filtered.filter { 
+                $0.originalText.localizedCaseInsensitiveContains(searchText) ||
+                $0.refinedText.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        return filtered
     }
 }
 

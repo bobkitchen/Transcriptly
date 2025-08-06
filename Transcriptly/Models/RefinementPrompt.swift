@@ -25,4 +25,12 @@ struct RefinementPrompt: Codable, Identifiable {
     static func getDefault(for mode: RefinementMode) -> String {
         return defaultPrompts[mode] ?? ""
     }
+    
+    static func createDefaultPrompts() -> [RefinementMode: RefinementPrompt] {
+        var prompts: [RefinementMode: RefinementPrompt] = [:]
+        for mode in RefinementMode.allCases {
+            prompts[mode] = RefinementPrompt(mode: mode, userPrompt: nil)
+        }
+        return prompts
+    }
 }

@@ -54,7 +54,7 @@ class RefinementService: ObservableObject {
         if let savedPrompts = UserDefaults.standard.loadPrompts() {
             self.prompts = savedPrompts
         } else {
-            self.prompts = RefinementPrompt.defaultPrompts()
+            self.prompts = RefinementPrompt.createDefaultPrompts()
         }
         
         // Note: FoundationModels not available in current SDK

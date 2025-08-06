@@ -467,11 +467,9 @@ struct PatternRowView: View {
                             .font(.caption)
                             .foregroundColor(pattern.confidence > 0.8 ? .green : .orange)
                         
-                        if let mode = pattern.refinementMode {
-                            Label(mode.rawValue, systemImage: "text.bubble")
-                                .font(.caption)
-                                .foregroundColor(.tertiaryText)
-                        }
+                        Label(pattern.refinementMode.rawValue, systemImage: "text.bubble")
+                            .font(.caption)
+                            .foregroundColor(.tertiaryText)
                     }
                 }
                 
@@ -583,13 +581,11 @@ struct PatternDetailView: View {
                         icon: "chart.bar.fill"
                     )
                     
-                    if let mode = pattern.refinementMode {
-                        LearningStatCard(
-                            label: "Mode",
-                            value: mode.rawValue,
-                            icon: "text.bubble"
-                        )
-                    }
+                    LearningStatCard(
+                        label: "Mode",
+                        value: pattern.refinementMode.rawValue,
+                        icon: "text.bubble"
+                    )
                 }
                 
                 // Effectiveness Score

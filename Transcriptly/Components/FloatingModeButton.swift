@@ -16,7 +16,7 @@ struct FloatingModeButton: View {
     
     var body: some View {
         Button(action: {
-            HapticFeedback.impact()
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
             action()
         }) {
             HStack(spacing: 6) {
@@ -69,7 +69,7 @@ struct FloatingModeIconButton: View {
     
     var body: some View {
         Button(action: {
-            HapticFeedback.impact()
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
             action()
         }) {
             Image(systemName: "pip.enter")
@@ -93,7 +93,7 @@ struct FloatingModeWindowButton: View {
     
     var body: some View {
         Button(action: {
-            HapticFeedback.impact()
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
             action()
         }) {
             HStack(spacing: 6) {

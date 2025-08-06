@@ -66,7 +66,7 @@ struct TranscriptionDetailView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primaryText)
                 
-                Text(transcription.title)
+                Text(transcription.mode.rawValue)
                     .font(.system(size: 14))
                     .foregroundColor(.secondaryText)
                     .lineLimit(1)
@@ -95,14 +95,14 @@ struct TranscriptionDetailView: View {
                 GridItem(.flexible(), alignment: .leading)
             ], spacing: 12) {
                 MetadataItem(label: "Mode", value: transcription.mode.displayName, icon: transcription.mode.icon, color: transcription.mode.accentColor)
-                MetadataItem(label: "Created", value: formatFullDate(transcription.timestamp))
+                MetadataItem(label: "Created", value: formatFullDate(transcription.date))
                 MetadataItem(label: "Word Count", value: "\(transcription.wordCount) words")
                 
-                if let duration = transcription.durationDisplay {
-                    MetadataItem(label: "Duration", value: duration)
+                if transcription.duration != nil {
+                    MetadataItem(label: "Duration", value: formatDuration(transcription.duration ?? 0))
                 }
                 
-                if transcription.wasLearningTriggered {
+                if transcription.learningType != nil {
                     MetadataItem(
                         label: "Learning", 
                         value: transcription.learningType?.displayName ?? "Yes",
@@ -111,7 +111,7 @@ struct TranscriptionDetailView: View {
                     )
                 }
                 
-                MetadataItem(label: "Device", value: transcription.deviceIdentifier)
+                MetadataItem(label: "Device", value: transcription.deviceId)
             }
         }
         .padding(16)
@@ -200,7 +200,7 @@ struct TranscriptionDetailView: View {
         case .refined:
             return transcription.refinedText
         case .final:
-            return transcription.finalText
+            return transcription.refinedText
         }
     }
     
@@ -213,22 +213,28 @@ struct TranscriptionDetailView: View {
         return formatter.string(from: date)
     }
     
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
     private func copyCurrentText() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(currentTextContent, forType: .string)
         
         // Show feedback (you could add a toast notification here)
-        HapticFeedback.selection()
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
     }
     
     private func copyAllVersions() {
         let allVersions = """
         TRANSCRIPTION DETAILS
         ==================
-        Created: \(formatFullDate(transcription.timestamp))
+        Created: \(formatFullDate(transcription.date))
         Mode: \(transcription.mode.displayName)
         Word Count: \(transcription.wordCount)
-        Duration: \(transcription.durationDisplay ?? "Unknown")
+        Duration: \(formatDuration(transcription.duration ?? 0))
         
         ORIGINAL (Raw Speech-to-Text):
         \(transcription.originalText)
@@ -237,20 +243,20 @@ struct TranscriptionDetailView: View {
         \(transcription.refinedText)
         
         FINAL (User Version):
-        \(transcription.finalText)
+        \(transcription.refinedText)
         """
         
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(allVersions, forType: .string)
         
-        HapticFeedback.selection()
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
     }
     
     private func exportAsText() {
         let savePanel = NSSavePanel()
         savePanel.title = "Export Transcription"
         savePanel.message = "Choose where to save the transcription file"
-        savePanel.nameFieldStringValue = "transcription-\(transcription.timestamp.timeIntervalSince1970).txt"
+        savePanel.nameFieldStringValue = "transcription-\(transcription.date.timeIntervalSince1970).txt"
         savePanel.allowedContentTypes = [.plainText]
         
         savePanel.begin { response in
@@ -259,14 +265,14 @@ struct TranscriptionDetailView: View {
                     let content = """
                     TRANSCRIPTION EXPORT
                     ===================
-                    Title: \(transcription.title)
-                    Created: \(formatFullDate(transcription.timestamp))
+                    Title: \(transcription.mode.rawValue)
+                    Created: \(formatFullDate(transcription.date))
                     Mode: \(transcription.mode.displayName)
                     Word Count: \(transcription.wordCount)
-                    Duration: \(transcription.durationDisplay ?? "Unknown")
+                    Duration: \(formatDuration(transcription.duration ?? 0))
                     
                     FINAL TEXT:
-                    \(transcription.finalText)
+                    \(transcription.refinedText)
                     
                     AI REFINED TEXT:
                     \(transcription.refinedText)

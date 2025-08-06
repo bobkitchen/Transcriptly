@@ -185,19 +185,19 @@ struct SyncStatusView: View {
             }
             
             VStack(spacing: DesignSystem.spacingSmall) {
-                ForEach(offlineQueue.pendingOperations.prefix(5)) { operation in
+                ForEach(Array(offlineQueue.pendingOperations.prefix(5))) { operation in
                     HStack {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 12))
                             .foregroundColor(.orange)
                         
-                        Text(operation.displayName)
+                        Text(operation.type.rawValue)
                             .font(.caption)
                             .foregroundColor(.primaryText)
                         
                         Spacer()
                         
-                        Text(operation.statusText)
+                        Text("Pending")
                             .font(.caption2)
                             .foregroundColor(.secondaryText)
                         

@@ -53,8 +53,8 @@ class TranscriptionDetailWindowController: NSWindowController {
     private func updateWindowTitle() {
         guard let window = window else { return }
         
-        let title = transcription.title
-        let timeAgo = transcription.timeAgo
+        let title = transcription.mode.rawValue
+        let timeAgo = formatTimeAgo(transcription.date)
         window.title = "Transcription: \(title) • \(timeAgo)"
     }
     
@@ -64,6 +64,24 @@ class TranscriptionDetailWindowController: NSWindowController {
         // Additional window configuration if needed
         window?.titlebarAppearsTransparent = false
         window?.titleVisibility = .visible
+    }
+    
+    private func formatTimeAgo(_ date: Date) -> String {
+        let now = Date()
+        let interval = now.timeIntervalSince(date)
+        
+        if interval < 60 {
+            return "just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "\(minutes) min\(minutes == 1 ? "" : "s") ago"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+        } else {
+            let days = Int(interval / 86400)
+            return "\(days) day\(days == 1 ? "" : "s") ago"
+        }
     }
 }
 

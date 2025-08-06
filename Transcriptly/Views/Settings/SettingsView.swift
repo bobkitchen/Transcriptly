@@ -45,7 +45,7 @@ struct SettingsView: View {
                 
                 VStack(alignment: .leading) {
                     Text("Settings")
-                        .font(DesignSystem.typography.titleLarge)
+                        .font(DesignSystem.Typography.titleLarge)
                     Text("Configure Transcriptly to your preferences")
                         .font(.body)
                         .foregroundColor(.secondary)
@@ -67,7 +67,7 @@ struct SettingsView: View {
                 
                 HStack {
                     Text("Default refinement mode:")
-                    Picker("", selection: $viewModel.refinementMode) {
+                    Picker("", selection: $viewModel.currentRefinementMode) {
                         ForEach(RefinementMode.allCases, id: \.self) { mode in
                             Text(mode.rawValue).tag(mode)
                         }

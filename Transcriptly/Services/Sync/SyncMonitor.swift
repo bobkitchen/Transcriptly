@@ -175,17 +175,9 @@ class SyncMonitor: ObservableObject {
     }
     
     private func testConnection() async -> Bool {
-        do {
-            // Simple connection test using a lightweight query
-            _ = try await supabase.client.from("learned_patterns")
-                .select("id")
-                .limit(1)
-                .execute()
-            return true
-        } catch {
-            print("Connection test failed: \(error)")
-            return false
-        }
+        // Placeholder - Supabase client not available
+        // Will test connection when Supabase package is added
+        return false
     }
     
     private func performBackgroundSync() async {

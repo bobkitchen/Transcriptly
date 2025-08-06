@@ -13,6 +13,7 @@ class OfflineQueue: ObservableObject {
     static let shared = OfflineQueue()
     
     @Published var pendingOperations: [QueuedOperation] = []
+    @Published var isProcessingQueue: Bool = false
     
     private init() {
         loadPendingOperations()
@@ -42,12 +43,14 @@ class OfflineQueue: ObservableObject {
     }
     
     func processQueue() async {
+        isProcessingQueue = true
         // Process pending operations when online
         for operation in pendingOperations {
             // Process each operation
             print("Processing offline operation: \(operation.type)")
         }
         pendingOperations.removeAll()
+        isProcessingQueue = false
         savePendingOperations()
     }
     

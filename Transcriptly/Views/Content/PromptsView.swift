@@ -40,7 +40,7 @@ struct PromptsView: View {
                             } else {
                                 // Start editing
                                 if let currentPrompt = viewModel.refinementPrompts[selectedMode] {
-                                    editingPrompt = currentPrompt.userPrompt
+                                    editingPrompt = currentPrompt.userPrompt ?? ""
                                 }
                             }
                             isEditing.toggle()
@@ -132,7 +132,7 @@ struct PromptsView: View {
         .onAppear {
             // Initialize with current prompt
             if let prompt = viewModel.refinementPrompts[selectedMode] {
-                editingPrompt = prompt.userPrompt ?? "" ?? ""
+                editingPrompt = prompt.userPrompt ?? ""
             }
         }
     }

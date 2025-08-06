@@ -64,19 +64,21 @@ struct TranscriptionStatistics {
     let favoriteMode: RefinementMode
     let averageWordsPerMinute: Int
     let todayCount: Int
+    let weekCount: Int
     
     var totalCount: Int {
         totalTranscriptions
     }
     
     init(totalTranscriptions: Int = 0, totalWords: Int = 0, totalTime: TimeInterval = 0, 
-         favoriteMode: RefinementMode = .raw, averageWordsPerMinute: Int = 0, todayCount: Int = 0) {
+         favoriteMode: RefinementMode = .raw, averageWordsPerMinute: Int = 0, todayCount: Int = 0, weekCount: Int = 0) {
         self.totalTranscriptions = totalTranscriptions
         self.totalWords = totalWords
         self.totalTime = totalTime
         self.favoriteMode = favoriteMode
         self.averageWordsPerMinute = averageWordsPerMinute
         self.todayCount = todayCount
+        self.weekCount = weekCount
     }
 }
 
@@ -86,6 +88,19 @@ class UserStats: ObservableObject {
     @Published var currentStreak: Int
     @Published var longestStreak: Int
     @Published var todayCount: Int
+    @Published var todaySessions: Int = 0
+    @Published var todayMinutesSaved: Int = 0
+    
+    var wordsFormatted: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: totalWords)) ?? "0"
+    }
+    
+    var growthFormatted: String {
+        // Placeholder for growth calculation
+        return "+12% this week"
+    }
     
     init(totalWords: Int = 0, timeSaved: TimeInterval = 0, currentStreak: Int = 0, longestStreak: Int = 0, todayCount: Int = 0) {
         self.totalWords = totalWords
@@ -93,6 +108,17 @@ class UserStats: ObservableObject {
         self.currentStreak = currentStreak
         self.longestStreak = longestStreak
         self.todayCount = todayCount
+        self.todaySessions = todayCount
+        self.todayMinutesSaved = Int(timeSaved / 60)
+    }
+    
+    func loadTodayStats() {
+        // Update today's stats from TranscriptionHistoryService
+        if let historyService = TranscriptionHistoryService.shared as TranscriptionHistoryService? {
+            self.todaySessions = historyService.userStats.todayCount
+            self.todayMinutesSaved = Int(historyService.userStats.timeSaved / 60)
+            self.totalWords = historyService.userStats.totalWords
+        }
     }
 }
 
@@ -202,13 +228,18 @@ class TranscriptionHistoryService: ObservableObject {
         let today = Calendar.current.startOfDay(for: Date())
         let todayTranscriptions = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
         
+        // Calculate week count
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: today) ?? today
+        let weekTranscriptions = history.filter { $0.date >= weekAgo }.count
+        
         statistics = TranscriptionStatistics(
             totalTranscriptions: history.count,
             totalWords: totalWords,
             totalTime: totalTime,
             favoriteMode: favoriteMode,
             averageWordsPerMinute: avgWPM,
-            todayCount: todayTranscriptions
+            todayCount: todayTranscriptions,
+            weekCount: weekTranscriptions
         )
         
         // Calculate user stats
