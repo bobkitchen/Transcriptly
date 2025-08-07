@@ -44,4 +44,9 @@ struct CapsuleDesignSystem {
     static let waveformHeight: CGFloat = 40
     static let minimalSize = CGSize(width: minimalWidth, height: minimalHeight)
     static let expandedSize = CGSize(width: expandedWidth, height: expandedHeight)
+    
+    // Menu bar specific
+    static let menuBarHeight: CGFloat = 22
+    static let topMargin: CGFloat = 10
+    static let centerOffset: CGFloat = 0
 }
