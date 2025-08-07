@@ -37,14 +37,13 @@ struct ResponsiveContentWrapper: View {
                         onFloat: onFloat,
                         availableWidth: geometry.size.width
                     )
-                case .fileTranscription:
-                    ResponsiveFileTranscriptionWrapper(
-                        availableWidth: geometry.size.width
+                case .transcription:
+                    TranscriptionView(
+                        viewModel: viewModel,
+                        onFloat: onFloat
                     )
-                case .readAloud:
-                    ResponsiveReadAloudWrapper(
-                        availableWidth: geometry.size.width
-                    )
+                case .aiProviders:
+                    AIProvidersView()
                 case .learning:
                     ResponsiveLearningWrapper(
                         availableWidth: geometry.size.width
@@ -104,33 +103,12 @@ struct ResponsiveDictationWrapper: View {
     }
 }
 
-// Responsive wrapper for ReadAloudView
-struct ResponsiveReadAloudWrapper: View {
-    let availableWidth: CGFloat
-    
-    var body: some View {
-        ReadAloudView()
-            .environment(\.availableWidth, availableWidth)
-    }
-}
-
 // Responsive wrapper for LearningView
 struct ResponsiveLearningWrapper: View {
     let availableWidth: CGFloat
     
     var body: some View {
         LearningView()
-            .environment(\.availableWidth, availableWidth)
-    }
-}
-
-// Responsive wrapper for FileTranscriptionView
-@available(macOS 26.0, *)
-struct ResponsiveFileTranscriptionWrapper: View {
-    let availableWidth: CGFloat
-    
-    var body: some View {
-        FileTranscriptionView()
             .environment(\.availableWidth, availableWidth)
     }
 }

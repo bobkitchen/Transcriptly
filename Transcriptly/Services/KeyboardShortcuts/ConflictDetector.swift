@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import Combine
+import SwiftUI
 
 struct ConflictInfo: Identifiable {
     let id = UUID()
@@ -18,6 +19,32 @@ struct ConflictInfo: Identifiable {
     enum ConflictType {
         case system
         case application
+    }
+    
+    var severity: ConflictSeverity {
+        switch conflictType {
+        case .system:
+            return .high
+        case .application:
+            return .medium
+        }
+    }
+}
+
+enum ConflictSeverity {
+    case low
+    case medium
+    case high
+    
+    var color: Color {
+        switch self {
+        case .low:
+            return .yellow
+        case .medium:
+            return .orange
+        case .high:
+            return .red
+        }
     }
 }
 

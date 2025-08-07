@@ -93,6 +93,17 @@ enum LearningType: String, Codable {
     case editReview
     case abTesting
     case automatic
+    
+    var displayName: String {
+        switch self {
+        case .editReview:
+            return "Edit Review"
+        case .abTesting:
+            return "A/B Testing"
+        case .automatic:
+            return "Automatic"
+        }
+    }
 }
 
 struct LearnedPattern: Identifiable, Codable {

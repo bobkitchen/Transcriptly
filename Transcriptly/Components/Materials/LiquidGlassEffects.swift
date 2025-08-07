@@ -189,7 +189,7 @@ struct LiquidGlassButtonStyle: SwiftUI.ButtonStyle {
                 }
                 .onChange(of: configuration.isPressed) { _, pressed in
                     if pressed {
-                        HapticFeedback.impact()
+                        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
                     }
                 }
         }

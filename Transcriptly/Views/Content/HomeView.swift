@@ -397,7 +397,7 @@ struct HomeView: View {
     private func processAudioVideoFile(at url: URL) async {
         // Basic audio/video file processing
         do {
-            let fileService = FileTranscriptionService()
+            let fileService = FileTranscriptionService.shared
             let text = await fileService.transcribeFile(at: url)
             
             await MainActor.run {
