@@ -556,9 +556,10 @@ final class AppViewModel: ObservableObject {
             
             // Save transcription to history
             await MainActor.run {
-                historyService.addTranscription(
+                historyService.createAndSaveTranscription(
                     original: currentOriginalTranscription.isEmpty ? text : currentOriginalTranscription,
                     refined: text,
+                    final: text,
                     mode: refinementService.currentMode,
                     duration: duration ?? 0
                 )
