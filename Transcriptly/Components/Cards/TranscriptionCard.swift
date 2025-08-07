@@ -19,7 +19,7 @@ struct TranscriptionCard: View {
             VStack(alignment: .leading, spacing: DesignSystem.spacingTiny) {
                 // Title and metadata
                 HStack {
-                    Text(transcription.title)
+                    Text(transcription.text.prefix(50) + (transcription.text.count > 50 ? "..." : ""))
                         .font(DesignSystem.Typography.body)
                         .fontWeight(.medium)
                         .foregroundColor(.primaryText)
@@ -45,7 +45,7 @@ struct TranscriptionCard: View {
                 
                 // Metadata row
                 HStack(spacing: DesignSystem.spacingSmall) {
-                    Text(transcription.timeAgo)
+                    Text(transcription.timestamp)
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(.secondaryText)
                     
@@ -56,11 +56,11 @@ struct TranscriptionCard: View {
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(.secondaryText)
                     
-                    if let duration = transcription.durationDisplay {
+                    if let duration = transcription.duration {
                         Text("•")
                             .foregroundColor(.tertiaryText)
                         
-                        Text(duration)
+                        Text("\(Int(duration))s")
                             .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(.secondaryText)
                     }
@@ -141,12 +141,12 @@ struct TranscriptionCard: View {
     private func copyToClipboard() {
         // TODO: Implement clipboard copying
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(transcription.content, forType: .string)
+        NSPasteboard.general.setString(transcription.text, forType: .string)
     }
     
     private func viewTranscription() {
         // TODO: Implement view transcription action
-        print("View transcription: \(transcription.title)")
+        print("View transcription: \(transcription.text.prefix(50))")
     }
 }
 

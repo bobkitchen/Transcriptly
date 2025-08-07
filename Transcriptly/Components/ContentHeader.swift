@@ -66,7 +66,7 @@ struct ModeSelector: View {
             ForEach(RefinementMode.allCases, id: \.self) { mode in
                 Button(action: { 
                     currentMode = mode
-                    HapticFeedback.selection()
+                    NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
                 }) {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {

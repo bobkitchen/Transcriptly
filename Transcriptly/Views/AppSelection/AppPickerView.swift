@@ -9,6 +9,22 @@
 import SwiftUI
 import AppKit
 
+// Simple mapping of known apps to refinement modes
+struct DefaultAppMappings {
+    static func defaultMode(for bundleIdentifier: String) -> RefinementMode? {
+        switch bundleIdentifier {
+        case "com.apple.mail", "com.microsoft.Outlook":
+            return .email
+        case "com.apple.MobileSMS", "com.tinyspeck.slackmacgap", "com.microsoft.teams2":
+            return .messaging
+        case "com.apple.Notes", "com.microsoft.Word":
+            return .cleanup
+        default:
+            return nil
+        }
+    }
+}
+
 struct AppPickerView: View {
     @Binding var isPresented: Bool
     let mode: RefinementMode

@@ -11,6 +11,11 @@ import Foundation
 import Combine
 import SwiftUI
 
+// Notification name for file import
+extension Notification.Name {
+    static let fileTranscriptionImportFile = Notification.Name("fileTranscriptionImportFile")
+}
+
 enum FileTranscriptionProvider: String, CaseIterable {
     case speechAnalyzer = "Apple SpeechAnalyzer"
     case gpt4oWhisper = "GPT-4o Whisper"
@@ -82,6 +87,35 @@ class FileTranscriptionService: ObservableObject {
     // Supported file types
     static let supportedAudioTypes: Set<String> = ["mp3", "wav", "m4a", "aac", "flac", "ogg"]
     static let supportedVideoTypes: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "webm"]
+    
+    // Helper methods for UI
+    static func supportedFormatsString() -> String {
+        let audioFormats = supportedAudioTypes.sorted().joined(separator: ", ")
+        let videoFormats = supportedVideoTypes.sorted().joined(separator: ", ")
+        return "Audio: \(audioFormats)\nVideo: \(videoFormats)"
+    }
+    
+    static func fileTypeIcon(for url: URL) -> String {
+        let ext = url.pathExtension.lowercased()
+        if supportedAudioTypes.contains(ext) {
+            return "waveform"
+        } else if supportedVideoTypes.contains(ext) {
+            return "video.fill"
+        } else {
+            return "doc.fill"
+        }
+    }
+    
+    static func fileTypeColor(for url: URL) -> Color {
+        let ext = url.pathExtension.lowercased()
+        if supportedAudioTypes.contains(ext) {
+            return .blue
+        } else if supportedVideoTypes.contains(ext) {
+            return .purple
+        } else {
+            return .gray
+        }
+    }
     
     // OpenAI configuration
     private lazy var openAIKey: String? = try? APIKeyManager.shared.getAPIKey(for: .openai)

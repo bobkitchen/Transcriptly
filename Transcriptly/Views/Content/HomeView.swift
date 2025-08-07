@@ -398,19 +398,19 @@ struct HomeView: View {
         // Basic audio/video file processing
         do {
             let fileService = FileTranscriptionService.shared
-            let text = await fileService.transcribeFile(at: url)
+            let text = try await fileService.transcribeFile(url)
             
             await MainActor.run {
-                if let transcribedText = text {
-                    viewModel.transcribedText = transcribedText
-                    // Copy to clipboard
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(transcribedText, forType: .string)
-                } else {
-                    self.fileErrorTitle = "Transcription Failed"
-                    self.fileErrorMessage = "Could not transcribe the audio/video file."
-                    self.showingFileError = true
-                }
+                viewModel.transcribedText = text
+                // Copy to clipboard
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
+        } catch {
+            await MainActor.run {
+                self.fileErrorTitle = "Transcription Failed"
+                self.fileErrorMessage = error.localizedDescription
+                self.showingFileError = true
             }
         }
     }

@@ -225,7 +225,7 @@ class TranscriptionHistoryService: ObservableObject {
         }
         
         let totalWords = history.reduce(0) { $0 + $1.wordCount }
-        let totalTime = history.reduce(0) { $0 + $1.duration }
+        let totalTime = history.reduce(0) { $0 + ($1.duration ?? 0) }
         
         // Calculate favorite mode
         let modeCounts = Dictionary(grouping: history, by: { $0.mode })
