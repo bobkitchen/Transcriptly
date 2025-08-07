@@ -253,9 +253,8 @@ class TranscriptionHistoryService: ObservableObject {
             weekCount: weekTranscriptions
         )
         
-        // Calculate user stats
-        let today = Calendar.current.startOfDay(for: Date())
-        let todayCount = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
+        // Calculate user stats (reuse today variable from above)
+        let todayCountForStats = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
         
         // Time saved calculation (assuming 40 WPM typing speed vs instant paste)
         let typingTime = Double(totalWords) / 40.0 * 60 // seconds
@@ -266,7 +265,7 @@ class TranscriptionHistoryService: ObservableObject {
             timeSaved: timeSaved,
             currentStreak: calculateCurrentStreak(),
             longestStreak: calculateLongestStreak(),
-            todayCount: todayCount
+            todayCount: todayCountForStats
         )
     }
     
