@@ -20,6 +20,10 @@ struct FullWidthContentView: View {
             HomeView(viewModel: viewModel, selectedSection: $selectedSection, onFloat: onFloat)
         case .transcription:
             TranscriptionView(viewModel: viewModel, onFloat: onFloat)
+        case .fileTranscription:
+            FileTranscriptionView()
+        case .readAloud:
+            ReadAloudView()
         case .dictation:
             FileTranscriptionView()
         case .aiProviders:
