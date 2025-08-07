@@ -92,7 +92,7 @@ struct DocumentMetadata: Codable, Sendable {
     let creationDate: Date?
     let modificationDate: Date?
     
-    nonisolated init(
+    init(
         fileSize: Int = 0,
         wordCount: Int = 0,
         characterCount: Int = 0,

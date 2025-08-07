@@ -17,22 +17,22 @@ protocol AIProvider: ObservableObject {
     var isAvailable: Bool { get }
     var isConfigured: Bool { get }
     
-    func testConnection() async -> Result<Bool, any Error>
+    func testConnection() async -> Result<Bool, Error>
     func configure(apiKey: String?) async throws
 }
 
 // MARK: - Service-Specific Protocols
 
 protocol TranscriptionProvider: AIProvider {
-    func transcribe(audio: Data) async -> Result<String, any Error>
+    func transcribe(audio: Data) async -> Result<String, Error>
 }
 
 protocol RefinementProvider: AIProvider {
-    func refine(text: String, mode: RefinementMode) async -> Result<String, any Error>
+    func refine(text: String, mode: RefinementMode) async -> Result<String, Error>
 }
 
 protocol TTSProvider: AIProvider {
-    func synthesizeSpeech(text: String) async -> Result<Data, any Error>
+    func synthesizeSpeech(text: String) async -> Result<Data, Error>
 }
 
 // MARK: - Health Status

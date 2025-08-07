@@ -461,7 +461,7 @@ final class DocumentProcessingService: ObservableObject {
         }
     }
     
-    nonisolated private func processTextFile(at url: URL) async throws -> (String, DocumentMetadata) {
+    private func processTextFile(at url: URL) async throws -> (String, DocumentMetadata) {
         let content = try String(contentsOf: url, encoding: .utf8)
         
         let metadata = DocumentMetadata(
@@ -473,7 +473,7 @@ final class DocumentProcessingService: ObservableObject {
         return (content, metadata)
     }
     
-    nonisolated private func processHTML(at url: URL) async throws -> (String, DocumentMetadata) {
+    private func processHTML(at url: URL) async throws -> (String, DocumentMetadata) {
         let htmlContent = try String(contentsOf: url, encoding: .utf8)
         let plainText = stripHTMLTags(from: htmlContent)
         
@@ -520,7 +520,7 @@ final class DocumentProcessingService: ObservableObject {
         }
     }
     
-    nonisolated private func stripHTMLTags(from html: String) -> String {
+    private func stripHTMLTags(from html: String) -> String {
         // Simple HTML tag removal - in production, use proper HTML parsing
         return html.replacingOccurrences(
             of: "<[^>]+>",
@@ -636,10 +636,10 @@ enum DocumentProcessingError: LocalizedError {
 // MARK: - Web Content Delegate
 
 private class WebContentDelegate: NSObject, WKNavigationDelegate {
-    private let completion: (Result<String, any Error>) -> Void
+    private let completion: (Result<String, Error>) -> Void
     private var hasCompleted = false
     
-    init(completion: @escaping (Result<String, any Error>) -> Void) {
+    init(completion: @escaping (Result<String, Error>) -> Void) {
         self.completion = completion
         super.init()
     }
@@ -687,7 +687,7 @@ private class WebContentDelegate: NSObject, WKNavigationDelegate {
         }
     }
     
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         guard !hasCompleted else { return }
         hasCompleted = true
         completion(.failure(error))

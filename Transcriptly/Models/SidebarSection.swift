@@ -10,6 +10,8 @@ import Foundation
 enum SidebarSection: String, CaseIterable {
     case home = "Home"
     case transcription = "Transcription"
+    case fileTranscription = "File Transcription"
+    case readAloud = "Read Aloud"
     case dictation = "Dictation"
     case aiProviders = "AI Providers"
     case learning = "Learning"
@@ -23,6 +25,8 @@ enum SidebarSection: String, CaseIterable {
         switch self {
         case .home: return "house"
         case .transcription: return "mic"
+        case .fileTranscription: return "doc.fill"
+        case .readAloud: return "speaker.wave.3"
         case .dictation: return "text.cursor"
         case .aiProviders: return "cpu"
         case .learning: return "brain"

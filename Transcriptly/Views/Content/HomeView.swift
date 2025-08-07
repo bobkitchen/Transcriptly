@@ -357,60 +357,59 @@ struct HomeView: View {
         let videoExtensions = ["mp4", "mov", "avi", "mkv", "webm", "m4v"]
         
         if documentExtensions.contains(fileExtension) {
-            print("📁 HomeView: Document detected")
-            // TODO: Navigate to Read Aloud when available
-            // selectedSection = .readAloud
+            print("📁 HomeView: Document detected, navigating to Read Aloud")
+            // Navigate to Read Aloud
+            selectedSection = .readAloud
             
-            // For now, just hide processing overlay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.isProcessingFile = false
+            // Post notification to trigger file import in ReadAloudView
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("📁 HomeView: Posting readAloudImportFile notification")
+                NotificationCenter.default.post(
+                    name: .readAloudImportFile,
+                    object: nil,
+                    userInfo: ["fileURL": url]
+                )
+                
+                // Hide processing overlay after navigation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.isProcessingFile = false
+                }
             }
-            
-            // Show error for now
-            self.fileErrorTitle = "Feature Not Available"
-            self.fileErrorMessage = "Document reading is not yet available in this version."
-            self.showingFileError = true
         } else if audioExtensions.contains(fileExtension) || videoExtensions.contains(fileExtension) {
-            print("📁 HomeView: Audio/Video file detected")
-            // TODO: Navigate to file transcription when available
-            // selectedSection = .fileTranscription
+            print("📁 HomeView: Audio/Video file detected, redirecting to file transcription")
+            selectedSection = .fileTranscription
             
-            // For now, process the file directly
-            Task {
-                await processAudioVideoFile(at: url)
-            }
-            
-            // Hide processing overlay after a delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.isProcessingFile = false
+            // Post notification to trigger file import in FileTranscriptionView
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("📁 HomeView: Posting fileTranscriptionImportFile notification")
+                NotificationCenter.default.post(
+                    name: .fileTranscriptionImportFile,
+                    object: nil,
+                    userInfo: ["fileURL": url]
+                )
+                
+                // Hide processing overlay after navigation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.isProcessingFile = false
+                }
             }
         } else {
-            print("📁 HomeView: Unknown file type")
-            // Unknown file type - show error
-            self.fileErrorTitle = "Unsupported File Type"
-            self.fileErrorMessage = "This file type is not supported."
-            self.showingFileError = true
-            self.isProcessingFile = false
-        }
-    }
-    
-    private func processAudioVideoFile(at url: URL) async {
-        // Basic audio/video file processing
-        do {
-            let fileService = FileTranscriptionService.shared
-            let text = try await fileService.transcribeFile(url)
+            print("📁 HomeView: Unknown file type, trying as document")
+            // Unknown file type - try documents first
+            selectedSection = .readAloud
             
-            await MainActor.run {
-                viewModel.transcribedText = text
-                // Copy to clipboard
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-            }
-        } catch {
-            await MainActor.run {
-                self.fileErrorTitle = "Transcription Failed"
-                self.fileErrorMessage = error.localizedDescription
-                self.showingFileError = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("📁 HomeView: Posting readAloudImportFile notification for unknown type")
+                NotificationCenter.default.post(
+                    name: .readAloudImportFile,
+                    object: nil,
+                    userInfo: ["fileURL": url]
+                )
+                
+                // Hide processing overlay after navigation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.isProcessingFile = false
+                }
             }
         }
     }

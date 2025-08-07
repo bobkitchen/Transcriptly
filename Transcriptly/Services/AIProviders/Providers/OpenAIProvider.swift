@@ -49,7 +49,7 @@ extension OpenAIProvider: AIProvider {
         isConfigured
     }
     
-    func testConnection() async -> Result<Bool, any Error> {
+    func testConnection() async -> Result<Bool, Error> {
         guard let apiKey = apiKey else {
             return .failure(ProviderError.apiKeyMissing)
         }
@@ -112,7 +112,7 @@ extension OpenAIProvider: AIProvider {
 // MARK: - TranscriptionProvider Protocol
 
 extension OpenAIProvider: TranscriptionProvider {
-    func transcribe(audio: Data) async -> Result<String, any Error> {
+    func transcribe(audio: Data) async -> Result<String, Error> {
         guard let apiKey = apiKey else {
             return .failure(ProviderError.apiKeyMissing)
         }
@@ -192,185 +192,12 @@ extension OpenAIProvider: TranscriptionProvider {
             return .failure(ProviderError.networkError(error))
         }
     }
-    
-    // MARK: - File Transcription Methods
-    
-    func transcribeFile(_ fileURL: URL) async throws -> String {
-        guard let apiKey = apiKey else {
-            throw ProviderError.apiKeyMissing
-        }
-        
-        let selectedModel = AIProviderManager.shared.preferences.openaiFileTranscriptionModel
-        
-        // Read the audio file data
-        let audioData = try Data(contentsOf: fileURL)
-        
-        if selectedModel == "whisper-1" {
-            // Use Whisper API endpoint for file transcription
-            return try await transcribeWithWhisper(audioData: audioData, fileName: fileURL.lastPathComponent)
-        } else {
-            // Use GPT-4o audio preview for file transcription
-            return try await transcribeWithGPT4oAudio(audioData: audioData)
-        }
-    }
-    
-    private func transcribeWithWhisper(audioData: Data, fileName: String) async throws -> String {
-        guard let apiKey = apiKey else {
-            throw ProviderError.apiKeyMissing
-        }
-        
-        // Create multipart form data
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var body = Data()
-        
-        // Add model parameter
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        body.append("whisper-1\r\n".data(using: .utf8)!)
-        
-        // Add file parameter
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(audioData)
-        body.append("\r\n".data(using: .utf8)!)
-        
-        // Add response_format parameter
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
-        body.append("text\r\n".data(using: .utf8)!)
-        
-        // Add temperature parameter
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"temperature\"\r\n\r\n".data(using: .utf8)!)
-        body.append("0\r\n".data(using: .utf8)!)
-        
-        // Close boundary
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        // Create request to Whisper endpoint
-        var request = URLRequest(url: URL(string: "\(baseURL)/audio/transcriptions")!)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.setValue("Transcriptly-macOS/1.0", forHTTPHeaderField: "User-Agent")
-        request.httpBody = body
-        
-        do {
-            let (data, response) = try await optimizedURLSession.data(for: request)
-            let httpResponse = response as? HTTPURLResponse
-            
-            guard httpResponse?.statusCode == 200 else {
-                if httpResponse?.statusCode == 401 {
-                    throw ProviderError.apiKeyInvalid
-                } else if httpResponse?.statusCode == 429 {
-                    throw ProviderError.rateLimitExceeded
-                } else {
-                    // Try to parse error message
-                    if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let error = errorData["error"] as? [String: Any],
-                       let message = error["message"] as? String {
-                        throw ProviderError.serviceUnavailable
-                    }
-                    throw ProviderError.serviceUnavailable
-                }
-            }
-            
-            // For text response format, the response is just the transcribed text
-            let transcription = String(data: data, encoding: .utf8) ?? ""
-            return transcription.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-        } catch {
-            if error is ProviderError {
-                throw error
-            }
-            throw ProviderError.networkError(error)
-        }
-    }
-    
-    private func transcribeWithGPT4oAudio(audioData: Data) async throws -> String {
-        guard let apiKey = apiKey else {
-            throw ProviderError.apiKeyMissing
-        }
-        
-        // Convert audio to base64 for GPT-4o audio
-        let base64Audio = audioData.base64EncodedString()
-        
-        let requestBody: [String: Any] = [
-            "model": "gpt-4o-audio-preview",
-            "messages": [
-                [
-                    "role": "user",
-                    "content": [
-                        [
-                            "type": "text",
-                            "text": "Please transcribe this audio file accurately. Return only the transcribed text without any additional commentary."
-                        ],
-                        [
-                            "type": "input_audio",
-                            "input_audio": [
-                                "data": base64Audio,
-                                "format": "mp3"
-                            ]
-                        ]
-                    ]
-                ]
-            ],
-            "temperature": 0.0,
-            "max_tokens": 4000
-        ]
-        
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody) else {
-            throw ProviderError.invalidResponse
-        }
-        
-        // Create request to chat completions endpoint
-        var request = URLRequest(url: URL(string: "\(baseURL)/chat/completions")!)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Transcriptly-macOS/1.0", forHTTPHeaderField: "User-Agent")
-        request.httpBody = bodyData
-        
-        do {
-            let (data, response) = try await optimizedURLSession.data(for: request)
-            let httpResponse = response as? HTTPURLResponse
-            
-            guard httpResponse?.statusCode == 200 else {
-                if httpResponse?.statusCode == 401 {
-                    throw ProviderError.apiKeyInvalid
-                } else if httpResponse?.statusCode == 429 {
-                    throw ProviderError.rateLimitExceeded
-                } else {
-                    throw ProviderError.serviceUnavailable
-                }
-            }
-            
-            // Parse JSON response
-            guard let jsonResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = jsonResponse["choices"] as? [[String: Any]],
-                  let firstChoice = choices.first,
-                  let message = firstChoice["message"] as? [String: Any],
-                  let content = message["content"] as? String else {
-                throw ProviderError.invalidResponse
-            }
-            
-            let transcription = content.trimmingCharacters(in: .whitespacesAndNewlines)
-            return transcription
-            
-        } catch {
-            if error is ProviderError {
-                throw error
-            }
-            throw ProviderError.networkError(error)
-        }
-    }
 }
 
 // MARK: - RefinementProvider Protocol
 
 extension OpenAIProvider: RefinementProvider {
-    func refine(text: String, mode: RefinementMode) async -> Result<String, any Error> {
+    func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
         guard let apiKey = apiKey else {
             return .failure(ProviderError.apiKeyMissing)
         }

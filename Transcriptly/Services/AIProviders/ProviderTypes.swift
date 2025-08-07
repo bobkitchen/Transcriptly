@@ -12,14 +12,12 @@ enum AIService: String, CaseIterable, Codable {
     case transcription
     case refinement
     case textToSpeech
-    case fileTranscription
     
     var displayName: String {
         switch self {
         case .transcription: return "Transcription"
         case .refinement: return "Refinement"
         case .textToSpeech: return "Text-to-Speech"
-        case .fileTranscription: return "File Transcription"
         }
     }
     
@@ -28,7 +26,6 @@ enum AIService: String, CaseIterable, Codable {
         case .transcription: return "mic.circle"
         case .refinement: return "wand.and.sparkles"
         case .textToSpeech: return "speaker.wave.3"
-        case .fileTranscription: return "doc.viewfinder"
         }
     }
 }
@@ -81,7 +78,7 @@ enum ProviderError: Error, LocalizedError {
     case serviceUnavailable
     case rateLimitExceeded
     case modelNotSupported
-    case networkError(any Error)
+    case networkError(Error)
     case invalidResponse
     case audioFormatNotSupported
     case textTooLong

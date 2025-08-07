@@ -43,8 +43,6 @@ class AIProviderManager: ObservableObject {
             preferredType = preferences.refinementProvider
         case .textToSpeech:
             preferredType = preferences.textToSpeechProvider
-        case .fileTranscription:
-            preferredType = preferences.fileTranscriptionProvider
         }
         
         // Try preferred provider
@@ -65,8 +63,8 @@ class AIProviderManager: ObservableObject {
     
     // MARK: - Service Methods
     
-    func transcribe(audio: Data) async -> Result<String, any Error> {
-        guard let provider = getProvider(for: .transcription) as? TranscriptionProvider else {
+    func transcribe(audio: Data) async -> Result<String, Error> {
+        guard let provider = getProvider(for: .transcription) as? any TranscriptionProvider else {
             return .failure(ProviderError.serviceUnavailable)
         }
         
@@ -82,7 +80,7 @@ class AIProviderManager: ObservableObject {
             // Try fallback if enabled
             if preferences.useFallbackHierarchy,
                provider.type != .apple,
-               let appleProvider = providers[.apple] as? TranscriptionProvider,
+               let appleProvider = providers[.apple] as? any TranscriptionProvider,
                appleProvider.isAvailable {
                 print("Primary transcription failed, trying Apple fallback")
                 let fallbackResult = await appleProvider.transcribe(audio: audio)
@@ -97,8 +95,8 @@ class AIProviderManager: ObservableObject {
         }
     }
     
-    func refine(text: String, mode: RefinementMode) async -> Result<String, any Error> {
-        guard let provider = getProvider(for: .refinement) as? RefinementProvider else {
+    func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
+        guard let provider = getProvider(for: .refinement) as? any RefinementProvider else {
             return .failure(ProviderError.serviceUnavailable)
         }
         
@@ -114,7 +112,7 @@ class AIProviderManager: ObservableObject {
             // Try fallback if enabled
             if preferences.useFallbackHierarchy,
                provider.type != .apple,
-               let appleProvider = providers[.apple] as? RefinementProvider,
+               let appleProvider = providers[.apple] as? any RefinementProvider,
                appleProvider.isAvailable {
                 print("Primary refinement failed, trying Apple fallback")
                 let fallbackResult = await appleProvider.refine(text: text, mode: mode)
@@ -129,8 +127,8 @@ class AIProviderManager: ObservableObject {
         }
     }
     
-    func synthesizeSpeech(text: String) async -> Result<Data, any Error> {
-        guard let provider = getProvider(for: .textToSpeech) as? TTSProvider else {
+    func synthesizeSpeech(text: String) async -> Result<Data, Error> {
+        guard let provider = getProvider(for: .textToSpeech) as? any TTSProvider else {
             return .failure(ProviderError.serviceUnavailable)
         }
         
@@ -146,7 +144,7 @@ class AIProviderManager: ObservableObject {
             // Try fallback if enabled
             if preferences.useFallbackHierarchy,
                provider.type != .apple,
-               let appleProvider = providers[.apple] as? TTSProvider,
+               let appleProvider = providers[.apple] as? any TTSProvider,
                appleProvider.isAvailable {
                 print("Primary TTS failed, trying Apple fallback")
                 let fallbackResult = await appleProvider.synthesizeSpeech(text: text)
@@ -178,7 +176,7 @@ class AIProviderManager: ObservableObject {
     
     // MARK: - Testing
     
-    func testAllProviders() async -> [ProviderType: Result<Bool, any Error>] {
+    func testAllProviders() async -> [ProviderType: Result<Bool, Error>] {
         var results: [ProviderType: Result<Bool, Error>] = [:]
         
         for (type, provider) in providers {

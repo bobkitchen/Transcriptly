@@ -1,6 +1,4 @@
 import Foundation
-// Temporarily disabled - Auth is part of Supabase package
-// import Auth
 
 @MainActor
 class PreferenceProfiler {

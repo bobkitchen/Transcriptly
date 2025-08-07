@@ -47,7 +47,7 @@ extension GoogleCloudProvider: AIProvider {
     var type: ProviderType { .googleCloud }
     var isAvailable: Bool { isConfigured }
     
-    func testConnection() async -> Result<Bool, any Error> {
+    func testConnection() async -> Result<Bool, Error> {
         guard let apiKey = apiKey, !apiKey.isEmpty else {
             return .failure(ProviderError.apiKeyMissing)
         }
@@ -96,7 +96,7 @@ extension GoogleCloudProvider: AIProvider {
 // MARK: - TTSProvider Conformance
 
 extension GoogleCloudProvider: TTSProvider {
-    func synthesizeSpeech(text: String) async -> Result<Data, any Error> {
+    func synthesizeSpeech(text: String) async -> Result<Data, Error> {
         guard let apiKey = apiKey, !apiKey.isEmpty else {
             return .failure(ProviderError.apiKeyMissing)
         }

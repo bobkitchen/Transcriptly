@@ -47,7 +47,7 @@ extension ElevenLabsProvider: AIProvider {
     var type: ProviderType { .elevenLabs }
     var isAvailable: Bool { isConfigured }
     
-    func testConnection() async -> Result<Bool, any Error> {
+    func testConnection() async -> Result<Bool, Error> {
         guard let apiKey = apiKey, !apiKey.isEmpty else {
             return .failure(ProviderError.apiKeyMissing)
         }
@@ -99,7 +99,7 @@ extension ElevenLabsProvider: AIProvider {
 // MARK: - TTSProvider Conformance
 
 extension ElevenLabsProvider: TTSProvider {
-    func synthesizeSpeech(text: String) async -> Result<Data, any Error> {
+    func synthesizeSpeech(text: String) async -> Result<Data, Error> {
         guard let apiKey = apiKey, !apiKey.isEmpty else {
             return .failure(ProviderError.apiKeyMissing)
         }

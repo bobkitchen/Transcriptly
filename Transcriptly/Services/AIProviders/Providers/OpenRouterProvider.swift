@@ -40,7 +40,7 @@ extension OpenRouterProvider: AIProvider {
         isConfigured
     }
     
-    func testConnection() async -> Result<Bool, any Error> {
+    func testConnection() async -> Result<Bool, Error> {
         guard let apiKey = apiKey else {
             return .failure(ProviderError.apiKeyMissing)
         }
@@ -104,7 +104,7 @@ extension OpenRouterProvider: AIProvider {
 // MARK: - RefinementProvider Protocol
 
 extension OpenRouterProvider: RefinementProvider {
-    func refine(text: String, mode: RefinementMode) async -> Result<String, any Error> {
+    func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
         guard let apiKey = apiKey else {
             return .failure(ProviderError.apiKeyMissing)
         }

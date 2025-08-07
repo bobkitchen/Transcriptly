@@ -10,6 +10,9 @@ import Foundation
 import Speech
 import SwiftUI
 import Combine
+#if canImport(FoundationModels)
+import FoundationModels
+#endif
 
 @MainActor
 class AppleProvider: ObservableObject {
@@ -30,7 +33,12 @@ class AppleProvider: ObservableObject {
         let speechAvailable = speechStatus == .authorized && speechRecognizer?.isAvailable == true
         
         // Check for Foundation Models availability (macOS 26+)
-        let foundationModelsAvailable = true
+        var foundationModelsAvailable = false
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            foundationModelsAvailable = true
+        }
+        #endif
         
         // Apple provider is healthy if either Speech Recognition is available
         // Foundation Models availability is a bonus but not required
@@ -56,7 +64,7 @@ extension AppleProvider: AIProvider {
         speechRecognizer?.isAvailable == true
     }
     
-    func testConnection() async -> Result<Bool, any Error> {
+    func testConnection() async -> Result<Bool, Error> {
         let status = SFSpeechRecognizer.authorizationStatus()
         return status == .authorized ? .success(true) : .failure(ProviderError.serviceUnavailable)
     }
@@ -69,7 +77,7 @@ extension AppleProvider: AIProvider {
 // MARK: - TranscriptionProvider Protocol
 
 extension AppleProvider: TranscriptionProvider {
-    func transcribe(audio: Data) async -> Result<String, any Error> {
+    func transcribe(audio: Data) async -> Result<String, Error> {
         // Save audio data to temporary file for Speech Recognition API
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
         
@@ -130,34 +138,72 @@ extension AppleProvider: TranscriptionProvider {
 // MARK: - RefinementProvider Protocol
 
 extension AppleProvider: RefinementProvider {
-    func refine(text: String, mode: RefinementMode) async -> Result<String, any Error> {
-        do {
-            let refinedText = try await refineWithFoundationModelsDirect(text: text, mode: mode)
-            return .success(refinedText)
-        } catch {
-            return .failure(ProviderError.custom("Foundation Models refinement failed: \(error.localizedDescription)"))
+    func refine(text: String, mode: RefinementMode) async -> Result<String, Error> {
+        // Check for Foundation Models availability first
+        var hasFoundationModels = false
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *) {
+            hasFoundationModels = true
+        }
+        #endif
+        
+        if hasFoundationModels {
+            // Use Foundation Models directly to avoid circular dependency
+            if #available(macOS 26.0, *) {
+                do {
+                    let refinedText = try await refineWithFoundationModelsDirect(text: text, mode: mode)
+                    return .success(refinedText)
+                    
+                } catch {
+                    return .failure(ProviderError.custom("Foundation Models refinement failed: \(error.localizedDescription)"))
+                }
+            } else {
+                return .failure(ProviderError.custom("Foundation Models not available on this macOS version."))
+            }
+        } else {
+            // Fallback for older macOS versions - suggest using cloud providers
+            return .failure(ProviderError.custom("Foundation Models not available on this macOS version. Please configure OpenAI or OpenRouter for refinement."))
         }
     }
     
+    #if canImport(FoundationModels)
+    @available(macOS 26.0, *)
     private func refineWithFoundationModelsDirect(text: String, mode: RefinementMode) async throws -> String {
-        // FoundationModels not available in current SDK
-        // Return original text with placeholder processing
-        print("AppleProvider: FoundationModels not available, returning original text")
-        
-        // Simple placeholder processing based on mode
-        switch mode {
-        case .raw:
-            return text
-        case .cleanup:
-            return text.replacingOccurrences(of: " um ", with: " ")
-                      .replacingOccurrences(of: " uh ", with: " ")
-                      .replacingOccurrences(of: "  ", with: " ")
-        case .email:
-            return "Subject: [Topic]\n\nHi,\n\n\(text)\n\nBest regards"
-        case .messaging:
-            return text.replacingOccurrences(of: " um ", with: " ")
-                      .replacingOccurrences(of: " uh ", with: " ")
+        // Get the system model directly
+        let systemModel = SystemLanguageModel.default
+        guard systemModel.isAvailable else {
+            throw ProviderError.serviceUnavailable
         }
+        
+        // Create system instructions for refinement tasks
+        let instructions = Instructions("""
+            You are a text refinement assistant. Your task is to improve transcribed text according to specific modes:
+            - Clean-up Mode: Remove filler words, fix grammar, maintain original meaning
+            - Email Mode: Format as professional email with greeting and closing
+            - Messaging Mode: Make conversational and concise for quick messaging
+            Always return only the refined text without explanations.
+            """)
+        
+        // Create language model session with instructions
+        let session = LanguageModelSession(instructions: instructions)
+        
+        // Build the prompt with mode-specific context
+        let userPrompt = buildPromptForMode(text: text, mode: mode)
+        
+        // Check context limits (approximate token count)
+        let estimatedTokens = userPrompt.count / 4 // Rough estimate: 4 chars per token
+        if estimatedTokens > 4000 { // Conservative limit
+            throw ProviderError.custom("Text is too long for processing")
+        }
+        
+        // Create prompt object and get response
+        let promptObject = Prompt(userPrompt)
+        let response = try await session.respond(to: promptObject)
+        
+        // Extract and clean the response
+        let refinedText = cleanResponseText(response.content, originalText: text)
+        
+        return refinedText
     }
     
     private func buildPromptForMode(text: String, mode: RefinementMode) -> String {
@@ -195,4 +241,5 @@ extension AppleProvider: RefinementProvider {
         
         return cleaned
     }
+    #endif
 }

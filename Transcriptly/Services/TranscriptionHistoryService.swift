@@ -2,300 +2,268 @@
 //  TranscriptionHistoryService.swift
 //  Transcriptly
 //
-//  Created by Claude Code on 6/26/25.
+//  Created by Claude Code on 6/28/25.
+//  Phase 4 Fixes - P1.3: TranscriptionRecord Storage Service
 //
 
 import Foundation
-import SwiftUI
 import Combine
 
-struct TranscriptionRecord: Identifiable, Codable {
-    let id = UUID()
-    let date: Date
-    let originalText: String
-    let refinedText: String
-    let mode: RefinementMode
-    let duration: TimeInterval?
-    let wordCount: Int
-    let learningType: LearningType?
-    let deviceId: String
-    
-    var timestamp: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    // Add text property for backward compatibility
-    var text: String {
-        return refinedText.isEmpty ? originalText : refinedText
-    }
-    
-    static let sampleData: [TranscriptionRecord] = [
-        TranscriptionRecord(
-            date: Date(),
-            originalText: "Sample transcription text",
-            refinedText: "Refined sample text",
-            mode: .raw,
-            duration: 5,
-            wordCount: 50,
-            learningType: nil,
-            deviceId: "Mac"
-        ),
-        TranscriptionRecord(
-            date: Date().addingTimeInterval(-3600),
-            originalText: "Another sample",
-            refinedText: "Another refined sample",
-            mode: .cleanup,
-            duration: 3,
-            wordCount: 30,
-            learningType: .editReview,
-            deviceId: "Mac"
-        ),
-        TranscriptionRecord(
-            date: Date().addingTimeInterval(-7200),
-            originalText: "Third sample",
-            refinedText: "Third refined sample",
-            mode: .email,
-            duration: 7,
-            wordCount: 75,
-            learningType: .abTesting,
-            deviceId: "Mac"
-        )
-    ]
-}
-
-struct TranscriptionStatistics {
-    let totalTranscriptions: Int
-    let totalWords: Int
-    let totalTime: TimeInterval
-    let favoriteMode: RefinementMode
-    let averageWordsPerMinute: Int
-    let todayCount: Int
-    let weekCount: Int
-    
-    var totalCount: Int {
-        totalTranscriptions
-    }
-    
-    init(totalTranscriptions: Int = 0, totalWords: Int = 0, totalTime: TimeInterval = 0, 
-         favoriteMode: RefinementMode = .raw, averageWordsPerMinute: Int = 0, todayCount: Int = 0, weekCount: Int = 0) {
-        self.totalTranscriptions = totalTranscriptions
-        self.totalWords = totalWords
-        self.totalTime = totalTime
-        self.favoriteMode = favoriteMode
-        self.averageWordsPerMinute = averageWordsPerMinute
-        self.todayCount = todayCount
-        self.weekCount = weekCount
-    }
-}
-
-class UserStats: ObservableObject {
-    @Published var totalWords: Int
-    @Published var timeSaved: TimeInterval
-    @Published var currentStreak: Int
-    @Published var longestStreak: Int
-    @Published var todayCount: Int
-    @Published var todaySessions: Int = 0
-    @Published var todayMinutesSaved: Int = 0
-    
-    var wordsFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: totalWords)) ?? "0"
-    }
-    
-    var growthFormatted: String {
-        // Placeholder for growth calculation
-        return "+12% this week"
-    }
-    
-    init(totalWords: Int = 0, timeSaved: TimeInterval = 0, currentStreak: Int = 0, longestStreak: Int = 0, todayCount: Int = 0) {
-        self.totalWords = totalWords
-        self.timeSaved = timeSaved
-        self.currentStreak = currentStreak
-        self.longestStreak = longestStreak
-        self.todayCount = todayCount
-        self.todaySessions = todayCount
-        self.todayMinutesSaved = Int(timeSaved / 60)
-    }
-    
-    func loadTodayStats() {
-        // Update today's stats from TranscriptionHistoryService
-        if let historyService = TranscriptionHistoryService.shared as TranscriptionHistoryService? {
-            self.todaySessions = historyService.userStats.todayCount
-            self.todayMinutesSaved = Int(historyService.userStats.timeSaved / 60)
-            self.totalWords = historyService.userStats.totalWords
-        }
-    }
-}
-
+/// Service responsible for managing transcription history storage and retrieval
 @MainActor
-class TranscriptionHistoryService: ObservableObject {
-    static let shared = TranscriptionHistoryService()
+final class TranscriptionHistoryService: ObservableObject {
     
-    @Published var history: [TranscriptionRecord] = []
+    // MARK: - Published Properties
+    
     @Published var transcriptions: [TranscriptionRecord] = []
-    @Published var statistics: TranscriptionStatistics?
-    @Published var userStats: UserStats
+    @Published var isLoading = false
+    @Published var error: String?
+    
+    // MARK: - Private Properties
     
     private let userDefaults = UserDefaults.standard
     private let historyKey = "TranscriptionHistory"
-    private let maxHistoryItems = 100
+    private let maxHistoryCount = 1000 // Limit to prevent unbounded growth
+    
+    // MARK: - Singleton
+    
+    static let shared = TranscriptionHistoryService()
     
     private init() {
-        self.userStats = UserStats(
-            totalWords: 0,
-            timeSaved: 0,
-            currentStreak: 0,
-            longestStreak: 0,
-            todayCount: 0
-        )
         loadHistory()
-        updateStatistics()
     }
     
-    func addTranscription(original: String, refined: String, mode: RefinementMode, duration: TimeInterval) {
-        let wordCount = refined.split(separator: " ").count
-        let deviceId = Host.current().localizedName ?? "Mac"
-        let record = TranscriptionRecord(
-            date: Date(),
-            originalText: original,
-            refinedText: refined,
+    // MARK: - Public Interface
+    
+    /// Save a new transcription record to history
+    func saveTranscription(_ record: TranscriptionRecord) {
+        transcriptions.insert(record, at: 0) // Add to beginning for newest-first ordering
+        
+        // Limit history size
+        if transcriptions.count > maxHistoryCount {
+            transcriptions = Array(transcriptions.prefix(maxHistoryCount))
+        }
+        
+        persistHistory()
+        
+        print("Saved transcription to history: \(record.title)")
+    }
+    
+    /// Create and save a transcription from the current app state
+    func createAndSaveTranscription(
+        original: String,
+        refined: String,
+        final: String,
+        mode: RefinementMode,
+        duration: TimeInterval? = nil,
+        wasLearningTriggered: Bool = false,
+        learningType: LearningType? = nil
+    ) {
+        let record = TranscriptionRecord.create(
+            original: original,
+            refined: refined,
+            final: final,
             mode: mode,
             duration: duration,
-            wordCount: wordCount,
-            learningType: nil,
-            deviceId: deviceId
+            wasLearningTriggered: wasLearningTriggered,
+            learningType: learningType
         )
         
-        history.insert(record, at: 0)
+        saveTranscription(record)
+    }
+    
+    /// Get transcriptions filtered by criteria
+    func getTranscriptions(
+        mode: RefinementMode? = nil,
+        limit: Int? = nil,
+        searchText: String? = nil
+    ) -> [TranscriptionRecord] {
+        var filtered = transcriptions
         
-        // Keep only the most recent items
-        if history.count > maxHistoryItems {
-            history = Array(history.prefix(maxHistoryItems))
+        // Filter by mode
+        if let mode = mode {
+            filtered = filtered.filter { $0.mode == mode }
         }
         
-        saveHistory()
-        updateStatistics()
+        // Filter by search text
+        if let searchText = searchText, !searchText.isEmpty {
+            let lowercasedSearch = searchText.lowercased()
+            filtered = filtered.filter { record in
+                record.title.lowercased().contains(lowercasedSearch) ||
+                record.finalText.lowercased().contains(lowercasedSearch)
+            }
+        }
+        
+        // Apply limit
+        if let limit = limit {
+            filtered = Array(filtered.prefix(limit))
+        }
+        
+        return filtered
     }
     
-    func clearHistory() {
-        history.removeAll()
+    /// Get the most recent transcription
+    var mostRecentTranscription: TranscriptionRecord? {
+        return transcriptions.first
+    }
+    
+    /// Get statistics about transcription usage
+    var statistics: TranscriptionStatistics {
+        let totalCount = transcriptions.count
+        let todayCount = transcriptions.filter { Calendar.current.isDateInToday($0.timestamp) }.count
+        let weekCount = transcriptions.filter { 
+            $0.timestamp > Date().addingTimeInterval(-7 * 24 * 3600) 
+        }.count
+        
+        let modeDistribution = Dictionary(grouping: transcriptions, by: { $0.mode })
+            .mapValues { $0.count }
+        
+        let averageWordCount = transcriptions.isEmpty ? 0 : 
+            transcriptions.map { $0.wordCount }.reduce(0, +) / transcriptions.count
+        
+        let totalDuration = transcriptions.compactMap { $0.duration }.reduce(0, +)
+        
+        return TranscriptionStatistics(
+            totalCount: totalCount,
+            todayCount: todayCount,
+            weekCount: weekCount,
+            modeDistribution: modeDistribution,
+            averageWordCount: averageWordCount,
+            totalDuration: totalDuration
+        )
+    }
+    
+    /// Delete a specific transcription
+    func deleteTranscription(withId id: UUID) {
+        transcriptions.removeAll { $0.id == id }
+        persistHistory()
+        print("Deleted transcription with ID: \(id)")
+    }
+    
+    /// Delete transcriptions older than a certain date
+    func deleteTranscriptionsOlderThan(_ date: Date) {
+        let countBefore = transcriptions.count
+        transcriptions.removeAll { $0.timestamp < date }
+        let countAfter = transcriptions.count
+        persistHistory()
+        print("Deleted \(countBefore - countAfter) transcriptions older than \(date)")
+    }
+    
+    /// Clear all transcription history
+    func clearAllHistory() {
         transcriptions.removeAll()
-        saveHistory()
-        updateStatistics()
+        persistHistory()
+        print("Cleared all transcription history")
     }
     
-    func getTranscriptions() {
-        transcriptions = history
+    /// Export transcriptions as JSON
+    func exportTranscriptions() -> Data? {
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            return try encoder.encode(transcriptions)
+        } catch {
+            self.error = "Failed to export transcriptions: \(error.localizedDescription)"
+            return nil
+        }
     }
     
-    func deleteRecord(_ record: TranscriptionRecord) {
-        history.removeAll { $0.id == record.id }
-        saveHistory()
-        updateStatistics()
+    /// Import transcriptions from JSON data
+    func importTranscriptions(from data: Data, replaceExisting: Bool = false) {
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let importedTranscriptions = try decoder.decode([TranscriptionRecord].self, from: data)
+            
+            if replaceExisting {
+                transcriptions = importedTranscriptions
+            } else {
+                // Merge, avoiding duplicates based on ID
+                let existingIds = Set(transcriptions.map { $0.id })
+                let newTranscriptions = importedTranscriptions.filter { !existingIds.contains($0.id) }
+                transcriptions.append(contentsOf: newTranscriptions)
+                transcriptions.sort { $0.timestamp > $1.timestamp } // Keep newest first
+            }
+            
+            // Apply size limit
+            if transcriptions.count > maxHistoryCount {
+                transcriptions = Array(transcriptions.prefix(maxHistoryCount))
+            }
+            
+            persistHistory()
+            print("Imported \(importedTranscriptions.count) transcriptions")
+        } catch {
+            self.error = "Failed to import transcriptions: \(error.localizedDescription)"
+        }
     }
+    
+    // MARK: - Private Methods
     
     private func loadHistory() {
-        if let data = userDefaults.data(forKey: historyKey),
-           let decoded = try? JSONDecoder().decode([TranscriptionRecord].self, from: data) {
-            history = decoded
-            transcriptions = decoded
-        }
-    }
-    
-    private func saveHistory() {
-        if let encoded = try? JSONEncoder().encode(history) {
-            userDefaults.set(encoded, forKey: historyKey)
-        }
-    }
-    
-    private func updateStatistics() {
-        guard !history.isEmpty else {
-            statistics = nil
-            userStats = UserStats(
-                totalWords: 0,
-                timeSaved: 0,
-                currentStreak: 0,
-                longestStreak: 0,
-                todayCount: 0
-            )
+        isLoading = true
+        error = nil
+        
+        guard let data = userDefaults.data(forKey: historyKey) else {
+            // No existing history, start with empty array
+            transcriptions = []
+            isLoading = false
             return
         }
         
-        let totalWords = history.reduce(0) { $0 + $1.wordCount }
-        let totalTime = history.reduce(0) { $0 + ($1.duration ?? 0) }
-        
-        // Calculate favorite mode
-        let modeCounts = Dictionary(grouping: history, by: { $0.mode })
-            .mapValues { $0.count }
-        let favoriteMode = modeCounts.max(by: { $0.value < $1.value })?.key ?? .raw
-        
-        // Calculate average WPM (assuming 40 WPM typing speed)
-        let avgWPM = totalTime > 0 ? Int(Double(totalWords) / (totalTime / 60)) : 0
-        
-        // Calculate today count
-        let today = Calendar.current.startOfDay(for: Date())
-        let todayTranscriptions = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
-        
-        // Calculate week count
-        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: today) ?? today
-        let weekTranscriptions = history.filter { $0.date >= weekAgo }.count
-        
-        statistics = TranscriptionStatistics(
-            totalTranscriptions: history.count,
-            totalWords: totalWords,
-            totalTime: totalTime,
-            favoriteMode: favoriteMode,
-            averageWordsPerMinute: avgWPM,
-            todayCount: todayTranscriptions,
-            weekCount: weekTranscriptions
-        )
-        
-        // Calculate user stats (reuse today variable from above)
-        let todayCountForStats = history.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }.count
-        
-        // Time saved calculation (assuming 40 WPM typing speed vs instant paste)
-        let typingTime = Double(totalWords) / 40.0 * 60 // seconds
-        let timeSaved = max(0, typingTime - totalTime)
-        
-        userStats = UserStats(
-            totalWords: totalWords,
-            timeSaved: timeSaved,
-            currentStreak: calculateCurrentStreak(),
-            longestStreak: calculateLongestStreak(),
-            todayCount: todayCountForStats
-        )
-    }
-    
-    private func calculateCurrentStreak() -> Int {
-        // Simple streak calculation based on consecutive days
-        var streak = 0
-        var currentDate = Date()
-        let calendar = Calendar.current
-        
-        for _ in 0..<30 { // Check last 30 days
-            let dayRecords = history.filter {
-                calendar.isDate($0.date, inSameDayAs: currentDate)
-            }
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            transcriptions = try decoder.decode([TranscriptionRecord].self, from: data)
+            print("Loaded \(transcriptions.count) transcriptions from history")
+        } catch {
+            print("Failed to load transcription history: \(error)")
+            print("Attempting to clear corrupted history data...")
             
-            if !dayRecords.isEmpty {
-                streak += 1
-                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
-            } else if streak > 0 {
-                break // Streak broken
-            } else {
-                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
+            // Clear the corrupted data to prevent future crashes
+            userDefaults.removeObject(forKey: historyKey)
+            
+            self.error = "Transcription history was corrupted and has been reset. This is a one-time recovery action."
+            transcriptions = []
+            
+            // Log the specific error for debugging
+            if error.localizedDescription.contains("Cannot initialize RefinementMode") {
+                print("Corruption was due to invalid RefinementMode enum value - likely from app update")
             }
         }
         
-        return streak
+        isLoading = false
     }
     
-    private func calculateLongestStreak() -> Int {
-        // For simplicity, return current streak as longest
-        // In a real app, you'd track this over time
-        return max(calculateCurrentStreak(), 7) // Default to at least 7
+    private func persistHistory() {
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(transcriptions)
+            userDefaults.set(data, forKey: historyKey)
+            print("Persisted \(transcriptions.count) transcriptions to UserDefaults")
+        } catch {
+            print("Failed to persist transcription history: \(error)")
+            self.error = "Failed to save history: \(error.localizedDescription)"
+        }
+    }
+}
+
+// MARK: - Supporting Types
+
+struct TranscriptionStatistics {
+    let totalCount: Int
+    let todayCount: Int
+    let weekCount: Int
+    let modeDistribution: [RefinementMode: Int]
+    let averageWordCount: Int
+    let totalDuration: TimeInterval
+    
+    var averageDurationPerTranscription: TimeInterval {
+        return totalCount > 0 ? totalDuration / Double(totalCount) : 0
+    }
+    
+    var mostUsedMode: RefinementMode? {
+        return modeDistribution.max(by: { $0.value < $1.value })?.key
     }
 }
